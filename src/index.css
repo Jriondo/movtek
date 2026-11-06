@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  /* Tema por defecto (Esmeralda + Lima). Cada empresa lo sobrescribe en runtime. */
+  --brand-50: 236 253 245;  --brand-100: 209 250 229; --brand-200: 167 243 208;
+  --brand-300: 110 231 183; --brand-400: 52 211 153;  --brand-500: 16 185 129;
+  --brand-600: 5 150 105;   --brand-700: 4 120 87;    --brand-800: 6 95 70; --brand-900: 6 78 59;
+  --accent-400: 163 230 53; --accent-500: 132 204 22; --accent-600: 101 163 13;
+}
+
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  font-family: '"Plus Jakarta Sans"', system-ui, sans-serif;
+  background: #f6f6fc;
+  color: #1a1830;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 font-semibold text-sm transition active:scale-[.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500;
+  }
+  .btn-primary { @apply btn bg-brand-500 text-white hover:bg-brand-600 shadow-glow; }
+  .btn-ghost   { @apply btn bg-white text-ink border border-cloud-line hover:bg-cloud; }
+  .btn-accent  { @apply btn bg-mint-500 text-ink hover:bg-mint-600; }
+  .card        { @apply bg-white border border-cloud-line rounded-xl2 shadow-card; }
+  .input       { @apply w-full rounded-xl border border-cloud-line bg-cloud px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent; }
+  .label       { @apply block text-xs font-bold text-ink-soft mb-1.5; }
+  .pill        { @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold; }
+}

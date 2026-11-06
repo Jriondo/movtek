@@ -1,0 +1,278 @@
+import { supabase, isSupabaseConfigured } from './supabase'
+
+// Capa de datos de Movtek (multiempresa).
+// Con Supabase usa la base real; sin conectar, modo demo en el navegador.
+
+const LS_KEY = 'movtek_clientes'
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
+
+function lsAll() { try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]') } catch { return [] } }
+function lsSave(rows) { try { localStorage.setItem(LS_KEY, JSON.stringify(rows)) } catch {} }
+
+// ---------------- EMPRESAS (cada una con su color y logo) ----------------
+const EMPRESAS_DEMO = [
+  { id: 'e1', nombre: 'TransLitoral', color_primario: '#10b981', color_acento: '#84cc16' },
+  { id: 'e2', nombre: 'Andina Cargo', color_primario: '#2563eb', color_acento: '#06b6d4' },
+  { id: 'e3', nombre: 'RutaSur Express', color_primario: '#e11d8f', color_acento: '#7c3aed' },
+  { id: 'e4', nombre: 'Costa Trans', color_primario: '#f97316', color_acento: '#0f766e' },
+]
+
+export async function listEmpresas() {
+  if (isSupabaseConfigured) {
+    const { data, error } = await supabase.from('empresas').select('*').order('nombre')
+    if (error) throw error
+    return data?.length ? data : EMPRESAS_DEMO
+  }
+  return EMPRESAS_DEMO
+}
+
+// ---------------- CLIENTES MAESTROS ----------------
+function seedDemo() {
+  if (lsAll().length) return
+  lsSave([
+    {
+      id: 'seed2', empresa_id: 'e1', tipo_persona: 'juridica', compania: 'Comercial Andina S.A.',
+      tipo_identificacion: 'RUC', documento: '1790012345001', nombres: '', apellidos: '',
+      telefono_oficina: '04 2567890', celular: '0998765432', estado: 'activo',
+      contrato_maestro_nro: 'CM-0002', contrato_hijo_nro: 'CH-0002',
+      nombre_responsable: 'Carlos Vera', doc_responsable: '0912345678', telefono_responsable: '0987654321',
+      tipo_direccion: 'catastral', direccion: 'Av. 9 de Octubre 12 # 34 - 56, Edif. Central',
+    },
+    {
+      id: 'seed1', empresa_id: 'e1', tipo_persona: 'natural', compania: '',
+      tipo_identificacion: 'Cédula', documento: '1712345678', nombres: 'María', apellidos: 'Zambrano',
+      telefono_casa: '04 2234455', celular: '0991112233', estado: 'activo',
+      contrato_maestro_nro: 'CM-0001', contrato_hijo_nro: 'CH-0001',
+      tipo_direccion: 'tradicional', direccion: 'Cdla. Los Ceibos, calle 3ra y Av. del Bombero',
+    },
+    {
+      id: 'seed3', empresa_id: 'e2', tipo_persona: 'juridica', compania: 'Distribuidora del Valle',
+      tipo_identificacion: 'RUC', documento: '0991234567001', celular: '0987000111', estado: 'activo',
+      contrato_maestro_nro: 'CM-0001', contrato_hijo_nro: 'CH-0001',
+      tipo_direccion: 'tradicional', direccion: 'Parque Industrial, nave 14',
+    },
+  ])
+}
+
+export async function listClientes({ empresaId = null, documento = '', nombre = '' } = {}) {
+  if (isSupabaseConfigured) {
+    let q = supabase.from('clientes_maestros').select('*').order('created_at', { ascending: false })
+    if (empresaId) q = q.eq('empresa_id', empresaId)
+    if (documento) q = q.ilike('documento', `%${documento}%`)
+    if (nombre) q = q.or(`nombres.ilike.%${nombre}%,apellidos.ilike.%${nombre}%,compania.ilike.%${nombre}%`)
+    const { data, error } = await q
+    if (error) throw error
+    return data
+  }
+  seedDemo()
+  let rows = lsAll()
+  if (empresaId) rows = rows.filter((r) => r.empresa_id === empresaId)
+  if (documento) rows = rows.filter((r) => (r.documento || '').toLowerCase().includes(documento.toLowerCase()))
+  if (nombre) {
+    const n = nombre.toLowerCase()
+    rows = rows.filter((r) => `${r.nombres || ''} ${r.apellidos || ''} ${r.compania || ''}`.toLowerCase().includes(n))
+  }
+  return rows
+}
+
+export async function getCliente(id) {
+  if (isSupabaseConfigured) {
+    const { data, error } = await supabase.from('clientes_maestros').select('*').eq('id', id).single()
+    if (error) throw error
+    return data
+  }
+  return lsAll().find((r) => String(r.id) === String(id)) || null
+}
+
+export async function saveCliente(data) {
+  const payload = { ...data }
+
+  if (!payload.id) {
+    let n
+    if (isSupabaseConfigured) {
+      let c = supabase.from('clientes_maestros').select('*', { count: 'exact', head: true })
+      if (payload.empresa_id) c = c.eq('empresa_id', payload.empresa_id)
+      const { count } = await c
+      n = (count || 0) + 1
+    } else {
+      n = lsAll().filter((r) => r.empresa_id === payload.empresa_id).length + 1
+    }
+    if (!payload.contrato_maestro_nro) payload.contrato_maestro_nro = 'CM-' + String(n).padStart(4, '0')
+    if (!payload.contrato_hijo_nro) payload.contrato_hijo_nro = 'CH-' + String(n).padStart(4, '0')
+  }
+
+  if (isSupabaseConfigured) {
+    if (payload.id) {
+      const { id, created_at, ...rest } = payload
+      const { data: d, error } = await supabase.from('clientes_maestros').update(rest).eq('id', id).select().single()
+      if (error) throw error
+      return d
+    }
+    delete payload.id
+    const { data: d, error } = await supabase.from('clientes_maestros').insert(payload).select().single()
+    if (error) throw error
+    return d
+  }
+
+  const rows = lsAll()
+  if (payload.id) {
+    const i = rows.findIndex((r) => String(r.id) === String(payload.id))
+    if (i >= 0) rows[i] = { ...rows[i], ...payload }
+  } else {
+    payload.id = newId()
+    rows.unshift(payload)
+  }
+  lsSave(rows)
+  return payload
+}
+
+export async function deleteCliente(id) {
+  if (isSupabaseConfigured) {
+    const { error } = await supabase.from('clientes_maestros').delete().eq('id', id)
+    if (error) throw error
+    return
+  }
+  lsSave(lsAll().filter((r) => String(r.id) !== String(id)))
+}
+
+export function nombreMostrar(c) {
+  if (c.tipo_persona === 'juridica') return c.compania || '(Sin nombre)'
+  return `${c.nombres || ''} ${c.apellidos || ''}`.trim() || '(Sin nombre)'
+}
+
+// ---------------- MÓDULO 4.2: CONDUCTORES (empleados) ----------------
+const LS_KEY_C = 'movtek_conductores'
+function lsAllC() { try { return JSON.parse(localStorage.getItem(LS_KEY_C) || '[]') } catch { return [] } }
+function lsSaveC(rows) { try { localStorage.setItem(LS_KEY_C, JSON.stringify(rows)) } catch {} }
+
+function seedConductores() {
+  if (lsAllC().length) return
+  lsSaveC([
+    {
+      id: 'dc1', empresa_id: 'e1', tipo_identificacion: 'Cédula', documento: '0923456789',
+      nombres: 'Luis', apellidos: 'Mendoza', celular: '0981234567', whatsapp: '0981234567',
+      ciudad: 'Guayaquil', rh: 'O+', genero: 'Masculino', fecha_nacimiento: '1988-04-12',
+      licencia_numero: 'B-884512', categoria_licencia: 'C2', licencia_vencimiento: '2027-05-30',
+      correo: 'luis.mendoza@correo.com', estado_habilitacion: 'activo',
+      tipo_direccion: 'tradicional', direccion: 'Cdla. Alborada, etapa 5 mz 12',
+      salario_base: '850', eps: 'Sura', arl: 'Positiva', afp: 'Porvenir', banco: 'Bancolombia',
+      tipo_cuenta: 'Ahorros', no_cuenta: '12345678', existen_comparendos: 'NO',
+    },
+    {
+      id: 'dc2', empresa_id: 'e1', tipo_identificacion: 'Cédula', documento: '0934567890',
+      nombres: 'Jorge', apellidos: 'Paredes', celular: '0991000222', whatsapp: '',
+      ciudad: 'Durán', rh: 'A+', genero: 'Masculino', fecha_nacimiento: '1992-11-03',
+      licencia_numero: 'B-771203', categoria_licencia: 'C1', licencia_vencimiento: '2026-02-18',
+      correo: 'jorge.paredes@correo.com', estado_habilitacion: 'inactivo',
+      tipo_direccion: 'tradicional', direccion: 'Km 8.5 vía a Daule',
+      existen_comparendos: 'SI', ultima_revision_comparendos: '2025-09-10',
+    },
+  ])
+}
+
+export async function listConductores({ empresaId = null, documento = '', nombre = '', celular = '' } = {}) {
+  if (isSupabaseConfigured) {
+    let q = supabase.from('conductores').select('*').order('created_at', { ascending: false })
+    if (empresaId) q = q.eq('empresa_id', empresaId)
+    if (documento) q = q.ilike('documento', `%${documento}%`)
+    if (celular) q = q.ilike('celular', `%${celular}%`)
+    if (nombre) q = q.or(`nombres.ilike.%${nombre}%,apellidos.ilike.%${nombre}%`)
+    const { data, error } = await q
+    if (error) throw error
+    return data
+  }
+  seedConductores()
+  let rows = lsAllC()
+  if (empresaId) rows = rows.filter((r) => r.empresa_id === empresaId)
+  if (documento) rows = rows.filter((r) => (r.documento || '').toLowerCase().includes(documento.toLowerCase()))
+  if (celular) rows = rows.filter((r) => (r.celular || '').toLowerCase().includes(celular.toLowerCase()))
+  if (nombre) {
+    const n = nombre.toLowerCase()
+    rows = rows.filter((r) => `${r.nombres || ''} ${r.apellidos || ''}`.toLowerCase().includes(n))
+  }
+  return rows
+}
+
+export async function getConductor(id) {
+  if (isSupabaseConfigured) {
+    const { data, error } = await supabase.from('conductores').select('*').eq('id', id).single()
+    if (error) throw error
+    return data
+  }
+  return lsAllC().find((r) => String(r.id) === String(id)) || null
+}
+
+export async function saveConductor(data) {
+  const payload = { ...data }
+  if (isSupabaseConfigured) {
+    if (payload.id) {
+      const { id, created_at, ...rest } = payload
+      const { data: d, error } = await supabase.from('conductores').update(rest).eq('id', id).select().single()
+      if (error) throw error
+      return d
+    }
+    delete payload.id
+    const { data: d, error } = await supabase.from('conductores').insert(payload).select().single()
+    if (error) throw error
+    return d
+  }
+  const rows = lsAllC()
+  if (payload.id) {
+    const i = rows.findIndex((r) => String(r.id) === String(payload.id))
+    if (i >= 0) rows[i] = { ...rows[i], ...payload }
+  } else {
+    payload.id = newId()
+    rows.unshift(payload)
+  }
+  lsSaveC(rows)
+  return payload
+}
+
+export async function deleteConductor(id) {
+  if (isSupabaseConfigured) {
+    const { error } = await supabase.from('conductores').delete().eq('id', id)
+    if (error) throw error
+    return
+  }
+  lsSaveC(lsAllC().filter((r) => String(r.id) !== String(id)))
+}
+
+export const nombreConductor = (c) => `${c.nombres || ''} ${c.apellidos || ''}`.trim() || '(Sin nombre)'
+
+export function exportConductoresCsv(rows) {
+  const cols = [
+    ['documento', 'Documento'], ['nombre', 'Nombre'], ['celular', 'Celular'], ['ciudad', 'Ciudad'],
+    ['licencia_numero', 'Licencia'], ['categoria_licencia', 'Categoría'], ['licencia_vencimiento', 'Vence licencia'],
+    ['estado_habilitacion', 'Habilitación'], ['correo', 'Correo'],
+  ]
+  const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
+  const head = cols.map((c) => esc(c[1])).join(';')
+  const body = rows.map((r) => cols.map(([k]) => esc(k === 'nombre' ? nombreConductor(r) : r[k])).join(';')).join('\n')
+  const csv = '﻿' + head + '\n' + body
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'conductores.csv'
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+export function exportClientesCsv(rows) {
+  const cols = [
+    ['documento', 'Documento'], ['nombre', 'Nombre / Compañía'], ['tipo_persona', 'Tipo'],
+    ['tipo_identificacion', 'Identificación'], ['celular', 'Celular'], ['telefono_oficina', 'Tel. oficina'],
+    ['estado', 'Estado'], ['contrato_maestro_nro', 'Contrato maestro'], ['direccion', 'Dirección'],
+  ]
+  const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
+  const head = cols.map((c) => esc(c[1])).join(';')
+  const body = rows.map((r) => cols.map(([k]) => esc(k === 'nombre' ? nombreMostrar(r) : r[k])).join(';')).join('\n')
+  const csv = '﻿' + head + '\n' + body
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'clientes_maestros.csv'
+  a.click()
+  URL.revokeObjectURL(url)
+}
