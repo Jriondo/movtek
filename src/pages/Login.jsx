@@ -2,6 +2,17 @@ import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import Logo from '../components/Logo'
 
+// Traduce los errores comunes de Supabase a mensajes claros en español.
+function traducirError(msg = '') {
+  const m = msg.toLowerCase()
+  if (m.includes('invalid login credentials')) return 'Correo o contraseña incorrectos.'
+  if (m.includes('email not confirmed')) return 'El correo no está confirmado. Créalo en Supabase marcando “Auto Confirm User”.'
+  if (m.includes('email logins are disabled') || m.includes('provider')) return 'El inicio con correo/contraseña está deshabilitado en Supabase (Authentication → Providers → Email).'
+  if (m.includes('fetch') || m.includes('network')) return 'No hay conexión con el servidor. Revisa la URL de Supabase.'
+  if (m.includes('invalid api key') || m.includes('api key')) return 'La clave de Supabase no es válida. Revisa VITE_SUPABASE_ANON_KEY en Vercel.'
+  return msg || 'No pudimos iniciar sesión. Revisa tu correo y contraseña.'
+}
+
 export default function Login() {
   const { login, demo } = useAuth()
   const [email, setEmail] = useState('')
@@ -16,7 +27,7 @@ export default function Login() {
     try {
       await login(email, password)
     } catch (err) {
-      setError('No pudimos iniciar sesión. Revisa tu correo y contraseña.')
+      setError(traducirError(err?.message))
     } finally {
       setBusy(false)
     }
