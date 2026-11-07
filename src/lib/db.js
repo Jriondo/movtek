@@ -1088,9 +1088,10 @@ export async function buscarPropietarioGlobalPorDocumento(documento) {
   const doc = String(documento || '').trim()
   if (!doc) return null
   if (isSupabaseConfigured) {
-    const { data, error } = await supabase.from('propietarios').select('*').eq('documento', doc).limit(1)
+    // RPC pública (SECURITY DEFINER): permite verificar la cédula sin exponer la tabla.
+    const { data, error } = await supabase.rpc('propietario_por_documento', { doc })
     if (error) return null
-    return (data && data[0]) || null
+    return (Array.isArray(data) ? data[0] : data) || null
   }
   seedPropietarios()
   return lsAllP().find((p) => String(p.documento || '').trim() === doc) || null
@@ -1098,11 +1099,20 @@ export async function buscarPropietarioGlobalPorDocumento(documento) {
 
 // Registra el usuario de un propietario (rol propietario). Requiere que el propietario ya exista.
 export async function registrarUsuarioPropietario({ documento, nombre, telefono, direccion, email }) {
-  const prop = await buscarPropietarioGlobalPorDocumento(documento)
+  const doc = String(documento || '').trim()
+  if (isSupabaseConfigured) {
+    // RPC pública (SECURITY DEFINER): crea el usuario del propietario sin requerir sesión previa.
+    const { data, error } = await supabase.rpc('registrar_usuario_propietario', {
+      doc, p_nombre: nombre || '', p_tel: telefono || '', p_dir: direccion || '', p_email: email || '',
+    })
+    if (error) return { ok: false, motivo: 'error', error: error.message }
+    if (!data || data.ok === false) return { ok: false, motivo: data?.motivo || 'no-propietario' }
+    return { ok: true, usuario: { id: data.usuario_id }, propietario: { id: data.propietario_id, empresa_id: data.empresa_id } }
+  }
+  // Modo demo
+  const prop = await buscarPropietarioGlobalPorDocumento(doc)
   if (!prop) return { ok: false, motivo: 'no-propietario' }
-  // Actualiza datos de contacto del propietario si los cambió.
   try { await savePropietario({ ...prop, celular: telefono || prop.celular, direccion: direccion || prop.direccion, correo: email || prop.correo }) } catch {}
-  // Si ya tiene ficha de usuario, se reutiliza (actualiza correo/nombre); si no, se crea.
   const existentes = await listUsuarios({ empresaId: prop.empresa_id })
   const yaUsuario = existentes.find((u) => String(u.propietario_id) === String(prop.id))
   const base = { empresa_id: prop.empresa_id, nombre: nombre || nombrePropietario(prop), email, rol: 'propietario', propietario_id: prop.id, estado: 'activo' }

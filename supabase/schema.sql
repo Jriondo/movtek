@@ -304,3 +304,48 @@ insert into empresas (nombre, color_primario, color_acento) values
   ('Andina Cargo', '#2563eb', '#06b6d4'),
   ('RutaSur Express', '#e11d8f', '#7c3aed')
 on conflict (nombre) do nothing;
+
+-- ============================================================
+-- RPC públicas para el autoregistro de propietarios (login)
+-- Permiten verificar la cédula y crear el usuario sin sesión previa,
+-- sin exponer toda la tabla de propietarios.
+-- ============================================================
+create or replace function public.propietario_por_documento(doc text)
+returns setof propietarios
+language sql security definer set search_path = public as $$
+  select * from propietarios where documento = doc limit 1;
+$$;
+grant execute on function public.propietario_por_documento(text) to anon, authenticated;
+
+create or replace function public.registrar_usuario_propietario(
+  doc text, p_nombre text, p_tel text, p_dir text, p_email text
+) returns json
+language plpgsql security definer set search_path = public as $$
+declare
+  prop propietarios%rowtype;
+  uid uuid;
+begin
+  select * into prop from propietarios where documento = doc limit 1;
+  if not found then
+    return json_build_object('ok', false, 'motivo', 'no-propietario');
+  end if;
+  update propietarios set
+    celular = coalesce(nullif(p_tel, ''), celular),
+    direccion = coalesce(nullif(p_dir, ''), direccion),
+    correo = coalesce(nullif(p_email, ''), correo)
+  where id = prop.id;
+  select id into uid from usuarios where propietario_id = prop.id limit 1;
+  if uid is null then
+    insert into usuarios (empresa_id, nombre, email, rol, propietario_id, estado)
+    values (prop.empresa_id,
+            coalesce(nullif(p_nombre, ''), trim(coalesce(prop.nombres,'') || ' ' || coalesce(prop.apellidos,'')), prop.compania),
+            p_email, 'propietario', prop.id, 'activo')
+    returning id into uid;
+  else
+    update usuarios set email = p_email,
+      nombre = coalesce(nullif(p_nombre, ''), nombre) where id = uid;
+  end if;
+  return json_build_object('ok', true, 'usuario_id', uid, 'empresa_id', prop.empresa_id, 'propietario_id', prop.id);
+end;
+$$;
+grant execute on function public.registrar_usuario_propietario(text, text, text, text, text) to anon, authenticated;
