@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { listDestinos, saveDestino, deleteDestino, contarDestinos, importarCatalogoDestinos } from '../lib/db'
 import { DEPARTAMENTOS_NOMBRES } from '../lib/colombia'
 
@@ -8,14 +8,21 @@ export default function MatrizDestinos() {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [total, setTotal] = useState(null)
-  const [importing, setImporting] = useState(false)
-  const [nuevo, setNuevo] = useState({ nombre: '', codigo_postal: '', area_metropolitana: false })
+  const [nuevo, setNuevo] = useState({ nombre: '', area_metropolitana: false })
+  const sembrado = useRef(false)
 
   async function cargar() {
     setLoading(true)
     try {
+      // Si la base está vacía (Supabase recién conectado), carga el catálogo automáticamente una vez.
+      let t = await contarDestinos()
+      if (t === 0 && !sembrado.current) {
+        sembrado.current = true
+        await importarCatalogoDestinos()
+        t = await contarDestinos()
+      }
+      setTotal(t)
       setRows(await listDestinos({ departamento }))
-      setTotal(await contarDestinos())
     } finally {
       setLoading(false)
     }
@@ -32,18 +39,14 @@ export default function MatrizDestinos() {
   async function eliminar(row) {
     setRows((rs) => rs.filter((r) => r.id !== row.id))
     await deleteDestino(row.id)
+    setTotal((t) => (t || 1) - 1)
   }
 
   async function agregar() {
     if (!nuevo.nombre.trim()) return
-    await saveDestino({ departamento, estado: 'activo', ...nuevo })
-    setNuevo({ nombre: '', codigo_postal: '', area_metropolitana: false })
+    await saveDestino({ departamento, estado: 'activo', nombre: nuevo.nombre.trim(), area_metropolitana: nuevo.area_metropolitana })
+    setNuevo({ nombre: '', area_metropolitana: false })
     cargar()
-  }
-
-  async function importar() {
-    setImporting(true)
-    try { await importarCatalogoDestinos(); await cargar() } finally { setImporting(false) }
   }
 
   return (
@@ -67,12 +70,6 @@ export default function MatrizDestinos() {
             </select>
           </div>
         </div>
-        {total === 0 && (
-          <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-600">
-            <span>Aún no hay destinos cargados en la base de datos.</span>
-            <button className="btn-primary !py-1.5" onClick={importar} disabled={importing}>{importing ? 'Importando…' : 'Importar ciudades de Colombia'}</button>
-          </div>
-        )}
       </div>
 
       {/* Tabla de ciudades */}
@@ -83,14 +80,13 @@ export default function MatrizDestinos() {
         </div>
 
         {loading ? (
-          <p className="px-4 py-10 text-center text-sm text-ink-faint">Cargando…</p>
+          <p className="px-4 py-10 text-center text-sm text-ink-faint">Cargando ciudades…</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-cloud-line text-left text-xs uppercase tracking-wide text-ink-faint">
                   <th className="px-4 py-3 font-bold">Ciudad</th>
-                  <th className="px-4 py-3 font-bold">Código postal</th>
                   <th className="px-4 py-3 text-center font-bold">Área metropolitana</th>
                   <th className="px-4 py-3 text-center font-bold">Estado</th>
                   <th className="px-4 py-3 font-bold"></th>
@@ -100,19 +96,15 @@ export default function MatrizDestinos() {
                 {rows.map((r) => (
                   <tr key={r.id} className="border-b border-cloud-line last:border-0">
                     <td className="px-4 py-2.5 font-semibold text-ink">{r.nombre}</td>
-                    <td className="px-4 py-2.5">
-                      <input className="input !py-1.5 w-32" defaultValue={r.codigo_postal || ''}
-                        onBlur={(e) => e.target.value !== (r.codigo_postal || '') && actualizar(r, { codigo_postal: e.target.value })} />
-                    </td>
                     <td className="px-4 py-2.5 text-center">
                       <input type="checkbox" className="h-4 w-4 accent-brand-500" checked={!!r.area_metropolitana}
                         onChange={(e) => actualizar(r, { area_metropolitana: e.target.checked })} />
                     </td>
-                    <td className="px-4 py-2.5 text-center">
-                      <button onClick={() => actualizar(r, { estado: r.estado === 'activo' ? 'inactivo' : 'activo' })}
-                        className={r.estado === 'inactivo' ? 'pill bg-coral-400/15 text-coral-500' : 'pill bg-mint-500/15 text-mint-600'}>
-                        {r.estado === 'inactivo' ? 'Inactivo' : 'Activo'}
-                      </button>
+                    <td className="px-4 py-2.5">
+                      <div className="flex items-center justify-center gap-2">
+                        <Switch on={r.estado !== 'inactivo'} onClick={() => actualizar(r, { estado: r.estado === 'inactivo' ? 'activo' : 'inactivo' })} />
+                        <span className={`w-14 text-xs font-bold ${r.estado === 'inactivo' ? 'text-ink-faint' : 'text-mint-600'}`}>{r.estado === 'inactivo' ? 'Inactivo' : 'Activo'}</span>
+                      </div>
                     </td>
                     <td className="px-4 py-2.5 text-right">
                       <button onClick={() => eliminar(r)} title="Eliminar" className="text-ink-faint hover:text-coral-500">✕</button>
@@ -125,10 +117,6 @@ export default function MatrizDestinos() {
                     <input className="input !py-1.5" placeholder="Nueva ciudad" value={nuevo.nombre}
                       onChange={(e) => setNuevo((n) => ({ ...n, nombre: e.target.value }))}
                       onKeyDown={(e) => e.key === 'Enter' && agregar()} />
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <input className="input !py-1.5 w-32" placeholder="C. postal" value={nuevo.codigo_postal}
-                      onChange={(e) => setNuevo((n) => ({ ...n, codigo_postal: e.target.value }))} />
                   </td>
                   <td className="px-4 py-2.5 text-center">
                     <input type="checkbox" className="h-4 w-4 accent-brand-500" checked={nuevo.area_metropolitana}
@@ -145,5 +133,14 @@ export default function MatrizDestinos() {
         )}
       </div>
     </div>
+  )
+}
+
+function Switch({ on, onClick }) {
+  return (
+    <button type="button" onClick={onClick} aria-pressed={on}
+      className={`relative h-6 w-11 flex-none rounded-full transition ${on ? 'bg-mint-500' : 'bg-cloud-line'}`}>
+      <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${on ? 'left-[22px]' : 'left-0.5'}`} />
+    </button>
   )
 }
