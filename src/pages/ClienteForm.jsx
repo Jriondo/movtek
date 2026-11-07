@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getCliente, saveCliente, contarFuecCliente } from '../lib/db'
+import { TIPOS_CONTRATO } from '../lib/tiposContrato'
 import { useEmpresa } from '../context/EmpresaContext'
 
 const VACIO = {
@@ -41,6 +42,17 @@ export default function ClienteForm() {
   }, [id])
 
   const set = (campo, valor) => setForm((f) => ({ ...f, [campo]: valor }))
+
+  // Al elegir un tipo de contrato, coloca su objeto automáticamente.
+  function aplicarTipoContrato(label) {
+    const t = TIPOS_CONTRATO.find((x) => x.label === label)
+    setForm((f) => ({
+      ...f,
+      tipo_contrato: label,
+      objeto_contrato: t && t.objeto ? t.objeto : (label ? f.objeto_contrato : f.objeto_contrato),
+      asignar_objeto: label ? true : f.asignar_objeto,
+    }))
+  }
 
   async function grabar() {
     setBusy(true); setMsg('')
@@ -143,6 +155,15 @@ export default function ClienteForm() {
               <input className="input bg-cloud" value={editando ? String(fuecCount) : '0'} readOnly />
               <p className="mt-1 text-xs text-ink-soft">Aumenta automáticamente con cada FUEC que se genere para este cliente (módulo 4.6).</p>
             </Field>
+            <div className="sm:col-span-2">
+              <label className="label">Tipo de contrato</label>
+              <select className="input" value={form.tipo_contrato || ''} onChange={(e) => aplicarTipoContrato(e.target.value)}>
+                <option value="">Seleccione…</option>
+                {TIPOS_CONTRATO.map((t) => <option key={t.label}>{t.label}</option>)}
+              </select>
+              <p className="mt-1 text-xs text-ink-soft">Al elegir el tipo, se completa automáticamente el objeto del contrato.</p>
+            </div>
+
             <div className="sm:col-span-2">
               <label className="flex items-center gap-2 text-sm font-semibold text-ink">
                 <input type="checkbox" className="h-4 w-4 accent-brand-500" checked={form.asignar_objeto} onChange={(e) => set('asignar_objeto', e.target.checked)} />
