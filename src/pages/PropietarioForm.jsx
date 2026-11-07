@@ -1,22 +1,18 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { getPropietario, savePropietario, buscarPersonaPorDocumento, datosComunes } from '../lib/db'
+import { getPropietario, savePropietario, buscarPersonaPorDocumento, datosComunes, listVehiculos } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
 import DocumentoAviso from '../components/DocumentoAviso'
 
 const VACIO = {
   tipo_identificacion: '', documento: '', tipo_persona: 'natural', compania: '',
-  nombres: '', apellidos: '', telefono_casa: '', telefono_oficina: '', celular: '',
-  correo: '', correo_alterno: '', ciudad: '', barrio: '',
-  tipo_cuenta: '', no_cuenta: '', banco: '',
+  nombres: '', apellidos: '', celular: '', correo: '',
   tipo_direccion: 'catastral', direccion: '', estado: 'activo',
+  vehiculos_vinculados: [],
   via_tipo: 'Calle', via_num: '', placa1: '', placa2: '', complemento: '',
 }
 
 const TIPOS_ID = ['Cédula', 'Cédula de extranjería', 'Pasaporte', 'RUC', 'NIT']
-const CIUDADES = ['Guayaquil', 'Quito', 'Cuenca', 'Manta', 'Durán', 'Machala', 'Ambato', 'Loja']
-const CUENTAS = ['Ahorros', 'Corriente']
-const BANCOS = ['Bancolombia', 'Davivienda', 'BBVA', 'Banco de Bogotá', 'Nequi', 'Pichincha', 'Guayaquil']
 const TIPOS_VIA = ['Calle', 'Carrera', 'Avenida', 'Diagonal', 'Transversal', 'Km']
 
 const componerDireccion = (f) => {
@@ -31,21 +27,25 @@ export default function PropietarioForm() {
   const [form, setForm] = useState(VACIO)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
-  const [info, setInfo] = useState('')
   const [dup, setDup] = useState(null)
   const [prefill, setPrefill] = useState(null)
   const [aviso, setAviso] = useState('')
+  const [vehiculos, setVehiculos] = useState([])
+  const [selVeh, setSelVeh] = useState('')
   const editando = Boolean(id)
 
   useEffect(() => {
+    listVehiculos({ empresaId: empresa?.id }).then(setVehiculos).catch(() => {})
+  }, [empresa?.id])
+
+  useEffect(() => {
     if (!id) return
-    getPropietario(id).then((p) => { if (p) setForm({ ...VACIO, ...p }) })
+    getPropietario(id).then((p) => { if (p) setForm({ ...VACIO, ...p, vehiculos_vinculados: p.vehiculos_vinculados || [] }) })
   }, [id])
 
   const set = (campo, valor) => setForm((f) => ({ ...f, [campo]: valor }))
   const esJuridica = form.tipo_persona === 'juridica'
 
-  // Al salir del campo Documento: revisa duplicados y datos reutilizables.
   async function verificarDocumento() {
     setDup(null); setPrefill(null)
     if (!form.documento?.trim()) return
@@ -53,22 +53,26 @@ export default function PropietarioForm() {
     if (propietario && String(propietario.id) !== String(form.id)) setDup(propietario)
     else if (conductor) setPrefill(conductor)
   }
-
   function usarDatos() {
     setForm((f) => ({ ...f, ...datosComunes(prefill) }))
     setAviso('Datos copiados del conductor.')
     setPrefill(null)
   }
 
+  function agregarVehiculo() {
+    const v = vehiculos.find((x) => String(x.id) === String(selVeh))
+    if (!v || form.vehiculos_vinculados.some((x) => x.id === v.id)) return
+    set('vehiculos_vinculados', [...form.vehiculos_vinculados, { id: v.id, placa: v.placa, marca: v.marca, linea: v.linea }])
+    setSelVeh('')
+  }
+  function quitarVehiculo(i) { set('vehiculos_vinculados', form.vehiculos_vinculados.filter((_, idx) => idx !== i)) }
+
   async function grabar() {
-    setBusy(true); setMsg(''); setAviso('')
+    setBusy(true); setMsg('')
     try {
       if (!form.id) {
         const { propietario } = await buscarPersonaPorDocumento({ empresaId: empresa?.id, documento: form.documento })
-        if (propietario) {
-          setDup(propietario); setMsg('Ya existe un propietario con ese documento. Edita el registro existente.')
-          setBusy(false); return
-        }
+        if (propietario) { setDup(propietario); setMsg('Ya existe un propietario con ese documento. Edita el registro existente.'); setBusy(false); return }
       }
       const payload = { ...form }
       if (!payload.id && empresa?.id) payload.empresa_id = empresa.id
@@ -84,7 +88,7 @@ export default function PropietarioForm() {
     }
   }
 
-  function limpiar() { setForm(editando ? { ...VACIO, id: form.id } : VACIO); setMsg(''); setInfo('') }
+  function limpiar() { setForm(editando ? { ...VACIO, id: form.id } : VACIO); setMsg(''); setAviso('') }
 
   return (
     <div className="flex flex-col gap-5">
@@ -100,9 +104,7 @@ export default function PropietarioForm() {
 
       <div className="card p-5 sm:p-6">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Tipo de identificación">
-            <Select value={form.tipo_identificacion} onChange={(v) => set('tipo_identificacion', v)} options={TIPOS_ID} />
-          </Field>
+          <Field label="Tipo de identificación"><Select value={form.tipo_identificacion} onChange={(v) => set('tipo_identificacion', v)} options={TIPOS_ID} /></Field>
           <Field label="Documento"><input className="input" value={form.documento} onChange={(e) => set('documento', e.target.value)} onBlur={verificarDocumento} /></Field>
 
           <div className="sm:col-span-2 flex flex-wrap gap-5">
@@ -110,35 +112,14 @@ export default function PropietarioForm() {
             <Radio label="Persona jurídica" checked={esJuridica} onChange={() => set('tipo_persona', 'juridica')} />
           </div>
           {esJuridica && (
-            <Field label="Compañía" className="sm:col-span-2">
-              <input className="input" value={form.compania} onChange={(e) => set('compania', e.target.value)} />
-            </Field>
+            <Field label="Compañía" className="sm:col-span-2"><input className="input" value={form.compania} onChange={(e) => set('compania', e.target.value)} /></Field>
           )}
-
           {!esJuridica && <>
             <Field label="Nombres"><input className="input" value={form.nombres} onChange={(e) => set('nombres', e.target.value)} /></Field>
             <Field label="Apellidos"><input className="input" value={form.apellidos} onChange={(e) => set('apellidos', e.target.value)} /></Field>
           </>}
-
-          <Field label="Teléfono casa"><input className="input" value={form.telefono_casa} onChange={(e) => set('telefono_casa', e.target.value)} /></Field>
-          <Field label="Teléfono oficina"><input className="input" value={form.telefono_oficina} onChange={(e) => set('telefono_oficina', e.target.value)} /></Field>
           <Field label="Celular"><input className="input" value={form.celular} onChange={(e) => set('celular', e.target.value)} /></Field>
           <Field label="Correo electrónico"><input type="email" className="input" value={form.correo} onChange={(e) => set('correo', e.target.value)} /></Field>
-          <Field label="Correo electrónico alterno"><input type="email" className="input" value={form.correo_alterno} onChange={(e) => set('correo_alterno', e.target.value)} /></Field>
-          <Field label="Ciudad"><Select value={form.ciudad} onChange={(v) => set('ciudad', v)} options={CIUDADES} /></Field>
-          <Field label="Barrio"><input className="input" value={form.barrio} onChange={(e) => set('barrio', e.target.value)} /></Field>
-
-          {/* Datos bancarios */}
-          <Field label="Tipo de cuenta"><Select value={form.tipo_cuenta} onChange={(v) => set('tipo_cuenta', v)} options={CUENTAS} /></Field>
-          <Field label="N° de cuenta"><input className="input" value={form.no_cuenta} onChange={(e) => set('no_cuenta', e.target.value)} /></Field>
-          <Field label="Banco"><Select value={form.banco} onChange={(v) => set('banco', v)} options={BANCOS} /></Field>
-
-          <div className="sm:col-span-2">
-            <button type="button" className="btn-primary" onClick={() => setInfo('La vinculación con vehículos estará disponible cuando creemos el módulo de Vehículos (4.5).')}>
-              🔗 Vinculación de vehículos
-            </button>
-            {info && <p className="mt-2 rounded-xl bg-brand-50 px-3 py-2 text-sm font-medium text-brand-600">{info}</p>}
-          </div>
 
           {/* Dirección */}
           <div className="sm:col-span-2 border-t border-cloud-line pt-4">
@@ -167,7 +148,7 @@ export default function PropietarioForm() {
             ) : (
               <div className="mt-3">
                 <span className="label">Dirección</span>
-                <input className="input" value={form.direccion} onChange={(e) => set('direccion', e.target.value)} placeholder="Escribe la dirección completa" />
+                <input className="input" value={form.direccion} onChange={(e) => set('direccion', e.target.value)} placeholder="Incluye barrio y ciudad" />
               </div>
             )}
           </div>
@@ -180,6 +161,32 @@ export default function PropietarioForm() {
             </div>
           </Field>
         </div>
+      </div>
+
+      {/* Vinculación de vehículos */}
+      <div className="card p-5 sm:p-6">
+        <h2 className="mb-3 font-display text-sm font-bold uppercase tracking-wide text-ink-faint">🔗 Vinculación de vehículos</h2>
+        <div className="flex gap-2">
+          <select className="input" value={selVeh} onChange={(e) => setSelVeh(e.target.value)}>
+            <option value="">Selecciona un vehículo…</option>
+            {vehiculos.filter((v) => !form.vehiculos_vinculados.some((x) => x.id === v.id)).map((v) => (
+              <option key={v.id} value={v.id}>{v.placa} · {v.marca} {v.linea}</option>
+            ))}
+          </select>
+          <button type="button" className="btn-accent !px-3" onClick={agregarVehiculo}>+ Agregar</button>
+        </div>
+        {form.vehiculos_vinculados.length > 0 ? (
+          <ul className="mt-3 flex flex-col gap-1">
+            {form.vehiculos_vinculados.map((v, i) => (
+              <li key={i} className="flex items-center justify-between rounded-lg bg-cloud px-3 py-2 text-sm">
+                <span className="font-semibold text-ink">{v.placa} · {v.marca} {v.linea}</span>
+                <button onClick={() => quitarVehiculo(i)} className="text-ink-faint hover:text-coral-500">✕</button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2 text-xs text-ink-soft">Agrega uno o varios vehículos de los que tengas registrados.</p>
+        )}
       </div>
 
       {msg && <p className="rounded-xl bg-coral-400/15 px-4 py-2.5 text-sm font-medium text-coral-500">{msg}</p>}

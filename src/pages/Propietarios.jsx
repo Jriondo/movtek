@@ -89,7 +89,7 @@ export default function Propietarios() {
                     <th className="px-4 py-3 font-bold">Nombre / Compañía</th>
                     <th className="px-4 py-3 font-bold">Tipo</th>
                     <th className="px-4 py-3 font-bold">Celular</th>
-                    <th className="px-4 py-3 font-bold">Banco</th>
+                    <th className="px-4 py-3 font-bold">Correo</th>
                     <th className="px-4 py-3 font-bold">Estado</th>
                     <th className="px-4 py-3 font-bold"></th>
                   </tr>
@@ -103,7 +103,7 @@ export default function Propietarios() {
                         <span className="pill bg-brand-50 text-brand-600">{p.tipo_persona === 'juridica' ? 'Jurídica' : 'Natural'}</span>
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 tabular-nums text-ink-soft">{p.celular || '—'}</td>
-                      <td className="whitespace-nowrap px-4 py-3 text-ink-soft">{p.banco || '—'}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-ink-soft">{p.correo || '—'}</td>
                       <td className="whitespace-nowrap px-4 py-3">
                         {p.estado === 'inactivo'
                           ? <span className="pill bg-coral-400/15 text-coral-500">Inactivo</span>

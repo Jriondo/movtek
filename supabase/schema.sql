@@ -111,6 +111,7 @@ create table if not exists propietarios (
 );
 create index if not exists idx_propietarios_empresa on propietarios (empresa_id);
 create index if not exists idx_propietarios_documento on propietarios (documento);
+alter table propietarios add column if not exists vehiculos_vinculados jsonb default '[]';
 
 -- Módulo 4.4: Empresas transportadoras
 create table if not exists empresas_transportadoras (
