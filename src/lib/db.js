@@ -532,6 +532,133 @@ export function exportTransportadorasCsv(rows) {
   URL.revokeObjectURL(url)
 }
 
+// ---------------- MÓDULO 4.5: VEHÍCULOS ----------------
+const LS_KEY_V = 'movtek_vehiculos'
+function lsAllV() { try { return JSON.parse(localStorage.getItem(LS_KEY_V) || '[]') } catch { return [] } }
+function lsSaveV(rows) { try { localStorage.setItem(LS_KEY_V, JSON.stringify(rows)) } catch {} }
+
+function seedVehiculos() {
+  if (lsAllV().length) return
+  lsSaveV([
+    {
+      id: 'vh1', empresa_id: 'e1', placa: 'PBA-4471', numero_interno: '28', modelo: '2019',
+      clase: 'Microbús', marca: 'Hyundai', linea: 'County', cilindraje: '3907', vehiculo_servicio: 'PUBLICO',
+      capacidad: '26', color: 'Blanco', carroceria: 'Microbús', tipo_combustible: 'Diésel',
+      aseguradora_soat: 'Sura', fecha_venc_soat: '2027-03-12',
+      propietario_id: 'pp1', transportadora_id: 'tr1', estado: 'activo', desvinculacion: 'NO',
+      tiene_convenio: 'NO', ciudad_matricula: 'Guayaquil', fecha_matricula: '2019-05-10',
+    },
+  ])
+}
+
+export async function listVehiculos({ empresaId = null, placa = '', movil = '', estado = '' } = {}) {
+  if (isSupabaseConfigured) {
+    let q = supabase.from('vehiculos').select('*').order('created_at', { ascending: false })
+    if (empresaId) q = q.eq('empresa_id', empresaId)
+    if (placa) q = q.ilike('placa', `%${placa}%`)
+    if (movil) q = q.ilike('numero_interno', `%${movil}%`)
+    if (estado) q = q.eq('estado', estado)
+    const { data, error } = await q
+    if (error) throw error
+    return data
+  }
+  seedVehiculos()
+  let rows = lsAllV()
+  if (empresaId) rows = rows.filter((r) => r.empresa_id === empresaId)
+  if (placa) rows = rows.filter((r) => (r.placa || '').toLowerCase().includes(placa.toLowerCase()))
+  if (movil) rows = rows.filter((r) => (r.numero_interno || '').toLowerCase().includes(movil.toLowerCase()))
+  if (estado) rows = rows.filter((r) => (r.estado || 'activo') === estado)
+  return rows
+}
+
+export async function getVehiculo(id) {
+  if (isSupabaseConfigured) {
+    const { data, error } = await supabase.from('vehiculos').select('*').eq('id', id).single()
+    if (error) throw error
+    return data
+  }
+  return lsAllV().find((r) => String(r.id) === String(id)) || null
+}
+
+export async function buscarVehiculoPorPlaca({ empresaId, placa }) {
+  const pl = (placa || '').trim().toUpperCase()
+  if (!pl) return null
+  if (isSupabaseConfigured) {
+    const { data } = await supabase.from('vehiculos').select('*').eq('empresa_id', empresaId).ilike('placa', pl).limit(1)
+    return data?.[0] || null
+  }
+  seedVehiculos()
+  return lsAllV().find((r) => r.empresa_id === empresaId && (r.placa || '').trim().toUpperCase() === pl) || null
+}
+
+export async function saveVehiculo(data) {
+  const payload = { ...data }
+  if (isSupabaseConfigured) {
+    if (payload.id) {
+      const { id, created_at, ...rest } = payload
+      const { data: d, error } = await supabase.from('vehiculos').update(rest).eq('id', id).select().single()
+      if (error) throw error
+      return d
+    }
+    delete payload.id
+    const { data: d, error } = await supabase.from('vehiculos').insert(payload).select().single()
+    if (error) throw error
+    return d
+  }
+  const rows = lsAllV()
+  if (payload.id) {
+    const i = rows.findIndex((r) => String(r.id) === String(payload.id))
+    if (i >= 0) rows[i] = { ...rows[i], ...payload }
+  } else {
+    payload.id = newId()
+    rows.unshift(payload)
+  }
+  lsSaveV(rows)
+  return payload
+}
+
+export async function deleteVehiculo(id) {
+  if (isSupabaseConfigured) {
+    const { error } = await supabase.from('vehiculos').delete().eq('id', id)
+    if (error) throw error
+    return
+  }
+  lsSaveV(lsAllV().filter((r) => String(r.id) !== String(id)))
+}
+
+// Cuenta los FUEC generados para un vehículo (se llena con el módulo 4.6).
+export async function contarFuecVehiculo(vehiculoId) {
+  if (!vehiculoId) return 0
+  if (isSupabaseConfigured) {
+    const { count, error } = await supabase.from('fuec').select('*', { count: 'exact', head: true }).eq('vehiculo_id', vehiculoId)
+    if (error) return 0
+    return count || 0
+  }
+  try {
+    const rows = JSON.parse(localStorage.getItem('movtek_fuec') || '[]')
+    return rows.filter((r) => String(r.vehiculo_id) === String(vehiculoId)).length
+  } catch { return 0 }
+}
+
+export function exportVehiculosCsv(rows) {
+  const cols = [
+    ['placa', 'Placa'], ['numero_interno', 'Móvil'], ['clase', 'Clase'], ['marca', 'Marca'],
+    ['linea', 'Línea'], ['modelo', 'Modelo'], ['color', 'Color'], ['tipo_combustible', 'Combustible'],
+    ['vehiculo_servicio', 'Servicio'], ['estado', 'Estado'],
+  ]
+  const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
+  const head = cols.map((c) => esc(c[1])).join(';')
+  const body = rows.map((r) => cols.map(([k]) => esc(r[k])).join(';')).join('\n')
+  const csv = '﻿' + head + '\n' + body
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'vehiculos.csv'
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export function exportClientesCsv(rows) {
   const cols = [
     ['documento', 'Documento'], ['nombre', 'Nombre / Compañía'], ['tipo_persona', 'Tipo'],

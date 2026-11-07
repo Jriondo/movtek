@@ -11,6 +11,8 @@ import Propietarios from './pages/Propietarios'
 import PropietarioForm from './pages/PropietarioForm'
 import Transportadoras from './pages/Transportadoras'
 import TransportadoraForm from './pages/TransportadoraForm'
+import Vehiculos from './pages/Vehiculos'
+import VehiculoForm from './pages/VehiculoForm'
 
 // Protege las rutas internas: si no hay sesión, manda al login.
 function Protected({ children }) {
@@ -46,6 +48,9 @@ export default function App() {
         <Route path="transportadoras" element={<Transportadoras />} />
         <Route path="transportadoras/nuevo" element={<TransportadoraForm />} />
         <Route path="transportadoras/:id" element={<TransportadoraForm />} />
+        <Route path="vehiculos" element={<Vehiculos />} />
+        <Route path="vehiculos/nuevo" element={<VehiculoForm />} />
+        <Route path="vehiculos/:id" element={<VehiculoForm />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -19,7 +19,7 @@ export default function Inicio() {
     { label: 'Conductores', icon: '🧑‍✈️', to: '/conductores', desc: 'Empleados y licencias' },
     { label: 'Propietarios', icon: '🪪', to: '/propietarios', desc: 'Dueños de vehículos' },
     { label: 'Empresas transp.', icon: '🏢', to: '/transportadoras', desc: 'Transportadoras vinculadas' },
-    { label: 'Vehículos', icon: '🚚', desc: 'Flota de la empresa', soon: true },
+    { label: 'Vehículos', icon: '🚚', to: '/vehiculos', desc: 'Flota de la empresa' },
   ]
 
   return (
@@ -38,7 +38,7 @@ export default function Inicio() {
         </button>
         <div className="card p-4">
           <p className="text-xs font-bold uppercase tracking-wide text-ink-faint">Módulos activos</p>
-          <p className="mt-1 font-display text-3xl font-extrabold text-ink">4</p>
+          <p className="mt-1 font-display text-3xl font-extrabold text-ink">5</p>
           <p className="text-xs text-ink-soft">de varios en camino</p>
         </div>
         <div className="card p-4">

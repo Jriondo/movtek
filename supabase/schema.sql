@@ -135,6 +135,33 @@ create table if not exists empresas_transportadoras (
 create index if not exists idx_transportadoras_empresa on empresas_transportadoras (empresa_id);
 create index if not exists idx_transportadoras_documento on empresas_transportadoras (documento);
 
+-- Módulo 4.5: Vehículos
+create table if not exists vehiculos (
+  id uuid primary key default gen_random_uuid(),
+  empresa_id uuid references empresas(id) on delete cascade,
+  -- básicos
+  modelo text, clase text, numero_interno text, marca text, linea text, placa text,
+  cilindraje text, vehiculo_servicio text default 'PUBLICO',
+  -- complementarios
+  capacidad text, peso text, peso_unidad text default 'KILOGRAMO', registro_motor text, serie_chasis text,
+  color text, carroceria text, tipo_combustible text, porcentaje_cobro text,
+  -- operacionales
+  aseguradora_soat text, fecha_venc_soat date, fecha_venc_rcc date, fecha_venc_rce date,
+  fecha_venc_preventiva date, fecha_venc_tecnomecanica date, tarjeta_operacion text, fecha_venc_toperacion date,
+  propietario_id uuid references propietarios(id) on delete set null,
+  tenedor_id uuid references propietarios(id) on delete set null,
+  transportadora_id uuid references empresas_transportadoras(id) on delete set null,
+  aseguradora_rcc_rce text, estado text default 'activo', desvinculacion text default 'NO',
+  -- adicionales / convenio
+  tiene_convenio text default 'NO', ciudad_matricula text, fecha_matricula date,
+  inicio_convenio date, caducidad_convenio date,
+  -- kilometraje
+  kilometraje_actual text, fecha_kilometraje date, observaciones_km text,
+  created_at timestamptz default now()
+);
+create index if not exists idx_vehiculos_empresa on vehiculos (empresa_id);
+create index if not exists idx_vehiculos_placa on vehiculos (placa);
+
 -- Seguridad a nivel de fila
 alter table empresas enable row level security;
 alter table clientes_maestros enable row level security;
@@ -158,6 +185,10 @@ create policy "dev_propietarios_all" on propietarios for all to authenticated us
 alter table empresas_transportadoras enable row level security;
 drop policy if exists "dev_transportadoras_all" on empresas_transportadoras;
 create policy "dev_transportadoras_all" on empresas_transportadoras for all to authenticated using (true) with check (true);
+
+alter table vehiculos enable row level security;
+drop policy if exists "dev_vehiculos_all" on vehiculos;
+create policy "dev_vehiculos_all" on vehiculos for all to authenticated using (true) with check (true);
 
 -- Empresas de ejemplo (opcional)
 insert into empresas (nombre, color_primario, color_acento) values
