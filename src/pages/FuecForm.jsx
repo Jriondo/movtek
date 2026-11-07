@@ -116,7 +116,7 @@ export default function FuecForm() {
         const oc = ocasional
         if (oc.tipo_documento === 'NIT') { c_nombre = oc.empresa_nombre || oc.nombre; c_doc = oc.empresa_nit || oc.documento }
         else { c_nombre = oc.nombre; c_doc = oc.documento }
-        r_nombre = oc.responsable ? oc.nombre : ''; r_cedula = oc.documento; r_tel = oc.telefono; r_dir = oc.direccion
+        r_nombre = oc.nombre; r_cedula = oc.documento; r_tel = oc.telefono; r_dir = oc.direccion
       }
       const payload = {
         ...form,
@@ -220,28 +220,25 @@ export default function FuecForm() {
 
       {/* Sub-formulario del contratante "grupo específico" (se habilita solo con ese contrato) */}
       {grupo && (
-        <div className="card border-2 border-brand-300 p-5">
-          <h2 className="mb-3 font-display text-sm font-bold uppercase tracking-wide text-brand-600">Contratante · Grupo específico usuarios-particulares</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="card border-2 border-brand-300 p-5 sm:p-6">
+          <h2 className="mb-4 font-display text-sm font-bold uppercase tracking-wide text-brand-600">Contratante · Grupo específico usuarios-particulares</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Tipo documento">
               <Select value={ocasional.tipo_documento} onChange={(v) => setOc('tipo_documento', v)} options={TIPOS_DOC} />
             </Field>
-            <Field label="Documento"><input className="input" value={ocasional.documento} onChange={(e) => setOc('documento', e.target.value)} /></Field>
-            <Field label="Nombre"><input className="input" value={ocasional.nombre} onChange={(e) => setOc('nombre', e.target.value)} /></Field>
-            <Field label="Responsable">
-              <label className="flex items-center gap-2 pt-2 text-sm font-semibold text-ink">
-                <input type="checkbox" className="h-4 w-4 accent-brand-500" checked={ocasional.responsable} onChange={(e) => setOc('responsable', e.target.checked)} />
-                Responsable
-              </label>
-            </Field>
-            <Field label="Dirección" className="sm:col-span-2"><input className="input" value={ocasional.direccion} onChange={(e) => setOc('direccion', e.target.value)} /></Field>
-            <Field label="Teléfono"><input className="input" value={ocasional.telefono} onChange={(e) => setOc('telefono', e.target.value)} /></Field>
+            <Field label="Documento"><input className="input" value={ocasional.documento} onChange={(e) => setOc('documento', e.target.value)} placeholder="N° de documento" /></Field>
+            <Field label="Nombre" className="sm:col-span-2"><input className="input" value={ocasional.nombre} onChange={(e) => setOc('nombre', e.target.value)} placeholder="Nombre completo del contratante" /></Field>
+            <Field label="Dirección"><input className="input" value={ocasional.direccion} onChange={(e) => setOc('direccion', e.target.value)} placeholder="Dirección" /></Field>
+            <Field label="Teléfono"><input className="input" value={ocasional.telefono} onChange={(e) => setOc('telefono', e.target.value)} placeholder="Teléfono" /></Field>
           </div>
           {/* Si es NIT, dos campos extra: nombre de la empresa y NIT */}
           {esNit && (
-            <div className="mt-3 grid gap-4 rounded-xl bg-brand-50 p-3 sm:grid-cols-2">
-              <Field label="Nombre de la empresa"><input className="input" value={ocasional.empresa_nombre} onChange={(e) => setOc('empresa_nombre', e.target.value)} /></Field>
-              <Field label="NIT"><input className="input" value={ocasional.empresa_nit} onChange={(e) => setOc('empresa_nit', e.target.value)} /></Field>
+            <div className="mt-4 rounded-xl bg-brand-50 p-4">
+              <p className="mb-3 text-xs font-bold uppercase tracking-wide text-brand-600">Datos de la empresa (NIT)</p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Nombre de la empresa"><input className="input" value={ocasional.empresa_nombre} onChange={(e) => setOc('empresa_nombre', e.target.value)} placeholder="Razón social" /></Field>
+                <Field label="NIT"><input className="input" value={ocasional.empresa_nit} onChange={(e) => setOc('empresa_nit', e.target.value)} placeholder="N° de NIT" /></Field>
+              </div>
             </div>
           )}
         </div>
