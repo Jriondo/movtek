@@ -82,6 +82,34 @@ create table if not exists conductores (
 create index if not exists idx_conductores_empresa on conductores (empresa_id);
 create index if not exists idx_conductores_documento on conductores (documento);
 
+-- Módulo 4.3: Propietarios
+create table if not exists propietarios (
+  id uuid primary key default gen_random_uuid(),
+  empresa_id uuid references empresas(id) on delete cascade,
+  tipo_identificacion text,
+  documento text,
+  tipo_persona text default 'natural',
+  compania text,
+  nombres text,
+  apellidos text,
+  telefono_casa text,
+  telefono_oficina text,
+  celular text,
+  correo text,
+  correo_alterno text,
+  ciudad text,
+  barrio text,
+  tipo_cuenta text,
+  no_cuenta text,
+  banco text,
+  tipo_direccion text default 'catastral',
+  direccion text,
+  estado text default 'activo',
+  created_at timestamptz default now()
+);
+create index if not exists idx_propietarios_empresa on propietarios (empresa_id);
+create index if not exists idx_propietarios_documento on propietarios (documento);
+
 -- Seguridad a nivel de fila
 alter table empresas enable row level security;
 alter table clientes_maestros enable row level security;
@@ -97,6 +125,10 @@ create policy "dev_clientes_all" on clientes_maestros for all to authenticated u
 alter table conductores enable row level security;
 drop policy if exists "dev_conductores_all" on conductores;
 create policy "dev_conductores_all" on conductores for all to authenticated using (true) with check (true);
+
+alter table propietarios enable row level security;
+drop policy if exists "dev_propietarios_all" on propietarios;
+create policy "dev_propietarios_all" on propietarios for all to authenticated using (true) with check (true);
 
 -- Empresas de ejemplo (opcional)
 insert into empresas (nombre, color_primario, color_acento) values

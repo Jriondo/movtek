@@ -17,8 +17,8 @@ export default function Inicio() {
   const modulos = [
     { label: 'Clientes maestros', icon: '👥', to: '/clientes', desc: 'Consulta y gestión de clientes' },
     { label: 'Conductores', icon: '🧑‍✈️', to: '/conductores', desc: 'Empleados y licencias' },
+    { label: 'Propietarios', icon: '🪪', to: '/propietarios', desc: 'Dueños de vehículos' },
     { label: 'Vehículos', icon: '🚚', desc: 'Flota de la empresa', soon: true },
-    { label: 'Matriz destinos', icon: '🗺️', desc: 'Rutas y destinos', soon: true },
   ]
 
   return (
@@ -37,7 +37,7 @@ export default function Inicio() {
         </button>
         <div className="card p-4">
           <p className="text-xs font-bold uppercase tracking-wide text-ink-faint">Módulos activos</p>
-          <p className="mt-1 font-display text-3xl font-extrabold text-ink">2</p>
+          <p className="mt-1 font-display text-3xl font-extrabold text-ink">3</p>
           <p className="text-xs text-ink-soft">de varios en camino</p>
         </div>
         <div className="card p-4">

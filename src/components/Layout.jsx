@@ -8,7 +8,7 @@ const nav = [
   { to: '/', label: 'Inicio', icon: '▣', end: true },
   { to: '/clientes', label: 'Clientes maestros', icon: '👥' },
   { to: '/conductores', label: 'Conductores', icon: '🧑‍✈️' },
-  { label: 'Propietarios', icon: '🪪', soon: true },
+  { to: '/propietarios', label: 'Propietarios', icon: '🪪' },
   { label: 'Vehículos', icon: '🚚', soon: true },
   { label: 'Matriz destinos', icon: '🗺️', soon: true },
   { label: 'Usuarios', icon: '🔑', soon: true },

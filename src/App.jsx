@@ -7,6 +7,8 @@ import Clientes from './pages/Clientes'
 import ClienteForm from './pages/ClienteForm'
 import Conductores from './pages/Conductores'
 import ConductorForm from './pages/ConductorForm'
+import Propietarios from './pages/Propietarios'
+import PropietarioForm from './pages/PropietarioForm'
 
 // Protege las rutas internas: si no hay sesión, manda al login.
 function Protected({ children }) {
@@ -36,6 +38,9 @@ export default function App() {
         <Route path="conductores" element={<Conductores />} />
         <Route path="conductores/nuevo" element={<ConductorForm />} />
         <Route path="conductores/:id" element={<ConductorForm />} />
+        <Route path="propietarios" element={<Propietarios />} />
+        <Route path="propietarios/nuevo" element={<PropietarioForm />} />
+        <Route path="propietarios/:id" element={<PropietarioForm />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

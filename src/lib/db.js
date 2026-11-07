@@ -258,6 +258,115 @@ export function exportConductoresCsv(rows) {
   URL.revokeObjectURL(url)
 }
 
+// ---------------- MÓDULO 4.3: PROPIETARIOS ----------------
+const LS_KEY_P = 'movtek_propietarios'
+function lsAllP() { try { return JSON.parse(localStorage.getItem(LS_KEY_P) || '[]') } catch { return [] } }
+function lsSaveP(rows) { try { localStorage.setItem(LS_KEY_P, JSON.stringify(rows)) } catch {} }
+
+function seedPropietarios() {
+  if (lsAllP().length) return
+  lsSaveP([
+    {
+      id: 'pp1', empresa_id: 'e1', tipo_persona: 'natural', tipo_identificacion: 'Cédula',
+      documento: '0945678912', nombres: 'Ricardo', apellidos: 'Salazar',
+      celular: '0982223344', correo: 'ricardo.salazar@correo.com', ciudad: 'Guayaquil', barrio: 'Urdesa',
+      tipo_cuenta: 'Ahorros', no_cuenta: '220199887', banco: 'Bancolombia', estado: 'activo',
+      tipo_direccion: 'tradicional', direccion: 'Urdesa Central, calle Primera 203',
+    },
+  ])
+}
+
+export async function listPropietarios({ empresaId = null, documento = '', nombre = '', celular = '' } = {}) {
+  if (isSupabaseConfigured) {
+    let q = supabase.from('propietarios').select('*').order('created_at', { ascending: false })
+    if (empresaId) q = q.eq('empresa_id', empresaId)
+    if (documento) q = q.ilike('documento', `%${documento}%`)
+    if (celular) q = q.ilike('celular', `%${celular}%`)
+    if (nombre) q = q.or(`nombres.ilike.%${nombre}%,apellidos.ilike.%${nombre}%,compania.ilike.%${nombre}%`)
+    const { data, error } = await q
+    if (error) throw error
+    return data
+  }
+  seedPropietarios()
+  let rows = lsAllP()
+  if (empresaId) rows = rows.filter((r) => r.empresa_id === empresaId)
+  if (documento) rows = rows.filter((r) => (r.documento || '').toLowerCase().includes(documento.toLowerCase()))
+  if (celular) rows = rows.filter((r) => (r.celular || '').toLowerCase().includes(celular.toLowerCase()))
+  if (nombre) {
+    const n = nombre.toLowerCase()
+    rows = rows.filter((r) => `${r.nombres || ''} ${r.apellidos || ''} ${r.compania || ''}`.toLowerCase().includes(n))
+  }
+  return rows
+}
+
+export async function getPropietario(id) {
+  if (isSupabaseConfigured) {
+    const { data, error } = await supabase.from('propietarios').select('*').eq('id', id).single()
+    if (error) throw error
+    return data
+  }
+  return lsAllP().find((r) => String(r.id) === String(id)) || null
+}
+
+export async function savePropietario(data) {
+  const payload = { ...data }
+  if (isSupabaseConfigured) {
+    if (payload.id) {
+      const { id, created_at, ...rest } = payload
+      const { data: d, error } = await supabase.from('propietarios').update(rest).eq('id', id).select().single()
+      if (error) throw error
+      return d
+    }
+    delete payload.id
+    const { data: d, error } = await supabase.from('propietarios').insert(payload).select().single()
+    if (error) throw error
+    return d
+  }
+  const rows = lsAllP()
+  if (payload.id) {
+    const i = rows.findIndex((r) => String(r.id) === String(payload.id))
+    if (i >= 0) rows[i] = { ...rows[i], ...payload }
+  } else {
+    payload.id = newId()
+    rows.unshift(payload)
+  }
+  lsSaveP(rows)
+  return payload
+}
+
+export async function deletePropietario(id) {
+  if (isSupabaseConfigured) {
+    const { error } = await supabase.from('propietarios').delete().eq('id', id)
+    if (error) throw error
+    return
+  }
+  lsSaveP(lsAllP().filter((r) => String(r.id) !== String(id)))
+}
+
+export function nombrePropietario(p) {
+  if (p.tipo_persona === 'juridica') return p.compania || '(Sin nombre)'
+  return `${p.nombres || ''} ${p.apellidos || ''}`.trim() || '(Sin nombre)'
+}
+
+export function exportPropietariosCsv(rows) {
+  const cols = [
+    ['documento', 'Documento'], ['nombre', 'Nombre / Compañía'], ['tipo_persona', 'Tipo'],
+    ['celular', 'Celular'], ['correo', 'Correo'], ['ciudad', 'Ciudad'],
+    ['banco', 'Banco'], ['no_cuenta', 'N° cuenta'], ['estado', 'Estado'], ['direccion', 'Dirección'],
+  ]
+  const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
+  const head = cols.map((c) => esc(c[1])).join(';')
+  const body = rows.map((r) => cols.map(([k]) => esc(k === 'nombre' ? nombrePropietario(r) : r[k])).join(';')).join('\n')
+  const csv = '﻿' + head + '\n' + body
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'propietarios.csv'
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export function exportClientesCsv(rows) {
   const cols = [
     ['documento', 'Documento'], ['nombre', 'Nombre / Compañía'], ['tipo_persona', 'Tipo'],
