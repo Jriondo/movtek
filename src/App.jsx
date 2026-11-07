@@ -61,6 +61,7 @@ export default function App() {
         <Route path="destinos" element={<MatrizDestinos />} />
         <Route path="fuec" element={<Fuec />} />
         <Route path="fuec/nuevo" element={<FuecForm />} />
+        <Route path="fuec/duplicar/:id" element={<FuecForm duplicar />} />
         <Route path="fuec/:id" element={<FuecForm />} />
         <Route path="fuec/:id/imprimir" element={<FuecImprimir />} />
       </Route>

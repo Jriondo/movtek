@@ -93,8 +93,18 @@ export default function FuecDocumento({ f, empresa, qr }) {
         .fuec .ej .num { font-weight:bold; letter-spacing:1px; }
         .fuec .qr-note { text-align:center; font-size:9px; color:#444; margin-top:14px; line-height:1.5; }
         @media print {
-          .fuec-page { padding:0; }
-          .fuec-page.pb { page-break-after: always; }
+          @page { size: A4 portrait; margin: 7mm; }
+          .fuec { max-width:none; font-size:9.3px; }
+          .fuec-page { padding:0 !important; }
+          .fuec td, .fuec th { padding:2px 5px; }
+          .fuec .title { font-size:11px; padding:4px; }
+          .fuec .logo { height:46px; }
+          .fuec .logo-sup { height:34px; }
+          .fuec .logo-emp { height:38px; }
+          .fuec .foot { font-size:7.5px; margin-top:5px; }
+          .fuec .firma-linea { margin-top:20px; }
+          /* El instructivo siempre inicia en su propia hoja */
+          .fuec-page + .fuec-page { page-break-before: always; }
         }
       `}</style>
 

@@ -23,7 +23,7 @@ export default function FuecImprimir() {
 
   return (
     <div className="fuec-wrap">
-      <style>{`@media print { aside, .no-print { display:none !important; } main { padding:0 !important; } }`}</style>
+      <style>{`@media print { header, aside, .no-print { display:none !important; } main { padding:0 !important; } body { background:#fff !important; } }`}</style>
       <div className="mb-4 flex gap-2 no-print">
         <button onClick={() => window.print()} className="btn-primary">🖨️ Imprimir / Guardar PDF</button>
         <button onClick={() => navigate('/fuec')} className="btn-ghost">Retornar</button>

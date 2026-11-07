@@ -15,12 +15,12 @@ const ESTRATEGIAS = ['N/A', 'CONSORCIO', 'CONVENIO', 'UNIÓN TEMPORAL']
 const TIPOS_DOC = ['Cédula de ciudadanía', 'NIT', 'Cédula de extranjería', 'Pasaporte', 'Tarjeta de identidad']
 const OCASIONAL_VACIO = { tipo_documento: '', documento: '', nombre: '', responsable: true, direccion: '', telefono: '', empresa_nombre: '', empresa_nit: '' }
 
-export default function FuecForm() {
+export default function FuecForm({ duplicar = false }) {
   const { id } = useParams()
   const navigate = useNavigate()
   const { empresa } = useEmpresa()
   const { user } = useAuth()
-  const editando = Boolean(id)
+  const editando = Boolean(id) && !duplicar
 
   const [vehiculos, setVehiculos] = useState([])
   const [conductores, setConductores] = useState([])
@@ -59,11 +59,14 @@ export default function FuecForm() {
     if (!id) return
     getFuec(id).then((f) => {
       if (!f) return
-      setForm((prev) => ({ ...prev, ...f }))
+      const base = { ...f }
+      // Al duplicar: se carga la info pero se crea un FUEC NUEVO (se limpia identidad).
+      if (duplicar) { delete base.id; delete base.created_at; delete base.numero_fuec; delete base.contrato_hijo }
+      setForm((prev) => ({ ...prev, ...base }))
       if (f.ocasional) setOcasional({ ...OCASIONAL_VACIO, ...f.ocasional })
       verificarHabilitacionFuec(f).then(setAvisosHab).catch(() => {})
     })
-  }, [id])
+  }, [id, duplicar])
 
   // Cuenta cuántos FUEC (contrato hijo) lleva el contratante principal.
   useEffect(() => {
@@ -92,6 +95,7 @@ export default function FuecForm() {
   // Límite de 9999 contratos hijo (FUEC) por contrato maestro.
   const creaNuevo = !editando || forzarNuevo
   const limiteHijo = creaNuevo && hijoActual != null && hijoActual >= 9999
+  const faltanDatos = camposFaltantesFuec(form, vehiculo)
 
   const set = (c, v) => setForm((f) => ({ ...f, [c]: v }))
 
@@ -126,15 +130,8 @@ export default function FuecForm() {
   const quitar = (campo, i) => set(campo, form[campo].filter((_, idx) => idx !== i))
 
   async function guardar(irAImprimir = false) {
-    // Validación de campos obligatorios — indica qué falta por llenar.
-    const falta = []
-    if (!vehiculo) falta.push('Vehículo (placa)')
-    if (!form.conductores.length) falta.push('Al menos un conductor')
-    if (!form.contratantes.length) falta.push('Al menos un contratante')
-    if (!String(form.objeto_contrato || '').trim()) falta.push('Objeto del contrato')
-    if (!String(form.origen_destino || '').trim() && !form.itinerarios.length) falta.push('Itinerario (origen – destino)')
-    if (!form.vigencia_inicio) falta.push('Vigencia — fecha inicial')
-    if (!form.vigencia_fin) falta.push('Vigencia — fecha vencimiento')
+    // Validación de campos obligatorios — no deja continuar hasta llenar todo.
+    const falta = camposFaltantesFuec(form, vehiculo)
     if (falta.length) { setMsg(`Faltan por llenar: ${falta.join(', ')}.`); return }
     // Confirmar al modificar un FUEC existente (no al crear uno nuevo).
     if (editando && !forzarNuevo && !window.confirm('¿Estás seguro de guardar los cambios en este FUEC?')) return
@@ -194,7 +191,7 @@ export default function FuecForm() {
     <div className="flex flex-col gap-5">
       <div>
         <button onClick={() => navigate('/fuec')} className="text-sm font-semibold text-brand-500 hover:underline">← FUEC</button>
-        <h1 className="mt-1 font-display text-2xl font-extrabold text-ink">{editando ? 'Editar FUEC' : 'Generar FUEC'}</h1>
+        <h1 className="mt-1 font-display text-2xl font-extrabold text-ink">{duplicar ? 'Duplicar FUEC' : editando ? 'Editar FUEC' : 'Generar FUEC'}</h1>
         <p className="mt-0.5 text-sm text-ink-soft">Completa los datos del contrato; el documento se arma automáticamente con el formato oficial.</p>
       </div>
 
@@ -384,15 +381,33 @@ export default function FuecForm() {
           ⏰ El plazo para modificar este FUEC venció (solo hasta la medianoche del día en que se creó). Si continúas, se generará un <b>FUEC nuevo</b>.
         </p>
       )}
+      {faltanDatos.length > 0 && (
+        <p className="rounded-xl bg-amber-100 px-4 py-2.5 text-sm font-medium text-amber-700">
+          ⚠️ Aún no puedes generar el FUEC. Faltan por llenar: <b>{faltanDatos.join(', ')}</b>.
+        </p>
+      )}
       {msg && <p className="rounded-xl bg-coral-400/15 px-4 py-2.5 text-sm font-medium text-coral-500">{msg}</p>}
 
       <div className="flex flex-wrap justify-center gap-2">
-        <button className="btn-accent" onClick={() => guardar(true)} disabled={busy || validacion.bloqueos.length > 0 || limiteHijo}>
-          {busy ? 'Procesando…' : forzarNuevo ? '🖨️ Crear nuevo e imprimir PDF' : editando ? '🖨️ Modificar e imprimir PDF' : '🖨️ Guardar e imprimir PDF'}
+        <button className="btn-accent" onClick={() => guardar(true)} disabled={busy || validacion.bloqueos.length > 0 || limiteHijo || faltanDatos.length > 0}>
+          {busy ? 'Procesando…' : forzarNuevo ? '🖨️ Crear nuevo e imprimir PDF' : editando ? '🖨️ Modificar e imprimir PDF' : duplicar ? '🖨️ Duplicar e imprimir PDF' : '🖨️ Guardar e imprimir PDF'}
         </button>
       </div>
     </div>
   )
+}
+
+// Campos obligatorios para generar un FUEC.
+function camposFaltantesFuec(form, vehiculo) {
+  const falta = []
+  if (!vehiculo) falta.push('Vehículo (placa)')
+  if (!form.conductores.length) falta.push('Al menos un conductor')
+  if (!form.contratantes.length) falta.push('Al menos un contratante')
+  if (!String(form.objeto_contrato || '').trim()) falta.push('Objeto del contrato')
+  if (!String(form.origen_destino || '').trim() && !form.itinerarios.length) falta.push('Itinerario (origen – destino)')
+  if (!form.vigencia_inicio) falta.push('Vigencia — fecha inicial')
+  if (!form.vigencia_fin) falta.push('Vigencia — fecha vencimiento')
+  return falta
 }
 
 function Dato({ k, v }) { return <div><span className="text-xs text-ink-faint">{k}: </span><span className="font-semibold text-ink">{v || '—'}</span></div> }

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { listFuec, exportFuecCsv, duplicarFuec, itinerarioTexto, ocasionalTexto, getFuec, verificarHabilitacionFuec, deleteFuec } from '../lib/db'
+import { listFuec, exportFuecCsv, itinerarioTexto, ocasionalTexto, getFuec, verificarHabilitacionFuec, deleteFuec } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
 import FechaInput from '../components/FechaInput'
 
@@ -39,7 +39,8 @@ export default function Fuec() {
     const f = await getFuec(id)
     const avisos = await verificarHabilitacionFuec(f)
     if (avisos.length) { setAviso('No se puede duplicar. ' + avisos.join(' ')); return }
-    await duplicarFuec(id); cargar()
+    // Abre el FUEC para editar antes de guardar la copia (no duplica directo).
+    navigate(`/fuec/duplicar/${id}`)
   }
 
   // ⚠️ SOLO PRUEBAS — quitar en producción (necesitamos historial)
@@ -143,7 +144,7 @@ export default function Fuec() {
                       <div className="flex justify-center gap-1.5">
                         <button title="Imprimir" onClick={() => navigate(`/fuec/${r.id}/imprimir`)} className="flex items-center gap-1 rounded-lg border border-cloud-line px-2 py-1.5 text-xs font-semibold text-ink hover:bg-cloud"><span>🖨️</span><span className="hidden lg:inline">Imprimir</span></button>
                         <button title="Editar" onClick={() => navigate(`/fuec/${r.id}`)} className="flex items-center gap-1 rounded-lg border border-cloud-line px-2 py-1.5 text-xs font-semibold text-ink hover:bg-cloud"><span>✏️</span><span className="hidden lg:inline">Editar</span></button>
-                        <button title="Duplicar" onClick={() => duplicar(r.id)} className="flex items-center gap-1 rounded-lg border border-cloud-line px-2 py-1.5 text-xs font-semibold text-ink hover:bg-cloud"><span>📑</span><span className="hidden lg:inline">Duplicar</span></button>
+                        <button title="Duplicar" onClick={() => duplicar(r.id)} className="flex items-center gap-1 rounded-lg border border-cloud-line px-2 py-1.5 text-xs font-semibold text-ink hover:bg-cloud"><span>📑</span><span className="hidden lg:inline">Duplicar</span></button>{/* abre para editar antes de guardar */}
                         {/* ⚠️ SOLO PRUEBAS */}
                         <button title="Eliminar (pruebas)" onClick={() => eliminar(r)} className="flex items-center gap-1 rounded-lg border border-coral-400/40 px-2 py-1.5 text-xs font-semibold text-coral-500 hover:bg-coral-400/10"><span>🗑️</span><span className="hidden lg:inline">Eliminar</span></button>
                       </div>
