@@ -11,6 +11,7 @@ import {
 } from '../lib/vehiculoOpciones'
 import { DEPARTAMENTOS, DEPARTAMENTOS_NOMBRES } from '../lib/colombia'
 import { faltantes, mensajeFaltantes } from '../lib/validar'
+import FechaInput from '../components/FechaInput'
 
 const VACIO = {
   // básicos
@@ -160,16 +161,16 @@ export default function VehiculoForm() {
         {tab === 2 && (
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Aseguradora SOAT"><Select value={form.aseguradora_soat} onChange={(v) => set('aseguradora_soat', v)} options={ASEGURADORAS} /></Field>
-            <Field label="Fecha vencimiento SOAT"><input type="date" className="input" value={form.fecha_venc_soat} onChange={(e) => set('fecha_venc_soat', e.target.value)} /></Field>
+            <Field label="Fecha vencimiento SOAT"><FechaInput value={form.fecha_venc_soat} onChange={(v) => set('fecha_venc_soat', v)} /></Field>
 
             {/* Póliza RCC/RCE unificada (contractual y extracontractual) */}
-            <Field label="Vencimiento póliza RCC/RCE"><input type="date" className="input" value={form.fecha_venc_rcc_rce} onChange={(e) => set('fecha_venc_rcc_rce', e.target.value)} /></Field>
+            <Field label="Vencimiento póliza RCC/RCE"><FechaInput value={form.fecha_venc_rcc_rce} onChange={(v) => set('fecha_venc_rcc_rce', v)} /></Field>
             <Field label="Aseguradora de la póliza RCC/RCE"><Select value={form.aseguradora_rcc_rce} onChange={(v) => set('aseguradora_rcc_rce', v)} options={ASEGURADORAS} /></Field>
 
-            <Field label="Fecha vencimiento preventiva"><input type="date" className="input" value={form.fecha_venc_preventiva} onChange={(e) => set('fecha_venc_preventiva', e.target.value)} /></Field>
-            <Field label="Fecha venc. revisión tecnicomecánica"><input type="date" className="input" value={form.fecha_venc_tecnomecanica} onChange={(e) => set('fecha_venc_tecnomecanica', e.target.value)} /></Field>
+            <Field label="Fecha vencimiento preventiva"><FechaInput value={form.fecha_venc_preventiva} onChange={(v) => set('fecha_venc_preventiva', v)} /></Field>
+            <Field label="Fecha venc. revisión tecnicomecánica"><FechaInput value={form.fecha_venc_tecnomecanica} onChange={(v) => set('fecha_venc_tecnomecanica', v)} /></Field>
             <Field label="Tarjeta de operación"><input className="input" value={form.tarjeta_operacion} onChange={(e) => set('tarjeta_operacion', e.target.value)} /></Field>
-            <Field label="Fecha venc. tarjeta de operación"><input type="date" className="input" value={form.fecha_venc_toperacion} onChange={(e) => set('fecha_venc_toperacion', e.target.value)} /></Field>
+            <Field label="Fecha venc. tarjeta de operación"><FechaInput value={form.fecha_venc_toperacion} onChange={(v) => set('fecha_venc_toperacion', v)} /></Field>
 
             <Field label="Propietario"><BuscarSelect value={form.propietario_id} onChange={(v) => set('propietario_id', v)} items={propietarios} label={nombrePropietario} placeholder="Busca por nombre o documento…" /></Field>
             <Field label="Tenedor"><BuscarSelect value={form.tenedor_id} onChange={(v) => set('tenedor_id', v)} items={propietarios} label={nombrePropietario} placeholder="Busca por nombre o documento…" /></Field>
@@ -205,7 +206,7 @@ export default function VehiculoForm() {
                 {ciudadesDeDepto(form.depto_matricula).map((c) => <option key={c}>{c}</option>)}
               </select>
             </Field>
-            <Field label="Fecha de matrícula"><input type="date" className="input" value={form.fecha_matricula} onChange={(e) => set('fecha_matricula', e.target.value)} /></Field>
+            <Field label="Fecha de matrícula"><FechaInput value={form.fecha_matricula} onChange={(v) => set('fecha_matricula', v)} /></Field>
             <Field label="¿Tiene convenio?">
               <div className="flex gap-5 pt-1.5">
                 <Radio label="Sí" checked={conConvenio} onChange={() => set('tiene_convenio', 'SI')} />
@@ -213,8 +214,8 @@ export default function VehiculoForm() {
               </div>
             </Field>
             {conConvenio && <>
-              <Field label="Inicio del convenio"><input type="date" className="input" value={form.inicio_convenio} onChange={(e) => set('inicio_convenio', e.target.value)} /></Field>
-              <Field label="Caducidad del convenio"><input type="date" className="input" value={form.caducidad_convenio} onChange={(e) => set('caducidad_convenio', e.target.value)} /></Field>
+              <Field label="Inicio del convenio"><FechaInput value={form.inicio_convenio} onChange={(v) => set('inicio_convenio', v)} /></Field>
+              <Field label="Caducidad del convenio"><FechaInput value={form.caducidad_convenio} onChange={(v) => set('caducidad_convenio', v)} /></Field>
             </>}
           </div>
         )}

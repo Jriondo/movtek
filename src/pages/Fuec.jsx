@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { listFuec, exportFuecCsv, duplicarFuec, itinerarioTexto, ocasionalTexto, getFuec, verificarHabilitacionFuec, deleteFuec } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
+import FechaInput from '../components/FechaInput'
 
 // Rango de fechas según el periodo elegido.
 function rango(periodo) {
@@ -75,10 +76,10 @@ export default function Fuec() {
             </select>
           </div>
           <div><label className="label">Fecha inicio</label>
-            <input type="date" className="input" value={f.desde} onChange={(e) => setF({ ...f, desde: e.target.value })} />
+            <FechaInput value={f.desde} onChange={(v) => setF({ ...f, desde: v })} />
           </div>
           <div><label className="label">Fecha final</label>
-            <input type="date" className="input" value={f.hasta} onChange={(e) => setF({ ...f, hasta: e.target.value })} />
+            <FechaInput value={f.hasta} onChange={(v) => setF({ ...f, hasta: v })} />
           </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">

@@ -9,6 +9,7 @@ import { useEmpresa } from '../context/EmpresaContext'
 import { useAuth } from '../context/AuthContext'
 import { DEPARTAMENTOS_NOMBRES } from '../lib/colombia'
 import { validarFuec, documentosVehiculo } from '../lib/fuecValidacion'
+import FechaInput from '../components/FechaInput'
 
 const ESTRATEGIAS = ['N/A', 'CONSORCIO', 'CONVENIO', 'UNIÓN TEMPORAL']
 const TIPOS_DOC = ['Cédula de ciudadanía', 'NIT', 'Cédula de extranjería', 'Pasaporte', 'Tarjeta de identidad']
@@ -345,8 +346,8 @@ export default function FuecForm() {
               {transportadoras.map((t) => <option key={t.id} value={nombreTransportadora(t)}>{nombreTransportadora(t)}</option>)}
             </select>
           </div>
-          <div><label className="label">Vigencia — fecha inicial</label><input type="date" className="input" value={form.vigencia_inicio} onChange={(e) => set('vigencia_inicio', e.target.value)} /></div>
-          <div><label className="label">Vigencia — fecha vencimiento</label><input type="date" className="input" value={form.vigencia_fin} max={validacion.limite || undefined} onChange={(e) => set('vigencia_fin', e.target.value)} /></div>
+          <div><label className="label">Vigencia — fecha inicial</label><FechaInput value={form.vigencia_inicio} onChange={(v) => set('vigencia_inicio', v)} /></div>
+          <div><label className="label">Vigencia — fecha vencimiento</label><FechaInput value={form.vigencia_fin} onChange={(v) => set('vigencia_fin', v)} /></div>
         </div>
       </div>
 

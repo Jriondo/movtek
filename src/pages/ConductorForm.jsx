@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { getConductor, saveConductor, buscarPersonaPorDocumento, datosComunes } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
 import DocumentoAviso from '../components/DocumentoAviso'
+import FechaInput from '../components/FechaInput'
 import { faltantes, mensajeFaltantes } from '../lib/validar'
 
 const VACIO = {
@@ -100,9 +101,9 @@ export default function ConductorForm() {
           <Field label="Celular"><input className="input" value={form.celular} onChange={(e) => set('celular', e.target.value)} /></Field>
           <Field label="Correo electrónico"><input type="email" className="input" value={form.correo} onChange={(e) => set('correo', e.target.value)} /></Field>
           <Field label="Licencia número"><input className="input" value={form.licencia_numero} onChange={(e) => set('licencia_numero', e.target.value)} /></Field>
-          <Field label="Fecha de vencimiento (licencia)"><input type="date" className="input" value={form.licencia_vencimiento} onChange={(e) => set('licencia_vencimiento', e.target.value)} /></Field>
+          <Field label="Fecha de vencimiento (licencia)"><FechaInput value={form.licencia_vencimiento} onChange={(v) => set('licencia_vencimiento', v)} /></Field>
           <Field label="Categoría de licencia"><Select value={form.categoria_licencia} onChange={(v) => set('categoria_licencia', v)} options={CATEGORIAS} /></Field>
-          <Field label="Vigencia de la seguridad social"><input type="date" className="input" value={form.vigencia_seguridad} onChange={(e) => set('vigencia_seguridad', e.target.value)} /></Field>
+          <Field label="Vigencia de la seguridad social"><FechaInput value={form.vigencia_seguridad} onChange={(v) => set('vigencia_seguridad', v)} /></Field>
 
           <Field label="Dirección" className="sm:col-span-2">
             <input className="input" value={form.direccion} onChange={(e) => set('direccion', e.target.value)} placeholder="Incluye barrio y ciudad" />
