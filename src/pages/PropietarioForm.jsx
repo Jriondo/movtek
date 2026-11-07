@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { getPropietario, savePropietario, buscarPersonaPorDocumento, datosComunes, listVehiculos } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
 import DocumentoAviso from '../components/DocumentoAviso'
+import BuscarAgregar from '../components/BuscarAgregar'
 import { faltantes, mensajeFaltantes } from '../lib/validar'
 
 const VACIO = {
@@ -172,15 +173,13 @@ export default function PropietarioForm() {
       {/* Vinculación de vehículos */}
       <div className="card p-5 sm:p-6">
         <h2 className="mb-3 font-display text-sm font-bold uppercase tracking-wide text-ink-faint">🔗 Vinculación de vehículos</h2>
-        <div className="flex gap-2">
-          <select className="input" value={selVeh} onChange={(e) => setSelVeh(e.target.value)}>
-            <option value="">Selecciona un vehículo…</option>
-            {vehiculos.filter((v) => !form.vehiculos_vinculados.some((x) => x.id === v.id)).map((v) => (
-              <option key={v.id} value={v.id}>{v.placa} · {v.marca} {v.linea}</option>
-            ))}
-          </select>
-          <button type="button" className="btn-accent !px-3" onClick={agregarVehiculo}>+ Agregar</button>
-        </div>
+        <BuscarAgregar
+          items={vehiculos.filter((v) => !form.vehiculos_vinculados.some((x) => x.id === v.id))}
+          label={(v) => `${v.placa} · ${v.marca} ${v.linea}`}
+          texto={(v) => `${v.placa} ${v.marca} ${v.linea}`}
+          onAdd={(v) => set('vehiculos_vinculados', [...form.vehiculos_vinculados, { id: v.id, placa: v.placa, marca: v.marca, linea: v.linea }])}
+          placeholder="Busca el vehículo por placa…"
+        />
         {form.vehiculos_vinculados.length > 0 ? (
           <ul className="mt-3 flex flex-col gap-1">
             {form.vehiculos_vinculados.map((v, i) => (

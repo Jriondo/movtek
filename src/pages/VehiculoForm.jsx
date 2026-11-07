@@ -14,6 +14,7 @@ import {
 import { DEPARTAMENTOS, DEPARTAMENTOS_NOMBRES } from '../lib/colombia'
 import { faltantes, mensajeFaltantes } from '../lib/validar'
 import FechaInput from '../components/FechaInput'
+import BuscarAgregar from '../components/BuscarAgregar'
 
 const VACIO = {
   // básicos
@@ -244,15 +245,13 @@ export default function VehiculoForm() {
       <div className="card p-5 sm:p-6">
         <h2 className="mb-1 flex items-center gap-2 font-display text-sm font-bold uppercase tracking-wide text-brand-600"><span className="h-4 w-1.5 rounded-full bg-brand-500" />🧑‍✈️ Conductores asignados</h2>
         <p className="mb-3 text-xs text-ink-soft">Al generar un FUEC con esta placa, solo aparecerán los conductores que asignes aquí.</p>
-        <div className="flex gap-2">
-          <select className="input" value={selCond} onChange={(e) => setSelCond(e.target.value)}>
-            <option value="">Selecciona un conductor…</option>
-            {conductores.filter((c) => !form.conductores_asignados.some((x) => String(x.id) === String(c.id))).map((c) => (
-              <option key={c.id} value={c.id}>{nombreConductor(c)}{c.documento ? ` · ${c.documento}` : ''}</option>
-            ))}
-          </select>
-          <button type="button" className="btn-accent !px-3" onClick={agregarConductor}>+ Agregar</button>
-        </div>
+        <BuscarAgregar
+          items={conductores.filter((c) => !form.conductores_asignados.some((x) => String(x.id) === String(c.id)))}
+          label={(c) => `${nombreConductor(c)}${c.documento ? ` · ${c.documento}` : ''}`}
+          texto={(c) => `${nombreConductor(c)} ${c.documento || ''}`}
+          onAdd={(c) => set('conductores_asignados', [...form.conductores_asignados, { id: c.id, nombre: nombreConductor(c), documento: c.documento || '' }])}
+          placeholder="Busca el conductor por nombre o identificación…"
+        />
         {form.conductores_asignados.length > 0 ? (
           <ul className="mt-3 flex flex-col gap-1">
             {form.conductores_asignados.map((c, i) => (
