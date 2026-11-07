@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { listFuec, exportFuecCsv, duplicarFuec, itinerarioTexto, ocasionalTexto, getFuec, verificarHabilitacionFuec, deleteFuec } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
@@ -19,11 +19,13 @@ export default function Fuec() {
   const { empresa } = useEmpresa()
   const [f, setF] = useState({ placa: '', movil: '', contrato_hijo: '', contrato_maestro: '', periodo: 'todos', desde: '', hasta: '' })
   const [rows, setRows] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
+  const [buscado, setBuscado] = useState(false)
   const [aviso, setAviso] = useState('')
 
   async function cargar(filtros = {}) {
     setLoading(true)
+    setBuscado(true)
     try {
       const estado = { ...f, ...filtros }
       // Si eliges fechas manuales tienen prioridad; si no, se usa el periodo.
@@ -31,8 +33,6 @@ export default function Fuec() {
       setRows(await listFuec({ empresaId: empresa?.id, placa: estado.placa, movil: estado.movil, contrato_hijo: estado.contrato_hijo, contrato_maestro: estado.contrato_maestro, desde: rango_.desde, hasta: rango_.hasta }))
     } finally { setLoading(false) }
   }
-
-  useEffect(() => { cargar() }, [empresa?.id])
 
   async function duplicar(id) {
     setAviso('')
@@ -92,7 +92,8 @@ export default function Fuec() {
         </div>
       </form>
 
-      {/* Resultados */}
+      {/* Resultados — solo después de buscar */}
+      {buscado && (
       <div className="card overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-cloud-line px-4 py-3">
           <h2 className="font-display text-sm font-bold text-ink">Resultados</h2>
@@ -118,13 +119,12 @@ export default function Fuec() {
                   <th className="px-3 py-3 font-bold">C. Hijo</th>
                   <th className="px-3 py-3 font-bold">Placa</th>
                   <th className="px-3 py-3 font-bold">Móvil</th>
+                  <th className="px-3 py-3 font-bold">Tipo de contrato</th>
                   <th className="px-3 py-3 font-bold">Contratante</th>
-                  <th className="px-3 py-3 font-bold">Ocasional</th>
                   <th className="px-3 py-3 font-bold">Vigencia</th>
                   <th className="px-3 py-3 font-bold">Itinerario</th>
-                  <th className="px-3 py-3 font-bold">Usuario</th>
                   <th className="px-3 py-3 font-bold">Fecha</th>
-                  <th className="px-3 py-3 font-bold"></th>
+                  <th className="px-3 py-3 font-bold text-center">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -134,19 +134,18 @@ export default function Fuec() {
                     <td className="px-3 py-3 font-semibold tabular-nums text-brand-600">{r.contrato_hijo}</td>
                     <td className="whitespace-nowrap px-3 py-3 font-semibold text-ink">{r.placa}</td>
                     <td className="px-3 py-3 tabular-nums text-ink-soft">{r.movil}</td>
-                    <td className="px-3 py-3 text-xs text-ink-soft max-w-[180px]">{r.objeto_contrato}</td>
-                    <td className="px-3 py-3 text-ink">{ocasionalTexto(r)}</td>
+                    <td className="px-3 py-3 text-xs font-semibold text-ink max-w-[200px]">{tipoContratoCorto(r)}</td>
+                    <td className="px-3 py-3 text-ink">{r.contratante_nombre || ocasionalTexto(r) || '—'}</td>
                     <td className="whitespace-nowrap px-3 py-3 text-xs text-ink-soft tabular-nums">{r.vigencia_inicio}<br />{r.vigencia_fin}</td>
                     <td className="px-3 py-3 text-xs text-ink">{itinerarioTexto(r)}</td>
-                    <td className="whitespace-nowrap px-3 py-3 text-ink-soft">{r.usuario}</td>
                     <td className="whitespace-nowrap px-3 py-3 text-xs text-ink-soft tabular-nums">{(r.created_at || '').slice(0, 10)}</td>
-                    <td className="whitespace-nowrap px-3 py-3 text-right">
-                      <div className="flex gap-1">
-                        <button title="Imprimir" onClick={() => navigate(`/fuec/${r.id}/imprimir`)} className="rounded-lg px-2 py-1 hover:bg-cloud">🖨️</button>
-                        <button title="Editar" onClick={() => navigate(`/fuec/${r.id}`)} className="rounded-lg px-2 py-1 hover:bg-cloud">✎</button>
-                        <button title="Duplicar" onClick={() => duplicar(r.id)} className="rounded-lg px-2 py-1 hover:bg-cloud">⧉</button>
+                    <td className="whitespace-nowrap px-3 py-3">
+                      <div className="flex justify-center gap-1.5">
+                        <button title="Imprimir" onClick={() => navigate(`/fuec/${r.id}/imprimir`)} className="flex items-center gap-1 rounded-lg border border-cloud-line px-2 py-1.5 text-xs font-semibold text-ink hover:bg-cloud"><span>🖨️</span><span className="hidden lg:inline">Imprimir</span></button>
+                        <button title="Editar" onClick={() => navigate(`/fuec/${r.id}`)} className="flex items-center gap-1 rounded-lg border border-cloud-line px-2 py-1.5 text-xs font-semibold text-ink hover:bg-cloud"><span>✏️</span><span className="hidden lg:inline">Editar</span></button>
+                        <button title="Duplicar" onClick={() => duplicar(r.id)} className="flex items-center gap-1 rounded-lg border border-cloud-line px-2 py-1.5 text-xs font-semibold text-ink hover:bg-cloud"><span>📑</span><span className="hidden lg:inline">Duplicar</span></button>
                         {/* ⚠️ SOLO PRUEBAS */}
-                        <button title="Eliminar (pruebas)" onClick={() => eliminar(r)} className="rounded-lg px-2 py-1 text-coral-500 hover:bg-cloud">🗑️</button>
+                        <button title="Eliminar (pruebas)" onClick={() => eliminar(r)} className="flex items-center gap-1 rounded-lg border border-coral-400/40 px-2 py-1.5 text-xs font-semibold text-coral-500 hover:bg-coral-400/10"><span>🗑️</span><span className="hidden lg:inline">Eliminar</span></button>
                       </div>
                     </td>
                   </tr>
@@ -156,6 +155,15 @@ export default function Fuec() {
           </div>
         )}
       </div>
+      )}
     </div>
   )
+}
+
+// Texto corto para la columna "Tipo de contrato".
+function tipoContratoCorto(r) {
+  if (r.tipo_contrato) return r.tipo_contrato
+  const t = (r.objeto_contrato || '').trim()
+  if (!t) return '—'
+  return t.length > 60 ? t.slice(0, 60) + '…' : t
 }

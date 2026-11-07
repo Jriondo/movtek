@@ -23,14 +23,14 @@ function Encabezado({ razon, e }) {
   return (
     <table className="head">
       <tbody>
-        <tr className="center">
-          <td style={{ width: '27%' }}><img className="logo" src={mintransporte} alt="Ministerio de Transporte" /></td>
-          <td>
-            {e.logo_url
-              ? <img className="logo" src={e.logo_url} alt={razon} />
-              : <><div className="b" style={{ fontSize: '15px', letterSpacing: '.3px' }}>{razon}</div><div className="sm" style={{ color: '#555' }}>Transporte Terrestre Automotor Especial</div></>}
+        <tr>
+          <td style={{ width: '28%', textAlign: 'center' }}><img className="logo" src={mintransporte} alt="Ministerio de Transporte" /></td>
+          <td style={{ textAlign: 'center' }}>
+            {e.logo_url && <div><img className="logo-emp" src={e.logo_url} alt={razon} /></div>}
+            <div className="b" style={{ fontSize: '15px', letterSpacing: '.3px' }}>{razon}</div>
+            <div className="sm" style={{ color: '#555' }}>Transporte Terrestre Automotor Especial</div>
           </td>
-          <td style={{ width: '27%' }}><img className="logo-sup" src={supertransporte} alt="Vigilado SuperTransporte" /></td>
+          <td style={{ width: '28%', textAlign: 'center' }}><img className="logo-sup" src={supertransporte} alt="Vigilado SuperTransporte" /></td>
         </tr>
       </tbody>
     </table>
@@ -76,6 +76,7 @@ export default function FuecDocumento({ f, empresa, qr }) {
         .fuec .sm { font-size:9px; }
         .fuec .logo { height:56px; object-fit:contain; max-width:100%; }
         .fuec .logo-sup { height:42px; object-fit:contain; max-width:100%; }
+        .fuec .logo-emp { height:48px; object-fit:contain; max-width:100%; margin-bottom:3px; }
         .fuec .foot { font-size:8.5px; color:#444; margin-top:7px; line-height:1.45; }
         .fuec .foot p { margin:2px 0; }
         .fuec .firma-linea { border-top:1px solid #222; margin-top:28px; padding-top:3px; }
@@ -178,6 +179,7 @@ export default function FuecDocumento({ f, empresa, qr }) {
               <div className="sm">Escanea para verificar</div>
             </td>
             <td className="center">
+              {e.logo_url && <img className="logo-emp" src={e.logo_url} alt={razon} style={{ maxHeight: '34px' }} />}
               <div className="firma-linea b">{razon}</div>
               <div className="sm">Firma electrónica Ley 527 de 1999, Decreto 2364 de 2012</div>
             </td>
@@ -187,7 +189,7 @@ export default function FuecDocumento({ f, empresa, qr }) {
         <div className="foot">
           <p>El presente Extracto de Contrato no lleva sellos según Decreto 2150, Art. 11 de Diciembre de 1995 y el Decreto ley 019 de Enero de 2012 (Ley Antitrámites).</p>
           <p><b>Según la guía para la aplicación de la Resolución 3068 del 15 octubre de 2014</b> emitido por el Ministerio de Transporte, el nombre de las personas que se transportan no debe estar relacionado en el FUEC.</p>
-          <p>El presente Extracto de Contrato <b>no lleva descripción de recorrido</b> según Resolución 0006652 del 27 dic 2019. · Generado con Movtek · Usuario: {f.usuario}</p>
+          <p>El presente Extracto de Contrato <b>no lleva descripción de recorrido</b> según Resolución 0006652 del 27 dic 2019.</p>
         </div>
       </div>
 

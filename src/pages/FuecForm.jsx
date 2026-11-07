@@ -110,7 +110,7 @@ export default function FuecForm() {
     if (!c || form.contratantes.some((x) => x.id === c.id)) return
     set('contratantes', [...form.contratantes, {
       id: c.id, nombre: nombreMostrar(c), documento: c.documento || '', no_maestro: c.contrato_maestro_nro || '',
-      es_grupo: !!c.es_grupo_especifico,
+      es_grupo: !!c.es_grupo_especifico, tipo_contrato: c.tipo_contrato || '',
       resp_nombre: c.nombre_responsable || '', resp_cedula: c.doc_responsable || '',
       resp_telefono: c.telefono_responsable || '', resp_direccion: c.direccion || '',
     }])
@@ -136,6 +136,8 @@ export default function FuecForm() {
     if (!form.vigencia_inicio) falta.push('Vigencia — fecha inicial')
     if (!form.vigencia_fin) falta.push('Vigencia — fecha vencimiento')
     if (falta.length) { setMsg(`Faltan por llenar: ${falta.join(', ')}.`); return }
+    // Confirmar al modificar un FUEC existente (no al crear uno nuevo).
+    if (editando && !forzarNuevo && !window.confirm('¿Estás seguro de guardar los cambios en este FUEC?')) return
     if (limiteHijo) { setMsg('Este contrato maestro alcanzó el límite de 9999 FUEC. No se pueden generar más con este contrato.'); return }
     if (validacion.bloqueos.length) { setMsg(validacion.bloqueos[0]); return }
     const primary = form.contratantes[0]
@@ -170,7 +172,7 @@ export default function FuecForm() {
         empresa_snapshot,
         placa: vehiculo.placa, movil: vehiculo.numero_interno,
         marca: vehiculo.marca, modelo: vehiculo.modelo, clase: vehiculo.clase, tarjeta_operacion: vehiculo.tarjeta_operacion,
-        cliente_id: primary.id, no_maestro: primary.no_maestro || '',
+        cliente_id: primary.id, no_maestro: primary.no_maestro || '', tipo_contrato: primary.tipo_contrato || '',
         contratante_nombre: c_nombre, contratante_doc: c_doc,
         resp_nombre: r_nombre, resp_cedula: r_cedula, resp_telefono: r_tel, resp_direccion: r_dir,
         ocasional: primary.es_grupo ? ocasional : null,
@@ -348,8 +350,7 @@ export default function FuecForm() {
         )}
         <div className="mt-3">
           <label className="label">Descripción de recorrido</label>
-          <textarea className="input h-16" value={form.origen_destino} onChange={(e) => set('origen_destino', e.target.value)}
-            placeholder="Describe el recorrido si lo necesitas (opcional)." />
+          <textarea className="input h-16" value={form.origen_destino} onChange={(e) => set('origen_destino', e.target.value)} />
         </div>
       </div>
 

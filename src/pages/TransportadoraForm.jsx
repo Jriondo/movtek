@@ -51,6 +51,7 @@ export default function TransportadoraForm() {
     req.push(esJuridica ? ['compania', 'Compañía'] : ['nombres', 'Nombres'])
     const falt = faltantes(form, req)
     if (falt.length) { setMsg(mensajeFaltantes(falt)); return }
+    if (editando && !window.confirm('¿Estás seguro de guardar los cambios?')) return
     setBusy(true); setMsg('')
     try {
       if (!form.id) {

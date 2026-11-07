@@ -58,6 +58,7 @@ export default function ConductorForm() {
       ['nombres', 'Nombres'], ['apellidos', 'Apellidos'],
     ])
     if (falt.length) { setMsg(mensajeFaltantes(falt)); return }
+    if (editando && !window.confirm('¿Estás seguro de guardar los cambios?')) return
     setBusy(true); setMsg(''); setAviso('')
     try {
       if (!form.id) {

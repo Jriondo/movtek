@@ -226,6 +226,7 @@ alter table fuec add column if not exists resp_direccion text;
 alter table fuec add column if not exists origen_destino text;
 alter table fuec add column if not exists ocasional jsonb;
 alter table fuec add column if not exists empresa_snapshot jsonb;
+alter table fuec add column if not exists tipo_contrato text;
 
 -- Seguridad a nivel de fila
 alter table empresas enable row level security;

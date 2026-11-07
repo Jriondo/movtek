@@ -71,6 +71,7 @@ export default function VehiculoForm() {
   async function grabar() {
     const falt = faltantes(form, REQUERIDOS)
     if (falt.length) { setMsg(mensajeFaltantes(falt)); return }
+    if (editando && !window.confirm('¿Estás seguro de guardar los cambios?')) return
     setBusy(true); setMsg('')
     try {
       if (!form.id) {

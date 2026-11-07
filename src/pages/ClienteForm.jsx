@@ -60,6 +60,7 @@ export default function ClienteForm() {
     req.push(esJuridica ? ['compania', 'Compañía'] : ['nombres', 'Nombres'])
     const falt = faltantes(form, req)
     if (falt.length) { setTab(0); setMsg(mensajeFaltantes(falt)); return }
+    if (editando && !window.confirm('¿Estás seguro de guardar los cambios?')) return
     setBusy(true); setMsg('')
     try {
       const payload = { ...form }
