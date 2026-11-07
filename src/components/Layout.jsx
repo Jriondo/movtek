@@ -9,6 +9,7 @@ const nav = [
   { to: '/clientes', label: 'Clientes maestros', icon: '👥' },
   { to: '/conductores', label: 'Conductores', icon: '🧑‍✈️' },
   { to: '/propietarios', label: 'Propietarios', icon: '🪪' },
+  { to: '/transportadoras', label: 'Empresas transp.', icon: '🏢' },
   { label: 'Vehículos', icon: '🚚', soon: true },
   { label: 'Matriz destinos', icon: '🗺️', soon: true },
   { label: 'Usuarios', icon: '🔑', soon: true },

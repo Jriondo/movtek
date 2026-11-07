@@ -399,6 +399,124 @@ export function datosComunes(src = {}) {
   }
 }
 
+// ---------------- MÓDULO 4.4: EMPRESAS TRANSPORTADORAS ----------------
+const LS_KEY_T = 'movtek_transportadoras'
+function lsAllT() { try { return JSON.parse(localStorage.getItem(LS_KEY_T) || '[]') } catch { return [] } }
+function lsSaveT(rows) { try { localStorage.setItem(LS_KEY_T, JSON.stringify(rows)) } catch {} }
+
+function seedTransportadoras() {
+  if (lsAllT().length) return
+  lsSaveT([
+    {
+      id: 'tr1', empresa_id: 'e1', tipo_persona: 'juridica', compania: 'Transportes Unidos del Sur S.A.',
+      tipo_identificacion: 'RUC', documento: '0992345678001', telefono_oficina: '04 2998877',
+      celular: '0990001122', correo: 'contacto@tusur.com', estado: 'activo',
+      doc_responsable: '0912345678', nombre_responsable: 'Ana Herrera', resolucion: 'ANT-2023-1182',
+      tipo_direccion: 'tradicional', direccion: 'Av. Juan Tanca Marengo km 2.5',
+    },
+  ])
+}
+
+export async function listTransportadoras({ empresaId = null, documento = '', nombre = '' } = {}) {
+  if (isSupabaseConfigured) {
+    let q = supabase.from('empresas_transportadoras').select('*').order('created_at', { ascending: false })
+    if (empresaId) q = q.eq('empresa_id', empresaId)
+    if (documento) q = q.ilike('documento', `%${documento}%`)
+    if (nombre) q = q.or(`nombres.ilike.%${nombre}%,apellidos.ilike.%${nombre}%,compania.ilike.%${nombre}%`)
+    const { data, error } = await q
+    if (error) throw error
+    return data
+  }
+  seedTransportadoras()
+  let rows = lsAllT()
+  if (empresaId) rows = rows.filter((r) => r.empresa_id === empresaId)
+  if (documento) rows = rows.filter((r) => (r.documento || '').toLowerCase().includes(documento.toLowerCase()))
+  if (nombre) {
+    const n = nombre.toLowerCase()
+    rows = rows.filter((r) => `${r.nombres || ''} ${r.apellidos || ''} ${r.compania || ''}`.toLowerCase().includes(n))
+  }
+  return rows
+}
+
+export async function getTransportadora(id) {
+  if (isSupabaseConfigured) {
+    const { data, error } = await supabase.from('empresas_transportadoras').select('*').eq('id', id).single()
+    if (error) throw error
+    return data
+  }
+  return lsAllT().find((r) => String(r.id) === String(id)) || null
+}
+
+export async function buscarTransportadoraPorDocumento({ empresaId, documento }) {
+  const doc = (documento || '').trim()
+  if (!doc) return null
+  if (isSupabaseConfigured) {
+    const { data } = await supabase.from('empresas_transportadoras').select('*').eq('empresa_id', empresaId).eq('documento', doc).limit(1)
+    return data?.[0] || null
+  }
+  seedTransportadoras()
+  return lsAllT().find((r) => r.empresa_id === empresaId && (r.documento || '').trim() === doc) || null
+}
+
+export async function saveTransportadora(data) {
+  const payload = { ...data }
+  if (isSupabaseConfigured) {
+    if (payload.id) {
+      const { id, created_at, ...rest } = payload
+      const { data: d, error } = await supabase.from('empresas_transportadoras').update(rest).eq('id', id).select().single()
+      if (error) throw error
+      return d
+    }
+    delete payload.id
+    const { data: d, error } = await supabase.from('empresas_transportadoras').insert(payload).select().single()
+    if (error) throw error
+    return d
+  }
+  const rows = lsAllT()
+  if (payload.id) {
+    const i = rows.findIndex((r) => String(r.id) === String(payload.id))
+    if (i >= 0) rows[i] = { ...rows[i], ...payload }
+  } else {
+    payload.id = newId()
+    rows.unshift(payload)
+  }
+  lsSaveT(rows)
+  return payload
+}
+
+export async function deleteTransportadora(id) {
+  if (isSupabaseConfigured) {
+    const { error } = await supabase.from('empresas_transportadoras').delete().eq('id', id)
+    if (error) throw error
+    return
+  }
+  lsSaveT(lsAllT().filter((r) => String(r.id) !== String(id)))
+}
+
+export function nombreTransportadora(t) {
+  if (t.tipo_persona === 'juridica') return t.compania || '(Sin nombre)'
+  return `${t.nombres || ''} ${t.apellidos || ''}`.trim() || '(Sin nombre)'
+}
+
+export function exportTransportadorasCsv(rows) {
+  const cols = [
+    ['documento', 'Documento'], ['nombre', 'Nombre / Compañía'], ['tipo_persona', 'Tipo'],
+    ['celular', 'Celular'], ['correo', 'Correo'], ['nombre_responsable', 'Responsable'],
+    ['resolucion', 'Resolución'], ['estado', 'Estado'],
+  ]
+  const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
+  const head = cols.map((c) => esc(c[1])).join(';')
+  const body = rows.map((r) => cols.map(([k]) => esc(k === 'nombre' ? nombreTransportadora(r) : r[k])).join(';')).join('\n')
+  const csv = '﻿' + head + '\n' + body
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'empresas_transportadoras.csv'
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export function exportClientesCsv(rows) {
   const cols = [
     ['documento', 'Documento'], ['nombre', 'Nombre / Compañía'], ['tipo_persona', 'Tipo'],
