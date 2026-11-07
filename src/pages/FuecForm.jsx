@@ -100,6 +100,7 @@ export default function FuecForm() {
     set('conductores', [...form.conductores, {
       id: c.id, nombre: nombreConductor(c), documento: c.documento,
       licencia_numero: c.licencia_numero || '', licencia_vencimiento: c.licencia_vencimiento || '',
+      vigencia_seguridad: c.vigencia_seguridad || '',
     }])
     setSelCond('')
   }

@@ -30,7 +30,10 @@ export function documentosVehiculo(v, conductores = []) {
   ]
   const cv = convenioVence(v)
   if (cv) docs.push(['Convenio', cv])
-  conductores.forEach((c) => { if (c.licencia_vencimiento) docs.push([`Licencia de ${c.nombre}`, c.licencia_vencimiento]) })
+  conductores.forEach((c) => {
+    if (c.licencia_vencimiento) docs.push([`Licencia de ${c.nombre}`, c.licencia_vencimiento])
+    if (c.vigencia_seguridad) docs.push([`Seguridad social de ${c.nombre}`, c.vigencia_seguridad])
+  })
   return docs.filter(([, f]) => f) // solo los que tienen fecha
 }
 
