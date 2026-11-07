@@ -9,10 +9,12 @@ export default function MatrizDestinos() {
   const [loading, setLoading] = useState(true)
   const [total, setTotal] = useState(null)
   const [nuevo, setNuevo] = useState({ nombre: '' })
+  const [error, setError] = useState('')
   const prep = useRef(false)
 
   async function cargar() {
     setLoading(true)
+    setError('')
     try {
       // Una sola vez: si la base está vacía carga el catálogo, y asegura las áreas metropolitanas.
       if (!prep.current) {
@@ -22,6 +24,9 @@ export default function MatrizDestinos() {
       }
       setTotal(await contarDestinos())
       setRows(await listDestinos({ departamento }))
+    } catch (e) {
+      prep.current = false
+      setError('No se pudo cargar la base de datos. Revisa que la tabla "destinos" exista en Supabase (corre el schema.sql). Detalle: ' + (e?.message || e))
     } finally {
       setLoading(false)
     }
@@ -70,6 +75,10 @@ export default function MatrizDestinos() {
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl bg-coral-400/15 px-4 py-3 text-sm font-medium text-coral-500">{error}</div>
+      )}
 
       {/* Tabla de ciudades */}
       <div className="card overflow-hidden">
