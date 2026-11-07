@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="140" height="90" viewBox="0 0 140 90">
+  <circle cx="70" cy="45" r="42" fill="#0b6b3a" stroke="#063d20" stroke-width="2"/>
+  <circle cx="70" cy="45" r="34" fill="#ffffff"/>
+  <path d="M70 6 a39 39 0 0 1 0 78" fill="none"/>
+  <text x="70" y="15" font-family="Arial, sans-serif" font-size="7" font-weight="bold" fill="#ffffff" text-anchor="middle">★ TRANSPORTE ESPECIAL ★</text>
+  <g transform="translate(44,33)">
+    <rect x="0" y="4" width="52" height="20" rx="3" fill="#0b6b3a"/>
+    <rect x="4" y="7" width="12" height="8" rx="1" fill="#cde9d7"/>
+    <rect x="19" y="7" width="12" height="8" rx="1" fill="#cde9d7"/>
+    <rect x="34" y="7" width="12" height="8" rx="1" fill="#cde9d7"/>
+    <circle cx="12" cy="25" r="3.5" fill="#222"/>
+    <circle cx="40" cy="25" r="3.5" fill="#222"/>
+  </g>
+  <text x="70" y="78" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#0b6b3a" text-anchor="middle">ANDINA CARGO</text>
+</svg>

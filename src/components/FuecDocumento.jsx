@@ -23,14 +23,15 @@ function Encabezado({ razon, e, qr, pagina }) {
     <>
       <table className="hd"><tbody>
         <tr>
-          <td className="hl" style={{ width: '22%' }}><img className="logo" src={mintransporte} alt="Ministerio de Transporte" /></td>
-          <td className="hl" style={{ width: '14%' }}>{qr && <img className="qrh" src={qr} alt="QR" />}</td>
+          <td className="hl" style={{ width: '17%' }}><img className="logo" src={mintransporte} alt="Ministerio de Transporte" /></td>
+          <td className="hl" style={{ width: '14%' }}>{e.iso_url && <img className="iso" src={e.iso_url} alt="ISO 9001" />}</td>
+          <td className="hl" style={{ width: '12%' }}>{qr && <img className="qrh" src={qr} alt="QR" />}</td>
           <td className="hl center">
             {e.logo_url
               ? <img className="logo-emp" src={e.logo_url} alt={razon} />
               : <><div className="b" style={{ fontSize: '14px' }}>{razon}</div><div className="sm" style={{ color: '#555' }}>Transporte Terrestre Automotor Especial</div></>}
           </td>
-          <td className="hl" style={{ width: '22%' }}><img className="logo-sup" src={supertransporte} alt="Vigilado SuperTransporte" /></td>
+          <td className="hl" style={{ width: '20%' }}><img className="logo-sup" src={supertransporte} alt="Vigilado SuperTransporte" /></td>
         </tr>
       </tbody></table>
       <table><tbody>
@@ -56,28 +57,30 @@ export default function FuecDocumento({ f, empresa, qr }) {
   return (
     <div className="fuec">
       <style>{`
-        .fuec { width:100%; max-width:830px; margin:0 auto; color:#000; font-family: Arial, Helvetica, sans-serif; font-size:9.5px; }
+        .fuec { width:100%; max-width:830px; margin:0 auto; color:#000; font-family: Arial, Helvetica, sans-serif; font-size:10px; }
         .fuec-page { background:#fff; padding:12px; }
         .fuec table { width:100%; border-collapse:collapse; table-layout:fixed; }
-        .fuec td, .fuec th { border:1px solid #000; padding:2px 5px; vertical-align:middle; word-wrap:break-word; }
-        .fuec .hd td.hl { border:1px solid #000; }
+        .fuec td, .fuec th { border:1px solid #000; padding:3px 6px; vertical-align:middle; word-wrap:break-word; }
+        .fuec .hd td.hl { border:1px solid #000; height:64px; }
         .fuec .center { text-align:center; }
         .fuec .b { font-weight:bold; }
         .fuec .sm { font-size:8px; }
-        .fuec .logo { height:52px; object-fit:contain; max-width:100%; }
-        .fuec .logo-sup { height:40px; object-fit:contain; max-width:100%; }
-        .fuec .logo-emp { height:58px; object-fit:contain; max-width:100%; }
-        .fuec .qrh { height:50px; width:50px; object-fit:contain; }
-        .fuec .title { position:relative; text-align:center; padding:5px 8px; line-height:1.3; }
+        .fuec .logo { height:54px; object-fit:contain; max-width:100%; }
+        .fuec .logo-sup { height:42px; object-fit:contain; max-width:100%; }
+        .fuec .logo-emp { height:68px; object-fit:contain; max-width:100%; }
+        .fuec .iso { height:56px; object-fit:contain; max-width:100%; }
+        .fuec .qrh { height:52px; width:52px; object-fit:contain; }
+        .fuec .title { position:relative; text-align:center; padding:7px 8px; line-height:1.35; }
         .fuec .title .b { font-size:11px; }
         .fuec .title .num { font-size:10px; margin-top:2px; }
         .fuec .title .pg { position:absolute; right:8px; top:50%; transform:translateY(-50%); font-weight:normal; font-size:9px; }
         .fuec .lbl { font-weight:bold; }
         .fuec .sec { text-align:center; font-weight:bold; font-size:10px; }
-        .fuec .tall td { height:30px; }
+        .fuec .tall td { height:38px; }
+        .fuec .xtall td { height:56px; }
         .fuec .foot { font-size:8px; line-height:1.4; }
-        .fuec .firma { border-top:1px solid #000; margin:26px 10px 0; padding-top:2px; }
-        .fuec .notas td { font-size:7.5px; line-height:1.35; text-align:left; padding:3px 5px; }
+        .fuec .firma { border-top:1px solid #000; margin:34px 10px 0; padding-top:2px; }
+        .fuec .notas td { font-size:8px; line-height:1.45; text-align:left; padding:5px 6px; }
         /* Instructivo */
         .fuec .ins-wrap { border:2px solid #000; border-radius:16px; padding:16px 20px; }
         .fuec .ins-title { text-align:center; font-weight:bold; font-size:10px; margin-bottom:10px; }
@@ -110,7 +113,7 @@ export default function FuecDocumento({ f, empresa, qr }) {
           <tr><td className="lbl">CONTRATANTE</td><td>{f.contratante_nombre || ''}</td></tr>
           <tr><td className="lbl">NIT/CC:</td><td className="center b">{f.contratante_doc || ''}</td></tr>
           <tr><td className="lbl">OBJETO DE CONTRATO:</td><td>{f.objeto_contrato || ''}</td></tr>
-          <tr className="tall"><td className="lbl">ORIGEN-DESTINO:</td><td>{f.origen_destino || ''}</td></tr>
+          <tr className="xtall"><td className="lbl">ORIGEN-DESTINO:</td><td>{f.origen_destino || ''}</td></tr>
         </tbody></table>
 
         {/* Convenio / consorcio / unión temporal */}
@@ -162,7 +165,7 @@ export default function FuecDocumento({ f, empresa, qr }) {
 
         {/* Pie con QR y firma */}
         <table><colgroup><col style={{ width: '48%' }} /><col style={{ width: '22%' }} /><col /></colgroup><tbody>
-          <tr className="tall">
+          <tr className="xtall">
             <td className="center">
               <div className="b">{e.direccion || ''}{e.ciudad ? `, ${e.ciudad}` : ''}</div>
               <div>Tels: {e.telefonos || ''}</div>

@@ -161,7 +161,7 @@ export default function FuecForm({ duplicar = false }) {
       const empresa_snapshot = {
         razon_social: emp.razon_social || '', nombre: emp.nombre || '', nit: emp.nit || '',
         direccion: emp.direccion || '', ciudad: emp.ciudad || '', telefonos: emp.telefonos || '',
-        email: emp.email || '', logo_url: emp.logo_url || '', resolucion: emp.resolucion || '',
+        email: emp.email || '', logo_url: emp.logo_url || '', iso_url: emp.iso_url || '', resolucion: emp.resolucion || '',
       }
       const payload = {
         ...form,

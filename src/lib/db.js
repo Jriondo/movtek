@@ -1,5 +1,7 @@
 import { supabase, isSupabaseConfigured } from './supabase'
 import { catalogoDestinos, AREAS_METROPOLITANAS } from './colombia'
+import demoLogo from '../assets/demo-logo.svg'
+import demoIso from '../assets/iso9001.svg'
 
 // Capa de datos de Movtek (multiempresa).
 // Con Supabase usa la base real; sin conectar, modo demo en el navegador.
@@ -17,16 +19,20 @@ function lsSave(rows) { try { localStorage.setItem(LS_KEY, JSON.stringify(rows))
 const EMPRESAS_DEMO = [
   { id: 'e1', nombre: 'TransLitoral', color_primario: '#10b981', color_acento: '#84cc16',
     razon_social: 'TRANSPORTES LITORAL S.A.S', nit: '901450517', direccion: 'CR 15 29 345 BRR Bavaria',
-    ciudad: 'Santa Marta, Magdalena', telefonos: '3145302372', email: 'contacto@translitoral.com', resolucion: 'ANT-2023-1182' },
+    ciudad: 'Santa Marta, Magdalena', telefonos: '3145302372', email: 'contacto@translitoral.com', resolucion: 'ANT-2023-1182',
+    logo_url: demoLogo, iso_url: demoIso },
   { id: 'e2', nombre: 'Andina Cargo', color_primario: '#2563eb', color_acento: '#06b6d4',
     razon_social: 'ANDINA CARGO S.A.S', nit: '900111222', direccion: 'Cra 50 # 10-20', ciudad: 'Bogotá D.C.',
-    telefonos: '6015550000', email: 'contacto@andinacargo.com', resolucion: 'MT-2024-0455' },
+    telefonos: '6015550000', email: 'contacto@andinacargo.com', resolucion: 'MT-2024-0455',
+    logo_url: demoLogo, iso_url: demoIso },
   { id: 'e3', nombre: 'RutaSur Express', color_primario: '#e11d8f', color_acento: '#7c3aed',
     razon_social: 'RUTASUR EXPRESS S.A.S', nit: '900333444', direccion: 'Av. Sur 22-14', ciudad: 'Cali',
-    telefonos: '6025551111', email: 'contacto@rutasur.com', resolucion: 'MT-2024-0781' },
+    telefonos: '6025551111', email: 'contacto@rutasur.com', resolucion: 'MT-2024-0781',
+    logo_url: demoLogo, iso_url: demoIso },
   { id: 'e4', nombre: 'Costa Trans', color_primario: '#f97316', color_acento: '#0f766e',
     razon_social: 'COSTA TRANS S.A.S', nit: '900555666', direccion: 'Cll 72 # 40-15', ciudad: 'Barranquilla',
-    telefonos: '6055552222', email: 'contacto@costatrans.com', resolucion: 'MT-2023-0990' },
+    telefonos: '6055552222', email: 'contacto@costatrans.com', resolucion: 'MT-2023-0990',
+    logo_url: demoLogo, iso_url: demoIso },
 ]
 
 export async function listEmpresas() {
