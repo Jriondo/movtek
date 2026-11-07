@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { getConductor, saveConductor, buscarPersonaPorDocumento, datosComunes } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
 import DocumentoAviso from '../components/DocumentoAviso'
+import { faltantes, mensajeFaltantes } from '../lib/validar'
 
 const VACIO = {
   tipo_identificacion: '', documento: '', nombres: '', apellidos: '', celular: '', correo: '',
@@ -51,6 +52,11 @@ export default function ConductorForm() {
   }
 
   async function grabar() {
+    const falt = faltantes(form, [
+      ['tipo_identificacion', 'Tipo de identificación'], ['documento', 'Documento'],
+      ['nombres', 'Nombres'], ['apellidos', 'Apellidos'],
+    ])
+    if (falt.length) { setMsg(mensajeFaltantes(falt)); return }
     setBusy(true); setMsg(''); setAviso('')
     try {
       if (!form.id) {

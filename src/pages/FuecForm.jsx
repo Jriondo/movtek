@@ -125,8 +125,16 @@ export default function FuecForm() {
   const quitar = (campo, i) => set(campo, form[campo].filter((_, idx) => idx !== i))
 
   async function guardar(irAImprimir = false) {
-    if (!vehiculo) { setMsg('Selecciona un vehículo (placa).'); return }
-    if (!form.contratantes.length) { setMsg('Agrega al menos un contratante.'); return }
+    // Validación de campos obligatorios — indica qué falta por llenar.
+    const falta = []
+    if (!vehiculo) falta.push('Vehículo (placa)')
+    if (!form.conductores.length) falta.push('Al menos un conductor')
+    if (!form.contratantes.length) falta.push('Al menos un contratante')
+    if (!String(form.objeto_contrato || '').trim()) falta.push('Objeto del contrato')
+    if (!String(form.origen_destino || '').trim() && !form.itinerarios.length) falta.push('Itinerario (origen – destino)')
+    if (!form.vigencia_inicio) falta.push('Vigencia — fecha inicial')
+    if (!form.vigencia_fin) falta.push('Vigencia — fecha vencimiento')
+    if (falta.length) { setMsg(`Faltan por llenar: ${falta.join(', ')}.`); return }
     if (limiteHijo) { setMsg('Este contrato maestro alcanzó el límite de 9999 FUEC. No se pueden generar más con este contrato.'); return }
     if (validacion.bloqueos.length) { setMsg(validacion.bloqueos[0]); return }
     const primary = form.contratantes[0]

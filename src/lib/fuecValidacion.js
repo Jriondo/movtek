@@ -20,10 +20,11 @@ export function convenioVence(v) {
 
 // Lista de documentos con su fecha de vencimiento (para mostrar estado).
 export function documentosVehiculo(v, conductores = []) {
+  // Póliza RCC/RCE unificada (vencen el mismo día). Retrocompat con datos antiguos.
+  const fechaPoliza = v?.fecha_venc_rcc_rce || v?.fecha_venc_rcc || v?.fecha_venc_rce
   const docs = [
     ['SOAT', v?.fecha_venc_soat],
-    ['Póliza RCC', v?.fecha_venc_rcc],
-    ['Póliza RCE', v?.fecha_venc_rce],
+    ['Póliza RCC/RCE', fechaPoliza],
     ['Revisión preventiva', v?.fecha_venc_preventiva],
     ['Revisión tecnicomecánica', v?.fecha_venc_tecnomecanica],
     ['Tarjeta de operación', v?.fecha_venc_toperacion],

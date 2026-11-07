@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { getCliente, saveCliente, contarFuecCliente } from '../lib/db'
 import { TIPOS_CONTRATO } from '../lib/tiposContrato'
 import { useEmpresa } from '../context/EmpresaContext'
+import { faltantes, mensajeFaltantes } from '../lib/validar'
 
 const VACIO = {
   tipo_persona: 'natural', compania: '', tipo_identificacion: '', documento: '',
@@ -55,6 +56,10 @@ export default function ClienteForm() {
   }
 
   async function grabar() {
+    const req = [['tipo_identificacion', 'Tipo de identificación'], ['documento', 'Documento']]
+    req.push(esJuridica ? ['compania', 'Compañía'] : ['nombres', 'Nombres'])
+    const falt = faltantes(form, req)
+    if (falt.length) { setTab(0); setMsg(mensajeFaltantes(falt)); return }
     setBusy(true); setMsg('')
     try {
       const payload = { ...form }

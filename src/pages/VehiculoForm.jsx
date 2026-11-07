@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
-  getVehiculo, saveVehiculo, buscarVehiculoPorPlaca, contarFuecVehiculo,
+  getVehiculo, saveVehiculo, buscarVehiculoPorPlaca,
   listPropietarios, listTransportadoras, nombrePropietario, nombreTransportadora,
 } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
@@ -9,25 +9,27 @@ import {
   modelosDisponibles, CLASES, MARCAS, MARCAS_LINEAS, COLORES, CARROCERIAS,
   COMBUSTIBLES, PESO_UNIDADES, SERVICIO, ASEGURADORAS,
 } from '../lib/vehiculoOpciones'
+import { DEPARTAMENTOS, DEPARTAMENTOS_NOMBRES } from '../lib/colombia'
+import { faltantes, mensajeFaltantes } from '../lib/validar'
 
 const VACIO = {
-  // Datos básicos
+  // básicos
   modelo: '', clase: '', numero_interno: '', marca: '', linea: '', placa: '', cilindraje: '', vehiculo_servicio: 'PUBLICO',
-  // Datos complementarios
+  // complementarios
   capacidad: '', peso: '', peso_unidad: 'KILOGRAMO', registro_motor: '', serie_chasis: '',
-  color: '', carroceria: '', tipo_combustible: '', porcentaje_cobro: '',
-  // Datos operacionales
-  aseguradora_soat: '', fecha_venc_soat: '', fecha_venc_rcc: '', fecha_venc_rce: '',
+  color: '', carroceria: '', tipo_combustible: '',
+  // operacionales
+  aseguradora_soat: '', fecha_venc_soat: '', fecha_venc_rcc_rce: '', aseguradora_rcc_rce: '',
   fecha_venc_preventiva: '', fecha_venc_tecnomecanica: '', tarjeta_operacion: '', fecha_venc_toperacion: '',
-  propietario_id: '', tenedor_id: '', transportadora_id: '', aseguradora_rcc_rce: '',
+  propietario_id: '', tenedor_id: '', transportadora_id: '',
   estado: 'activo', desvinculacion: 'NO',
-  // Datos adicionales / convenio
-  tiene_convenio: 'NO', ciudad_matricula: '', fecha_matricula: '', inicio_convenio: '', caducidad_convenio: '',
-  // Datos kilometraje
-  kilometraje_actual: '', fecha_kilometraje: '', observaciones_km: '',
+  // adicionales / convenio
+  tiene_convenio: 'NO', depto_matricula: '', ciudad_matricula: '', fecha_matricula: '', inicio_convenio: '', caducidad_convenio: '',
 }
 
-const TABS = ['Datos básicos', 'Datos complementarios', 'Datos operacionales', 'Datos adicionales', 'Datos kilometraje']
+const TABS = ['Datos básicos', 'Datos complementarios', 'Datos operacionales', 'Datos adicionales']
+const REQUERIDOS = [['placa', 'Placa'], ['clase', 'Clase'], ['marca', 'Marca'], ['linea', 'Línea'], ['modelo', 'Modelo']]
+const ciudadesDeDepto = (dep) => DEPARTAMENTOS.find((d) => d.nombre === dep)?.ciudades || []
 
 export default function VehiculoForm() {
   const { id } = useParams()
@@ -38,7 +40,6 @@ export default function VehiculoForm() {
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
   const [dupPlaca, setDupPlaca] = useState(null)
-  const [fuecCount, setFuecCount] = useState(0)
   const [propietarios, setPropietarios] = useState([])
   const [transportadoras, setTransportadoras] = useState([])
   const editando = Boolean(id)
@@ -54,7 +55,6 @@ export default function VehiculoForm() {
   useEffect(() => {
     if (!id) return
     getVehiculo(id).then((v) => { if (v) setForm({ ...VACIO, ...v }) })
-    contarFuecVehiculo(id).then(setFuecCount).catch(() => setFuecCount(0))
   }, [id])
 
   const set = (campo, valor) => setForm((f) => ({ ...f, [campo]: valor }))
@@ -68,6 +68,8 @@ export default function VehiculoForm() {
   }
 
   async function grabar() {
+    const falt = faltantes(form, REQUERIDOS)
+    if (falt.length) { setMsg(mensajeFaltantes(falt)); return }
     setBusy(true); setMsg('')
     try {
       if (!form.id) {
@@ -94,7 +96,6 @@ export default function VehiculoForm() {
         {form.placa && <p className="mt-0.5 text-sm text-ink-soft">Placa: {form.placa}</p>}
       </div>
 
-      {/* Pestañas */}
       <div className="flex gap-1 overflow-x-auto rounded-xl bg-cloud p-1">
         {TABS.map((t, i) => (
           <button key={t} onClick={() => setTab(i)}
@@ -152,11 +153,6 @@ export default function VehiculoForm() {
             <Field label="Color"><Select value={form.color} onChange={(v) => set('color', v)} options={COLORES} /></Field>
             <Field label="Carrocería"><Select value={form.carroceria} onChange={(v) => set('carroceria', v)} options={CARROCERIAS} /></Field>
             <Field label="Tipo de combustible"><Select value={form.tipo_combustible} onChange={(v) => set('tipo_combustible', v)} options={COMBUSTIBLES} /></Field>
-            <Field label="Porcentaje de cobro"><input className="input" value={form.porcentaje_cobro} onChange={(e) => set('porcentaje_cobro', e.target.value)} placeholder="Ej. 10%" /></Field>
-            <Field label="Cantidad de FUEC">
-              <input className="input bg-cloud" value={editando ? String(fuecCount) : '0'} readOnly />
-              <p className="mt-1 text-xs text-ink-soft">Se cuenta según los FUEC del vehículo (módulo 4.6).</p>
-            </Field>
           </div>
         )}
 
@@ -165,22 +161,20 @@ export default function VehiculoForm() {
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Aseguradora SOAT"><Select value={form.aseguradora_soat} onChange={(v) => set('aseguradora_soat', v)} options={ASEGURADORAS} /></Field>
             <Field label="Fecha vencimiento SOAT"><input type="date" className="input" value={form.fecha_venc_soat} onChange={(e) => set('fecha_venc_soat', e.target.value)} /></Field>
-            <Field label="Fecha vencimiento RCC"><input type="date" className="input" value={form.fecha_venc_rcc} onChange={(e) => set('fecha_venc_rcc', e.target.value)} /></Field>
-            <Field label="Fecha vencimiento RCE"><input type="date" className="input" value={form.fecha_venc_rce} onChange={(e) => set('fecha_venc_rce', e.target.value)} /></Field>
+
+            {/* Póliza RCC/RCE unificada (contractual y extracontractual) */}
+            <Field label="Vencimiento póliza RCC/RCE"><input type="date" className="input" value={form.fecha_venc_rcc_rce} onChange={(e) => set('fecha_venc_rcc_rce', e.target.value)} /></Field>
+            <Field label="Aseguradora de la póliza RCC/RCE"><Select value={form.aseguradora_rcc_rce} onChange={(v) => set('aseguradora_rcc_rce', v)} options={ASEGURADORAS} /></Field>
+
             <Field label="Fecha vencimiento preventiva"><input type="date" className="input" value={form.fecha_venc_preventiva} onChange={(e) => set('fecha_venc_preventiva', e.target.value)} /></Field>
             <Field label="Fecha venc. revisión tecnicomecánica"><input type="date" className="input" value={form.fecha_venc_tecnomecanica} onChange={(e) => set('fecha_venc_tecnomecanica', e.target.value)} /></Field>
             <Field label="Tarjeta de operación"><input className="input" value={form.tarjeta_operacion} onChange={(e) => set('tarjeta_operacion', e.target.value)} /></Field>
             <Field label="Fecha venc. tarjeta de operación"><input type="date" className="input" value={form.fecha_venc_toperacion} onChange={(e) => set('fecha_venc_toperacion', e.target.value)} /></Field>
-            <Field label="Propietario">
-              <PersonaSelect value={form.propietario_id} onChange={(v) => set('propietario_id', v)} items={propietarios} label={nombrePropietario} />
-            </Field>
-            <Field label="Tenedor">
-              <PersonaSelect value={form.tenedor_id} onChange={(v) => set('tenedor_id', v)} items={propietarios} label={nombrePropietario} />
-            </Field>
-            <Field label="Empresa transportadora">
-              <PersonaSelect value={form.transportadora_id} onChange={(v) => set('transportadora_id', v)} items={transportadoras} label={nombreTransportadora} />
-            </Field>
-            <Field label="Aseguradora RCC/RCE"><Select value={form.aseguradora_rcc_rce} onChange={(v) => set('aseguradora_rcc_rce', v)} options={ASEGURADORAS} /></Field>
+
+            <Field label="Propietario"><BuscarSelect value={form.propietario_id} onChange={(v) => set('propietario_id', v)} items={propietarios} label={nombrePropietario} placeholder="Busca por nombre o documento…" /></Field>
+            <Field label="Tenedor"><BuscarSelect value={form.tenedor_id} onChange={(v) => set('tenedor_id', v)} items={propietarios} label={nombrePropietario} placeholder="Busca por nombre o documento…" /></Field>
+            <Field label="Empresa transportadora" className="sm:col-span-2"><BuscarSelect value={form.transportadora_id} onChange={(v) => set('transportadora_id', v)} items={transportadoras} label={nombreTransportadora} placeholder="Busca por nombre o documento…" /></Field>
+
             <Field label="Estado">
               <div className="flex gap-5 pt-1.5">
                 <Radio label="Activo" checked={form.estado === 'activo'} onChange={() => set('estado', 'activo')} />
@@ -199,9 +193,20 @@ export default function VehiculoForm() {
         {/* ---------- 3. DATOS ADICIONALES (matrícula / convenio) ---------- */}
         {tab === 3 && (
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Ciudad de matrícula"><input className="input" value={form.ciudad_matricula} onChange={(e) => set('ciudad_matricula', e.target.value)} /></Field>
+            <Field label="Departamento de matrícula">
+              <select className="input" value={form.depto_matricula} onChange={(e) => setForm((f) => ({ ...f, depto_matricula: e.target.value, ciudad_matricula: '' }))}>
+                <option value="">Seleccione…</option>
+                {DEPARTAMENTOS_NOMBRES.map((d) => <option key={d}>{d}</option>)}
+              </select>
+            </Field>
+            <Field label="Ciudad de matrícula">
+              <select className="input" value={form.ciudad_matricula} onChange={(e) => set('ciudad_matricula', e.target.value)} disabled={!form.depto_matricula}>
+                <option value="">{form.depto_matricula ? 'Seleccione…' : 'Elige un departamento primero'}</option>
+                {ciudadesDeDepto(form.depto_matricula).map((c) => <option key={c}>{c}</option>)}
+              </select>
+            </Field>
             <Field label="Fecha de matrícula"><input type="date" className="input" value={form.fecha_matricula} onChange={(e) => set('fecha_matricula', e.target.value)} /></Field>
-            <Field label="¿Tiene convenio?" className="sm:col-span-2">
+            <Field label="¿Tiene convenio?">
               <div className="flex gap-5 pt-1.5">
                 <Radio label="Sí" checked={conConvenio} onChange={() => set('tiene_convenio', 'SI')} />
                 <Radio label="No" checked={!conConvenio} onChange={() => set('tiene_convenio', 'NO')} />
@@ -211,17 +216,6 @@ export default function VehiculoForm() {
               <Field label="Inicio del convenio"><input type="date" className="input" value={form.inicio_convenio} onChange={(e) => set('inicio_convenio', e.target.value)} /></Field>
               <Field label="Caducidad del convenio"><input type="date" className="input" value={form.caducidad_convenio} onChange={(e) => set('caducidad_convenio', e.target.value)} /></Field>
             </>}
-          </div>
-        )}
-
-        {/* ---------- 4. DATOS KILOMETRAJE ---------- */}
-        {tab === 4 && (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Kilometraje actual"><input className="input" value={form.kilometraje_actual} onChange={(e) => set('kilometraje_actual', e.target.value)} placeholder="Km" /></Field>
-            <Field label="Fecha de lectura"><input type="date" className="input" value={form.fecha_kilometraje} onChange={(e) => set('fecha_kilometraje', e.target.value)} /></Field>
-            <Field label="Observaciones" className="sm:col-span-2">
-              <textarea className="input h-24" value={form.observaciones_km} onChange={(e) => set('observaciones_km', e.target.value)} />
-            </Field>
           </div>
         )}
       </div>
@@ -248,19 +242,45 @@ function Select({ value, onChange, options }) {
     </select>
   )
 }
-function PersonaSelect({ value, onChange, items, label }) {
-  return (
-    <select className="input" value={value} onChange={(e) => onChange(e.target.value)}>
-      <option value="">Seleccione…</option>
-      {items.map((it) => <option key={it.id} value={it.id}>{label(it)}{it.documento ? ` · ${it.documento}` : ''}</option>)}
-    </select>
-  )
-}
 function Radio({ label, checked, onChange }) {
   return (
     <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-ink">
       <input type="radio" className="h-4 w-4 accent-brand-500" checked={checked} onChange={onChange} />
       {label}
     </label>
+  )
+}
+
+// Selector con búsqueda por nombre o documento.
+function BuscarSelect({ value, onChange, items, label, placeholder }) {
+  const [q, setQ] = useState('')
+  const [open, setOpen] = useState(false)
+  const sel = items.find((i) => String(i.id) === String(value))
+  const texto = sel ? `${label(sel)}${sel.documento ? ' · ' + sel.documento : ''}` : ''
+  const filtered = items.filter((i) => `${label(i)} ${i.documento || ''}`.toLowerCase().includes(q.toLowerCase())).slice(0, 25)
+  return (
+    <div className="relative">
+      <input className="input" value={open ? q : texto} placeholder={placeholder}
+        onFocus={() => { setOpen(true); setQ('') }}
+        onChange={(e) => { setQ(e.target.value); setOpen(true) }}
+        onBlur={() => setTimeout(() => setOpen(false), 150)} />
+      {open && (
+        <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-cloud-line bg-white shadow-card">
+          {filtered.length === 0 && <li className="px-3 py-2 text-sm text-ink-faint">Sin resultados</li>}
+          {filtered.map((i) => (
+            <li key={i.id}>
+              <button type="button" className="block w-full px-3 py-2 text-left text-sm hover:bg-cloud"
+                onMouseDown={() => { onChange(String(i.id)); setOpen(false) }}>
+                {label(i)}{i.documento ? ` · ${i.documento}` : ''}
+              </button>
+            </li>
+          ))}
+          {value && (
+            <li><button type="button" className="block w-full px-3 py-2 text-left text-xs text-coral-500 hover:bg-cloud"
+              onMouseDown={() => { onChange(''); setOpen(false) }}>Quitar selección</button></li>
+          )}
+        </ul>
+      )}
+    </div>
   )
 }

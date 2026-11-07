@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { getPropietario, savePropietario, buscarPersonaPorDocumento, datosComunes, listVehiculos } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
 import DocumentoAviso from '../components/DocumentoAviso'
+import { faltantes, mensajeFaltantes } from '../lib/validar'
 
 const VACIO = {
   tipo_identificacion: '', documento: '', tipo_persona: 'natural', compania: '',
@@ -68,6 +69,10 @@ export default function PropietarioForm() {
   function quitarVehiculo(i) { set('vehiculos_vinculados', form.vehiculos_vinculados.filter((_, idx) => idx !== i)) }
 
   async function grabar() {
+    const req = [['tipo_identificacion', 'Tipo de identificación'], ['documento', 'Documento']]
+    req.push(esJuridica ? ['compania', 'Compañía'] : ['nombres', 'Nombres'])
+    const falt = faltantes(form, req)
+    if (falt.length) { setMsg(mensajeFaltantes(falt)); return }
     setBusy(true); setMsg('')
     try {
       if (!form.id) {

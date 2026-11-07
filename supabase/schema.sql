@@ -149,17 +149,16 @@ create table if not exists vehiculos (
   capacidad text, peso text, peso_unidad text default 'KILOGRAMO', registro_motor text, serie_chasis text,
   color text, carroceria text, tipo_combustible text, porcentaje_cobro text,
   -- operacionales
-  aseguradora_soat text, fecha_venc_soat date, fecha_venc_rcc date, fecha_venc_rce date,
+  aseguradora_soat text, fecha_venc_soat date,
+  fecha_venc_rcc date, fecha_venc_rce date, fecha_venc_rcc_rce date,
   fecha_venc_preventiva date, fecha_venc_tecnomecanica date, tarjeta_operacion text, fecha_venc_toperacion date,
   propietario_id uuid references propietarios(id) on delete set null,
   tenedor_id uuid references propietarios(id) on delete set null,
   transportadora_id uuid references empresas_transportadoras(id) on delete set null,
   aseguradora_rcc_rce text, estado text default 'activo', desvinculacion text default 'NO',
   -- adicionales / convenio
-  tiene_convenio text default 'NO', ciudad_matricula text, fecha_matricula date,
+  tiene_convenio text default 'NO', depto_matricula text, ciudad_matricula text, fecha_matricula date,
   inicio_convenio date, caducidad_convenio date,
-  -- kilometraje
-  kilometraje_actual text, fecha_kilometraje date, observaciones_km text,
   created_at timestamptz default now()
 );
 create index if not exists idx_vehiculos_empresa on vehiculos (empresa_id);
