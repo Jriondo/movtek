@@ -193,6 +193,7 @@ export default function FuecForm() {
       <div>
         <button onClick={() => navigate('/fuec')} className="text-sm font-semibold text-brand-500 hover:underline">← FUEC</button>
         <h1 className="mt-1 font-display text-2xl font-extrabold text-ink">{editando ? 'Editar FUEC' : 'Generar FUEC'}</h1>
+        <p className="mt-0.5 text-sm text-ink-soft">Completa los datos del contrato; el documento se arma automáticamente con el formato oficial.</p>
       </div>
 
       {avisosHab.length > 0 && (
@@ -204,7 +205,7 @@ export default function FuecForm() {
 
       {/* Vehículo */}
       <div className="card p-5">
-        <h2 className="mb-3 font-display text-sm font-bold uppercase tracking-wide text-ink-faint">Características del vehículo</h2>
+        <h2 className="mb-4 flex items-center gap-2 font-display text-sm font-bold uppercase tracking-wide text-brand-600"><span className="h-4 w-1.5 rounded-full bg-brand-500" />🚐 Características del vehículo</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="label">Placa</label>
@@ -225,7 +226,7 @@ export default function FuecForm() {
       {/* Estado de documentos (validación) */}
       {vehiculo && (
         <div className="card p-5">
-          <h2 className="mb-3 font-display text-sm font-bold uppercase tracking-wide text-ink-faint">Estado de documentos</h2>
+          <h2 className="mb-4 flex items-center gap-2 font-display text-sm font-bold uppercase tracking-wide text-brand-600"><span className="h-4 w-1.5 rounded-full bg-brand-500" />📋 Estado de documentos</h2>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {docs.map(([nombre, fecha]) => {
               const dias = Math.round((new Date(fecha) - new Date(hoy)) / 86400000)
@@ -257,13 +258,13 @@ export default function FuecForm() {
       )}
 
       {/* Conductores */}
-      <ListaCard titulo="Conductores"
+      <ListaCard titulo="👤 Conductores"
         sel={<Picker value={selCond} onChange={setSelCond} onAdd={addConductor}
           options={conductores.filter((c) => c.estado_habilitacion !== 'inactivo').map((c) => ({ id: c.id, label: `${nombreConductor(c)} · ${c.documento || ''}` }))} placeholder="Selecciona conductor…" />}
         items={form.conductores} render={(c) => `${c.nombre} · ${c.documento || ''}`} onQuitar={(i) => quitar('conductores', i)} />
 
       {/* Contratante */}
-      <ListaCard titulo="Contratante"
+      <ListaCard titulo="🏢 Contratante"
         sel={<Picker value={selCont} onChange={setSelCont} onAdd={addContratante}
           options={clientes.filter((c) => c.estado !== 'inactivo').map((c) => ({ id: c.id, label: `${nombreMostrar(c)}${c.contrato_maestro_nro ? ' · ' + c.contrato_maestro_nro : ''}` }))} placeholder="Selecciona contratante…" />}
         items={form.contratantes} render={(c) => `${c.nombre}${c.no_maestro ? ' · Maestro ' + c.no_maestro : ''}`} onQuitar={(i) => quitar('contratantes', i)}>
@@ -309,7 +310,7 @@ export default function FuecForm() {
 
       {/* Itinerario */}
       <div className="card p-5">
-        <h2 className="mb-3 font-display text-sm font-bold uppercase tracking-wide text-ink-faint">Itinerario (origen – destino)</h2>
+        <h2 className="mb-4 flex items-center gap-2 font-display text-sm font-bold uppercase tracking-wide text-brand-600"><span className="h-4 w-1.5 rounded-full bg-brand-500" />🗺️ Itinerario (origen – destino)</h2>
         <div className="grid gap-3 sm:grid-cols-4">
           <div><label className="label">Depto origen</label>
             <select className="input uppercase" value={it.depto_origen} onChange={(e) => setIt({ ...it, depto_origen: e.target.value, ciudad_origen: '' })}>
@@ -354,6 +355,7 @@ export default function FuecForm() {
 
       {/* Estrategia + vigencia */}
       <div className="card p-5">
+        <h2 className="mb-4 flex items-center gap-2 font-display text-sm font-bold uppercase tracking-wide text-brand-600"><span className="h-4 w-1.5 rounded-full bg-brand-500" />📅 Estrategia y vigencia</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <div><label className="label">Estrategia comercial</label>
             <select className="input" value={form.estrategia_comercial} onChange={(e) => set('estrategia_comercial', e.target.value)}>
@@ -409,7 +411,7 @@ function Select({ value, onChange, options }) {
 function ListaCard({ titulo, sel, items, render, onQuitar, children }) {
   return (
     <div className="card p-5">
-      <h2 className="mb-3 font-display text-sm font-bold uppercase tracking-wide text-ink-faint">{titulo}</h2>
+      <h2 className="mb-4 flex items-center gap-2 font-display text-sm font-bold uppercase tracking-wide text-brand-600"><span className="h-4 w-1.5 rounded-full bg-brand-500" />{titulo}</h2>
       {sel}
       {items.length > 0 && (
         <ul className="mt-3 flex flex-col gap-1">
