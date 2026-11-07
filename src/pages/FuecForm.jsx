@@ -153,9 +153,17 @@ export default function FuecForm() {
         else { c_nombre = oc.nombre; c_doc = oc.documento }
         r_nombre = oc.nombre; r_cedula = oc.documento; r_tel = oc.telefono; r_dir = oc.direccion
       }
+      // "Foto" de los datos de la empresa al momento de generar el FUEC (encabezado inmutable).
+      const emp = empresa || {}
+      const empresa_snapshot = {
+        razon_social: emp.razon_social || '', nombre: emp.nombre || '', nit: emp.nit || '',
+        direccion: emp.direccion || '', ciudad: emp.ciudad || '', telefonos: emp.telefonos || '',
+        email: emp.email || '', logo_url: emp.logo_url || '', resolucion: emp.resolucion || '',
+      }
       const payload = {
         ...form,
         empresa_id: empresa?.id,
+        empresa_snapshot,
         placa: vehiculo.placa, movil: vehiculo.numero_interno,
         marca: vehiculo.marca, modelo: vehiculo.modelo, clase: vehiculo.clase, tarjeta_operacion: vehiculo.tarjeta_operacion,
         cliente_id: primary.id, no_maestro: primary.no_maestro || '',

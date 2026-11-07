@@ -6,7 +6,8 @@ const fmt = (iso) => (iso ? iso.split('-').reverse().join('/') : '')
 const parte = (iso, i) => (iso ? iso.split('-')[i] : '')
 
 export default function FuecDocumento({ f, empresa, qr }) {
-  const e = empresa || {}
+  // Usa la "foto" de la empresa guardada en el FUEC; si es un FUEC antiguo sin foto, usa los datos actuales.
+  const e = f?.empresa_snapshot || empresa || {}
   const razon = e.razon_social || e.nombre || 'EMPRESA DE TRANSPORTE ESPECIAL'
 
   return (
