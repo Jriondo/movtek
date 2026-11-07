@@ -72,7 +72,7 @@ export default function FuecDocumento({ f, empresa, qr }) {
         .fuec .sm { font-size:8px; }
         .fuec .logo { height:58px; object-fit:contain; max-width:100%; }
         .fuec .logo-sup { height:58px; object-fit:contain; max-width:100%; }
-        .fuec .logo-emp { height:58px; object-fit:contain; max-width:100%; }
+        .fuec .logo-emp { height:66px; object-fit:contain; max-width:100%; }
         .fuec .iso { height:60px; object-fit:contain; max-width:100%; }
         .fuec .qrh { height:56px; width:56px; object-fit:contain; }
         .fuec .title { position:relative; text-align:center; padding:7px 8px; line-height:1.35; }

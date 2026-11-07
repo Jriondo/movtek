@@ -1,7 +1,7 @@
 import { supabase, isSupabaseConfigured } from './supabase'
 import { catalogoDestinos, AREAS_METROPOLITANAS } from './colombia'
-import demoLogo from '../assets/demo-logo.svg'
-import demoIso from '../assets/iso9001.svg'
+import demoLogo from '../assets/demo-logo.webp'
+import demoIso from '../assets/iso9001.png'
 
 // Capa de datos de Movtek (multiempresa).
 // Con Supabase usa la base real; sin conectar, modo demo en el navegador.
