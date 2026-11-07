@@ -15,8 +15,10 @@ function traducirError(msg = '') {
 }
 
 export default function Login() {
-  const { login, registrar, demo } = useAuth()
-  const [modo, setModo] = useState('login') // 'login' | 'registro'
+  const { login, registrar, recuperarPassword, demo } = useAuth()
+  const [modo, setModo] = useState('login') // 'login' | 'registro' | 'recuperar'
+  const [recuperarEmail, setRecuperarEmail] = useState('')
+  const [recuperarMsg, setRecuperarMsg] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -39,6 +41,19 @@ export default function Login() {
     } finally {
       setBusy(false)
     }
+  }
+
+  async function onRecuperar(e) {
+    e.preventDefault()
+    setError(''); setRecuperarMsg('')
+    if (!recuperarEmail.trim()) { setError('Escribe tu correo.'); return }
+    setBusy(true)
+    try {
+      await recuperarPassword(recuperarEmail)
+      setRecuperarMsg('✅ Te enviamos un enlace a tu correo para crear una nueva contraseña. Revisa tu bandeja (y la carpeta de spam).')
+    } catch (err) {
+      setError((err?.message || '').startsWith('demo:') ? err.message.replace('demo: ', '') : traducirError(err?.message))
+    } finally { setBusy(false) }
   }
 
   // Al salir del campo de cédula: verifica si está registrado como propietario.
@@ -116,9 +131,29 @@ export default function Login() {
                 <button className="btn-primary mt-1 w-full" disabled={busy}>{busy ? 'Ingresando…' : 'Ingresar'}</button>
               </form>
 
-              <p className="mt-5 text-center text-sm text-ink-soft">
+              <div className="mt-4 text-center text-sm text-ink-soft">
+                <button type="button" className="font-semibold text-brand-600 hover:underline" onClick={() => { setModo('recuperar'); setError(''); setRecuperarMsg('') }}>¿Olvidaste tu contraseña?</button>
+              </div>
+              <p className="mt-3 text-center text-sm text-ink-soft">
                 ¿Eres propietario y es tu primera vez?{' '}
                 <button type="button" className="font-bold text-brand-600 hover:underline" onClick={() => { setModo('registro'); setError('') }}>Crear usuario</button>
+              </p>
+            </>
+          ) : modo === 'recuperar' ? (
+            <>
+              <h2 className="font-display text-2xl font-extrabold text-ink">Recuperar contraseña</h2>
+              <p className="mt-1 text-sm text-ink-soft">Te enviaremos un enlace a tu correo para crear una nueva.</p>
+              <form onSubmit={onRecuperar} className="mt-6 flex flex-col gap-4">
+                <div>
+                  <label className="label">Correo</label>
+                  <input type="email" className="input" value={recuperarEmail} onChange={(e) => setRecuperarEmail(e.target.value)} placeholder="tucorreo@ejemplo.com" required />
+                </div>
+                {recuperarMsg && <p className="rounded-lg bg-mint-500/15 px-3 py-2.5 text-sm font-medium text-mint-600">{recuperarMsg}</p>}
+                {error && <p className="rounded-lg bg-coral-400/15 px-3 py-2 text-sm font-medium text-coral-500">{error}</p>}
+                <button className="btn-primary mt-1 w-full" disabled={busy}>{busy ? 'Enviando…' : 'Enviar enlace'}</button>
+              </form>
+              <p className="mt-5 text-center text-sm text-ink-soft">
+                <button type="button" className="font-bold text-brand-600 hover:underline" onClick={() => { setModo('login'); setError('') }}>Volver a iniciar sesión</button>
               </p>
             </>
           ) : (

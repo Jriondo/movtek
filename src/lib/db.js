@@ -1100,11 +1100,12 @@ export async function buscarPropietarioGlobalPorDocumento(documento) {
 export async function registrarUsuarioPropietario({ documento, nombre, telefono, direccion, email }) {
   const prop = await buscarPropietarioGlobalPorDocumento(documento)
   if (!prop) return { ok: false, motivo: 'no-propietario' }
-  // Evita duplicar el usuario.
-  const existentes = await listUsuarios({ empresaId: prop.empresa_id })
-  if (existentes.some((u) => String(u.propietario_id) === String(prop.id))) return { ok: false, motivo: 'ya-existe' }
   // Actualiza datos de contacto del propietario si los cambió.
   try { await savePropietario({ ...prop, celular: telefono || prop.celular, direccion: direccion || prop.direccion, correo: email || prop.correo }) } catch {}
-  const usuario = await saveUsuario({ empresa_id: prop.empresa_id, nombre: nombre || nombrePropietario(prop), email, rol: 'propietario', propietario_id: prop.id, estado: 'activo' })
+  // Si ya tiene ficha de usuario, se reutiliza (actualiza correo/nombre); si no, se crea.
+  const existentes = await listUsuarios({ empresaId: prop.empresa_id })
+  const yaUsuario = existentes.find((u) => String(u.propietario_id) === String(prop.id))
+  const base = { empresa_id: prop.empresa_id, nombre: nombre || nombrePropietario(prop), email, rol: 'propietario', propietario_id: prop.id, estado: 'activo' }
+  const usuario = await saveUsuario(yaUsuario ? { ...yaUsuario, ...base } : base)
   return { ok: true, usuario, propietario: prop }
 }

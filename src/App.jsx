@@ -19,6 +19,7 @@ import FuecForm from './pages/FuecForm'
 import FuecImprimir from './pages/FuecImprimir'
 import VerificarFuec from './pages/VerificarFuec'
 import Usuarios from './pages/Usuarios'
+import NuevaPassword from './pages/NuevaPassword'
 
 // Protege las rutas internas: si no hay sesión, manda al login.
 function Protected({ children }) {
@@ -34,6 +35,7 @@ export default function App() {
     <Routes>
       {/* Verificación pública del FUEC (QR) — sin login */}
       <Route path="/verificar/:id" element={<VerificarFuec />} />
+      <Route path="/nueva-password" element={<NuevaPassword />} />
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
       <Route
         path="/"

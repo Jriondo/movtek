@@ -69,6 +69,21 @@ export function AuthProvider({ children }) {
     return login(email, password)
   }
 
+  // Envía el enlace para restablecer la contraseña (olvido de contraseña).
+  async function recuperarPassword(email) {
+    if (!isSupabaseConfigured) throw new Error('demo: La recuperación de contraseña funciona cuando Supabase está conectado.')
+    const redirectTo = `${window.location.origin}/nueva-password`
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
+    if (error) throw error
+  }
+
+  // Guarda la nueva contraseña (tras abrir el enlace de recuperación).
+  async function actualizarPassword(password) {
+    if (!isSupabaseConfigured) throw new Error('demo: Conecta Supabase para cambiar la contraseña.')
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) throw error
+  }
+
   async function logout() {
     if (isSupabaseConfigured) await supabase.auth.signOut()
     try { localStorage.removeItem(DEMO_KEY) } catch {}
@@ -88,7 +103,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{
-      user, loading, login, logout, registrar, demo: !isSupabaseConfigured,
+      user, loading, login, logout, registrar, recuperarPassword, actualizarPassword, demo: !isSupabaseConfigured,
       rol, rolReal, esAdmin, esOperativo, esPropietario, propietarioId,
       verComo, setVerComo,
     }}>
