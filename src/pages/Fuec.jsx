@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { listFuec, exportFuecCsv, exportFuecConductoresCsv, duplicarFuec, itinerarioTexto, ocasionalTexto } from '../lib/db'
+import { listFuec, exportFuecCsv, duplicarFuec, itinerarioTexto, ocasionalTexto } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
 
 // Rango de fechas según el periodo elegido.
@@ -16,15 +16,17 @@ function rango(periodo) {
 export default function Fuec() {
   const navigate = useNavigate()
   const { empresa } = useEmpresa()
-  const [f, setF] = useState({ placa: '', movil: '', contrato_hijo: '', contrato_maestro: '', periodo: 'todos' })
+  const [f, setF] = useState({ placa: '', movil: '', contrato_hijo: '', contrato_maestro: '', periodo: 'todos', desde: '', hasta: '' })
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
 
   async function cargar(filtros = {}) {
     setLoading(true)
     try {
-      const { desde, hasta } = rango(filtros.periodo ?? f.periodo)
-      setRows(await listFuec({ empresaId: empresa?.id, placa: f.placa, movil: f.movil, contrato_hijo: f.contrato_hijo, contrato_maestro: f.contrato_maestro, desde, hasta, ...filtros }))
+      const estado = { ...f, ...filtros }
+      // Si eliges fechas manuales tienen prioridad; si no, se usa el periodo.
+      const rango_ = (estado.desde || estado.hasta) ? { desde: estado.desde, hasta: estado.hasta } : rango(estado.periodo)
+      setRows(await listFuec({ empresaId: empresa?.id, placa: estado.placa, movil: estado.movil, contrato_hijo: estado.contrato_hijo, contrato_maestro: estado.contrato_maestro, desde: rango_.desde, hasta: rango_.hasta }))
     } finally { setLoading(false) }
   }
 
@@ -48,20 +50,29 @@ export default function Fuec() {
           <div><label className="label">Móvil</label><input className="input" value={f.movil} onChange={(e) => setF({ ...f, movil: e.target.value })} /></div>
           <div><label className="label">Contrato hijo</label><input className="input" value={f.contrato_hijo} onChange={(e) => setF({ ...f, contrato_hijo: e.target.value })} /></div>
           <div><label className="label">Contrato maestro</label><input className="input" value={f.contrato_maestro} onChange={(e) => setF({ ...f, contrato_maestro: e.target.value })} /></div>
-          <div><label className="label">Fecha registro</label>
-            <select className="input" value={f.periodo} onChange={(e) => { setF({ ...f, periodo: e.target.value }); cargar({ periodo: e.target.value }) }}>
+          <div><label className="label">Periodo</label>
+            <select className="input" value={f.periodo} disabled={!!(f.desde || f.hasta)}
+              onChange={(e) => { setF({ ...f, periodo: e.target.value }); cargar({ periodo: e.target.value }) }}>
               <option value="todos">Todos</option>
               <option value="hoy">Hoy</option>
               <option value="7">Últimos 7 días</option>
               <option value="mes">Este mes</option>
             </select>
           </div>
+          <div><label className="label">Fecha inicio</label>
+            <input type="date" className="input" value={f.desde} onChange={(e) => setF({ ...f, desde: e.target.value })} />
+          </div>
+          <div><label className="label">Fecha final</label>
+            <input type="date" className="input" value={f.hasta} onChange={(e) => setF({ ...f, hasta: e.target.value })} />
+          </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
           <button type="submit" className="btn-primary">🔍 Buscar</button>
           <button type="button" className="btn-accent" onClick={() => navigate('/fuec/nuevo')}>+ Nuevo</button>
           <button type="button" className="btn-ghost" onClick={() => exportFuecCsv(rows)} disabled={!rows.length}>⭳ Descargar</button>
-          <button type="button" className="btn-ghost" onClick={() => exportFuecConductoresCsv(rows)} disabled={!rows.length}>⭳ Descargar conductores</button>
+          {(f.desde || f.hasta) && (
+            <button type="button" className="btn-ghost" onClick={() => { const n = { ...f, desde: '', hasta: '' }; setF(n); cargar(n) }}>Limpiar fechas</button>
+          )}
         </div>
       </form>
 
