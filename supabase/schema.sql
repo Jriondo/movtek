@@ -266,9 +266,12 @@ create policy "public_fuec_select" on fuec for select to anon using (true);
 drop policy if exists "public_empresas_select" on empresas;
 create policy "public_empresas_select" on empresas for select to anon using (true);
 
--- Empresas de ejemplo (opcional)
+-- Nombre de empresa único (evita duplicados al re-sembrar)
+create unique index if not exists uq_empresas_nombre on empresas (nombre);
+
+-- Empresas de ejemplo (opcional) — idempotente por nombre
 insert into empresas (nombre, color_primario, color_acento) values
   ('TransLitoral', '#10b981', '#84cc16'),
   ('Andina Cargo', '#2563eb', '#06b6d4'),
   ('RutaSur Express', '#e11d8f', '#7c3aed')
-on conflict do nothing;
+on conflict (nombre) do nothing;

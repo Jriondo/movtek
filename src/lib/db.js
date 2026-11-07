@@ -30,7 +30,10 @@ export async function listEmpresas() {
   if (isSupabaseConfigured) {
     const { data, error } = await supabase.from('empresas').select('*').order('nombre')
     if (error) throw error
-    return data?.length ? data : EMPRESAS_DEMO
+    // Evita mostrar empresas repetidas por nombre (por si quedaron duplicadas en la base).
+    const vistos = new Set()
+    const unicas = (data || []).filter((e) => (vistos.has(e.nombre) ? false : vistos.add(e.nombre)))
+    return unicas.length ? unicas : EMPRESAS_DEMO
   }
   return EMPRESAS_DEMO
 }
