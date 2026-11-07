@@ -37,12 +37,23 @@ export const MARCAS_LINEAS = {
 export const MARCAS = Object.keys(MARCAS_LINEAS)
 
 export const COLORES = [
-  'Blanco', 'Negro', 'Gris', 'Plata', 'Azul', 'Azul oscuro', 'Rojo', 'Vinotinto',
-  'Verde', 'Amarillo', 'Beige', 'Dorado', 'Naranja', 'Café',
+  'NA',
+  // Blancos
+  'BLANCO', 'BLANCO ARTICO - (A)', 'BLANCO CERAMICA', 'BLANCO DIAMANTE', 'BLANCO GALAXIA',
+  'BLANCO LUNA', 'BLANCO METALICO', 'BLANCO NEVADO', 'BLANCO PERLA', 'BLANCO PURO SOLIDO',
+  'BLANCO SOLIDO', 'BLANCO TITANIO', 'BLANCO VAINILLA', 'SUPER BLANCO',
+  // Verdes
+  'VERDE', 'VERDE AMAZONIA', 'VERDE MEDIO MICA', 'VERDE METROPOLITANO',
+  // Otros colores base
+  'NEGRO', 'GRIS', 'PLATA', 'AZUL', 'AZUL OSCURO', 'ROJO', 'VINOTINTO',
+  'AMARILLO', 'BEIGE', 'DORADO', 'NARANJA', 'CAFE', 'GRIS PLATA', 'GRIS METALICO',
 ]
 
 export const CARROCERIAS = [
-  'Cerrada', 'Van', 'Microbús', 'Buseta', 'Bus', 'Campero', 'Sedán', 'Doble cabina', 'Panel', 'Furgón',
+  'CABINA UNO', 'CABINADO', 'CARPADO', 'CERRADA', 'DOBLE CABINA', 'DOBLE CABINA ESTACAS',
+  'DOBLE CABINA FURGON', 'ESTACAS', 'FURGON', 'GRUA', 'HORMIGONER', 'LIMOSINA', 'NA',
+  'PICK UP', 'PLANCHON', 'PLATON', 'REPARTO', 'SEDAN', 'STATION WAGON', 'TANQUE',
+  'VAN', 'VOLCO', 'WAGON',
 ]
 
 export const COMBUSTIBLES = [
