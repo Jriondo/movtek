@@ -23,15 +23,15 @@ function Encabezado({ razon, e, qr, pagina }) {
     <>
       <table className="hd"><tbody>
         <tr>
-          <td className="hl" style={{ width: '17%' }}><img className="logo" src={mintransporte} alt="Ministerio de Transporte" /></td>
+          <td className="hl" style={{ width: '16%' }}><img className="logo" src={mintransporte} alt="Ministerio de Transporte" /></td>
           <td className="hl" style={{ width: '14%' }}>{e.iso_url && <img className="iso" src={e.iso_url} alt="ISO 9001" />}</td>
           <td className="hl" style={{ width: '12%' }}>{qr && <img className="qrh" src={qr} alt="QR" />}</td>
           <td className="hl center">
-            {e.logo_url
-              ? <img className="logo-emp" src={e.logo_url} alt={razon} />
-              : <><div className="b" style={{ fontSize: '14px' }}>{razon}</div><div className="sm" style={{ color: '#555' }}>Transporte Terrestre Automotor Especial</div></>}
+            {e.logo_url && <img className="logo-emp" src={e.logo_url} alt={razon} />}
+            <div className="b" style={{ fontSize: '13px', marginTop: e.logo_url ? '2px' : '0' }}>{razon}</div>
+            <div className="sm" style={{ color: '#555' }}>Transporte Terrestre Automotor Especial</div>
           </td>
-          <td className="hl" style={{ width: '20%' }}><img className="logo-sup" src={supertransporte} alt="Vigilado SuperTransporte" /></td>
+          <td className="hl center" style={{ width: '24%' }}><img className="logo-sup" src={supertransporte} alt="Vigilado SuperTransporte" /></td>
         </tr>
       </tbody></table>
       <table><tbody>
@@ -46,7 +46,12 @@ function Encabezado({ razon, e, qr, pagina }) {
 }
 
 export default function FuecDocumento({ f, empresa, qr }) {
-  const e = { ...(f?.empresa_snapshot || empresa || {}), _num: f.numero_fuec || '' }
+  // La "foto" guardada manda; pero el logo y el sello ISO se toman de la empresa actual
+  // si la foto no los tiene (para FUEC creados antes de agregar esos campos).
+  const live = empresa || {}
+  const e = { ...live, ...(f?.empresa_snapshot || {}), _num: f.numero_fuec || '' }
+  if (!e.logo_url) e.logo_url = live.logo_url || ''
+  if (!e.iso_url) e.iso_url = live.iso_url || ''
   const razon = e.razon_social || e.nombre || 'EMPRESA DE TRANSPORTE ESPECIAL'
   const estr = (f.estrategia_comercial || '').toUpperCase()
   const conValue = (f.estrategia_con && f.estrategia_con.toUpperCase() !== 'NO APLICA') ? f.estrategia_con : 'NO APLICA'
@@ -61,15 +66,15 @@ export default function FuecDocumento({ f, empresa, qr }) {
         .fuec-page { background:#fff; padding:12px; }
         .fuec table { width:100%; border-collapse:collapse; table-layout:fixed; }
         .fuec td, .fuec th { border:1px solid #000; padding:3px 6px; vertical-align:middle; word-wrap:break-word; }
-        .fuec .hd td.hl { border:1px solid #000; height:64px; }
+        .fuec .hd td.hl { border:1px solid #000; height:76px; }
         .fuec .center { text-align:center; }
         .fuec .b { font-weight:bold; }
         .fuec .sm { font-size:8px; }
-        .fuec .logo { height:54px; object-fit:contain; max-width:100%; }
-        .fuec .logo-sup { height:42px; object-fit:contain; max-width:100%; }
-        .fuec .logo-emp { height:68px; object-fit:contain; max-width:100%; }
-        .fuec .iso { height:56px; object-fit:contain; max-width:100%; }
-        .fuec .qrh { height:52px; width:52px; object-fit:contain; }
+        .fuec .logo { height:58px; object-fit:contain; max-width:100%; }
+        .fuec .logo-sup { height:58px; object-fit:contain; max-width:100%; }
+        .fuec .logo-emp { height:58px; object-fit:contain; max-width:100%; }
+        .fuec .iso { height:60px; object-fit:contain; max-width:100%; }
+        .fuec .qrh { height:56px; width:56px; object-fit:contain; }
         .fuec .title { position:relative; text-align:center; padding:7px 8px; line-height:1.35; }
         .fuec .title .b { font-size:11px; }
         .fuec .title .num { font-size:10px; margin-top:2px; }

@@ -1,10 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="120" height="70" viewBox="0 0 120 70">
-  <rect x="1" y="1" width="118" height="68" rx="4" fill="#ffffff" stroke="#0a3d91" stroke-width="1.5"/>
-  <text x="60" y="15" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#0a3d91" text-anchor="middle">ISO 9001:2015</text>
-  <line x1="8" y1="20" x2="112" y2="20" stroke="#d0d7e6" stroke-width="1"/>
-  <text x="60" y="33" font-family="Arial, sans-serif" font-size="7.5" fill="#333" text-anchor="middle">COMPAÑÍA</text>
-  <circle cx="60" cy="48" r="15" fill="none" stroke="#0a3d91" stroke-width="1.5"/>
-  <text x="60" y="46" font-family="Arial, sans-serif" font-size="7" font-weight="bold" fill="#0a3d91" text-anchor="middle">ISO</text>
-  <text x="60" y="54" font-family="Arial, sans-serif" font-size="7" font-weight="bold" fill="#0a3d91" text-anchor="middle">9001</text>
-  <text x="60" y="68" font-family="Arial, sans-serif" font-size="6.5" fill="#0a3d91" text-anchor="middle">CERTIFICADA</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="130" height="74" viewBox="0 0 130 74">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1e5bb8"/>
+      <stop offset="1" stop-color="#0a3d91"/>
+    </linearGradient>
+  </defs>
+  <rect x="1.5" y="1.5" width="127" height="71" rx="6" fill="#ffffff" stroke="#0a3d91" stroke-width="2"/>
+  <rect x="1.5" y="1.5" width="127" height="18" rx="6" fill="url(#g)"/>
+  <rect x="1.5" y="12" width="127" height="8" fill="url(#g)"/>
+  <text x="65" y="14.5" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#ffffff" text-anchor="middle" letter-spacing="0.5">ISO 9001:2015</text>
+  <g transform="translate(14,26)">
+    <circle cx="19" cy="19" r="18" fill="none" stroke="#c9a227" stroke-width="2.5"/>
+    <circle cx="19" cy="19" r="13" fill="none" stroke="#c9a227" stroke-width="1"/>
+    <text x="19" y="16" font-family="Arial, sans-serif" font-size="8.5" font-weight="bold" fill="#0a3d91" text-anchor="middle">ISO</text>
+    <text x="19" y="26" font-family="Arial, sans-serif" font-size="8.5" font-weight="bold" fill="#0a3d91" text-anchor="middle">9001</text>
+  </g>
+  <text x="80" y="38" font-family="Arial, sans-serif" font-size="9" font-weight="bold" fill="#0a3d91" text-anchor="middle">COMPAÑÍA</text>
+  <text x="80" y="50" font-family="Arial, sans-serif" font-size="9" font-weight="bold" fill="#0a3d91" text-anchor="middle">CERTIFICADA</text>
+  <text x="80" y="63" font-family="Arial, sans-serif" font-size="7" fill="#555" text-anchor="middle">Gestión de Calidad</text>
 </svg>
