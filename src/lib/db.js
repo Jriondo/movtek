@@ -52,7 +52,7 @@ function seedDemo() {
       id: 'seed2', empresa_id: 'e1', tipo_persona: 'juridica', compania: 'Comercial Andina S.A.',
       tipo_identificacion: 'RUC', documento: '1790012345001', nombres: '', apellidos: '',
       telefono_oficina: '04 2567890', celular: '0998765432', estado: 'activo',
-      contrato_maestro_nro: '1002',
+      contrato_maestro_nro: '0002',
       nombre_responsable: 'Carlos Vera', doc_responsable: '0912345678', telefono_responsable: '0987654321',
       tipo_direccion: 'catastral', direccion: 'Av. 9 de Octubre 12 # 34 - 56, Edif. Central',
     },
@@ -60,13 +60,13 @@ function seedDemo() {
       id: 'seed1', empresa_id: 'e1', tipo_persona: 'natural', compania: '',
       tipo_identificacion: 'Cédula', documento: '1712345678', nombres: 'María', apellidos: 'Zambrano',
       telefono_casa: '04 2234455', celular: '0991112233', estado: 'activo',
-      contrato_maestro_nro: '1001',
+      contrato_maestro_nro: '0001',
       tipo_direccion: 'tradicional', direccion: 'Cdla. Los Ceibos, calle 3ra y Av. del Bombero',
     },
     {
       id: 'seed3', empresa_id: 'e2', tipo_persona: 'juridica', compania: 'Distribuidora del Valle',
       tipo_identificacion: 'RUC', documento: '0991234567001', celular: '0987000111', estado: 'activo',
-      contrato_maestro_nro: '1001',
+      contrato_maestro_nro: '0001',
       tipo_direccion: 'tradicional', direccion: 'Parque Industrial, nave 14',
     },
   ])
@@ -115,7 +115,7 @@ export async function saveCliente(data) {
     } else {
       n = lsAll().filter((r) => r.empresa_id === payload.empresa_id).length + 1
     }
-    if (!payload.contrato_maestro_nro) payload.contrato_maestro_nro = String(1000 + n) // solo números
+    if (!payload.contrato_maestro_nro) payload.contrato_maestro_nro = String(n).padStart(4, '0') // 0001, 0002…
     // El contrato HIJO no se fija aquí: se cuenta según los FUEC generados para este cliente.
   }
 
