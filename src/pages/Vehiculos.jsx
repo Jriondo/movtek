@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { listVehiculos, exportVehiculosCsv } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
@@ -11,10 +11,12 @@ export default function Vehiculos() {
   const [movil, setMovil] = useState('')
   const [estado, setEstado] = useState('activo')
   const [rows, setRows] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
+  const [buscado, setBuscado] = useState(false)
 
   async function cargar(filtros) {
     setLoading(true)
+    setBuscado(true)
     try {
       const f = filtros || { estado }
       setRows(await listVehiculos({ empresaId: empresa?.id, ...f }))
@@ -22,8 +24,6 @@ export default function Vehiculos() {
       setLoading(false)
     }
   }
-
-  useEffect(() => { cargar({ estado }) }, [empresa?.id])
 
   function buscar(e) {
     e?.preventDefault()
@@ -64,7 +64,8 @@ export default function Vehiculos() {
         </div>
       </form>
 
-      {/* Resultados */}
+      {/* Resultados — solo después de buscar */}
+      {buscado && (
       <div className="card overflow-hidden">
         <div className="flex items-center justify-between border-b border-cloud-line px-4 py-3">
           <h2 className="font-display text-sm font-bold text-ink">Resultados</h2>
@@ -119,6 +120,7 @@ export default function Vehiculos() {
           </div>
         )}
       </div>
+      )}
     </div>
   )
 }

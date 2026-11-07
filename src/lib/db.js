@@ -75,11 +75,12 @@ function seedDemo() {
   ])
 }
 
-export async function listClientes({ empresaId = null, documento = '', nombre = '' } = {}) {
+export async function listClientes({ empresaId = null, documento = '', nombre = '', estado = '' } = {}) {
   if (isSupabaseConfigured) {
     let q = supabase.from('clientes_maestros').select('*').order('created_at', { ascending: false })
     if (empresaId) q = q.eq('empresa_id', empresaId)
     if (documento) q = q.ilike('documento', `%${documento}%`)
+    if (estado) q = q.eq('estado', estado)
     if (nombre) q = q.or(`nombres.ilike.%${nombre}%,apellidos.ilike.%${nombre}%,compania.ilike.%${nombre}%`)
     const { data, error } = await q
     if (error) throw error
@@ -89,6 +90,7 @@ export async function listClientes({ empresaId = null, documento = '', nombre = 
   let rows = lsAll()
   if (empresaId) rows = rows.filter((r) => r.empresa_id === empresaId)
   if (documento) rows = rows.filter((r) => (r.documento || '').toLowerCase().includes(documento.toLowerCase()))
+  if (estado) rows = rows.filter((r) => (r.estado || 'activo') === estado)
   if (nombre) {
     const n = nombre.toLowerCase()
     rows = rows.filter((r) => `${r.nombres || ''} ${r.apellidos || ''} ${r.compania || ''}`.toLowerCase().includes(n))
@@ -472,11 +474,12 @@ function seedTransportadoras() {
   ])
 }
 
-export async function listTransportadoras({ empresaId = null, documento = '', nombre = '' } = {}) {
+export async function listTransportadoras({ empresaId = null, documento = '', nombre = '', estado = '' } = {}) {
   if (isSupabaseConfigured) {
     let q = supabase.from('empresas_transportadoras').select('*').order('created_at', { ascending: false })
     if (empresaId) q = q.eq('empresa_id', empresaId)
     if (documento) q = q.ilike('documento', `%${documento}%`)
+    if (estado) q = q.eq('estado', estado)
     if (nombre) q = q.or(`nombres.ilike.%${nombre}%,apellidos.ilike.%${nombre}%,compania.ilike.%${nombre}%`)
     const { data, error } = await q
     if (error) throw error
@@ -486,6 +489,7 @@ export async function listTransportadoras({ empresaId = null, documento = '', no
   let rows = lsAllT()
   if (empresaId) rows = rows.filter((r) => r.empresa_id === empresaId)
   if (documento) rows = rows.filter((r) => (r.documento || '').toLowerCase().includes(documento.toLowerCase()))
+  if (estado) rows = rows.filter((r) => (r.estado || 'activo') === estado)
   if (nombre) {
     const n = nombre.toLowerCase()
     rows = rows.filter((r) => `${r.nombres || ''} ${r.apellidos || ''} ${r.compania || ''}`.toLowerCase().includes(n))
