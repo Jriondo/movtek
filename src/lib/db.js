@@ -7,6 +7,9 @@ import { catalogoDestinos, AREAS_METROPOLITANAS } from './colombia'
 const LS_KEY = 'movtek_clientes'
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
 
+// Convierte strings vacíos a null (Postgres rechaza '' en columnas date/numeric).
+const nulls = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, v === '' ? null : v]))
+
 function lsAll() { try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]') } catch { return [] } }
 function lsSave(rows) { try { localStorage.setItem(LS_KEY, JSON.stringify(rows)) } catch {} }
 
@@ -122,12 +125,12 @@ export async function saveCliente(data) {
   if (isSupabaseConfigured) {
     if (payload.id) {
       const { id, created_at, ...rest } = payload
-      const { data: d, error } = await supabase.from('clientes_maestros').update(rest).eq('id', id).select().single()
+      const { data: d, error } = await supabase.from('clientes_maestros').update(nulls(rest)).eq('id', id).select().single()
       if (error) throw error
       return d
     }
     delete payload.id
-    const { data: d, error } = await supabase.from('clientes_maestros').insert(payload).select().single()
+    const { data: d, error } = await supabase.from('clientes_maestros').insert(nulls(payload)).select().single()
     if (error) throw error
     return d
   }
@@ -259,12 +262,12 @@ export async function saveConductor(data) {
   if (isSupabaseConfigured) {
     if (payload.id) {
       const { id, created_at, ...rest } = payload
-      const { data: d, error } = await supabase.from('conductores').update(rest).eq('id', id).select().single()
+      const { data: d, error } = await supabase.from('conductores').update(nulls(rest)).eq('id', id).select().single()
       if (error) throw error
       return d
     }
     delete payload.id
-    const { data: d, error } = await supabase.from('conductores').insert(payload).select().single()
+    const { data: d, error } = await supabase.from('conductores').insert(nulls(payload)).select().single()
     if (error) throw error
     return d
   }
@@ -365,12 +368,12 @@ export async function savePropietario(data) {
   if (isSupabaseConfigured) {
     if (payload.id) {
       const { id, created_at, ...rest } = payload
-      const { data: d, error } = await supabase.from('propietarios').update(rest).eq('id', id).select().single()
+      const { data: d, error } = await supabase.from('propietarios').update(nulls(rest)).eq('id', id).select().single()
       if (error) throw error
       return d
     }
     delete payload.id
-    const { data: d, error } = await supabase.from('propietarios').insert(payload).select().single()
+    const { data: d, error } = await supabase.from('propietarios').insert(nulls(payload)).select().single()
     if (error) throw error
     return d
   }
@@ -515,12 +518,12 @@ export async function saveTransportadora(data) {
   if (isSupabaseConfigured) {
     if (payload.id) {
       const { id, created_at, ...rest } = payload
-      const { data: d, error } = await supabase.from('empresas_transportadoras').update(rest).eq('id', id).select().single()
+      const { data: d, error } = await supabase.from('empresas_transportadoras').update(nulls(rest)).eq('id', id).select().single()
       if (error) throw error
       return d
     }
     delete payload.id
-    const { data: d, error } = await supabase.from('empresas_transportadoras').insert(payload).select().single()
+    const { data: d, error } = await supabase.from('empresas_transportadoras').insert(nulls(payload)).select().single()
     if (error) throw error
     return d
   }
@@ -633,12 +636,12 @@ export async function saveVehiculo(data) {
   if (isSupabaseConfigured) {
     if (payload.id) {
       const { id, created_at, ...rest } = payload
-      const { data: d, error } = await supabase.from('vehiculos').update(rest).eq('id', id).select().single()
+      const { data: d, error } = await supabase.from('vehiculos').update(nulls(rest)).eq('id', id).select().single()
       if (error) throw error
       return d
     }
     delete payload.id
-    const { data: d, error } = await supabase.from('vehiculos').insert(payload).select().single()
+    const { data: d, error } = await supabase.from('vehiculos').insert(nulls(payload)).select().single()
     if (error) throw error
     return d
   }
@@ -736,12 +739,12 @@ export async function saveDestino(data) {
   if (isSupabaseConfigured) {
     if (payload.id) {
       const { id, created_at, ...rest } = payload
-      const { data: d, error } = await supabase.from('destinos').update(rest).eq('id', id).select().single()
+      const { data: d, error } = await supabase.from('destinos').update(nulls(rest)).eq('id', id).select().single()
       if (error) throw error
       return d
     }
     delete payload.id
-    const { data: d, error } = await supabase.from('destinos').insert(payload).select().single()
+    const { data: d, error } = await supabase.from('destinos').insert(nulls(payload)).select().single()
     if (error) throw error
     return d
   }
@@ -855,11 +858,11 @@ export async function saveFuec(data) {
   if (isSupabaseConfigured) {
     if (payload.id) {
       const { id, created_at, ...rest } = payload
-      const { data: d, error } = await supabase.from('fuec').update(rest).eq('id', id).select().single()
+      const { data: d, error } = await supabase.from('fuec').update(nulls(rest)).eq('id', id).select().single()
       if (error) throw error
       return d
     }
-    const { data: d, error } = await supabase.from('fuec').insert(payload).select().single()
+    const { data: d, error } = await supabase.from('fuec').insert(nulls(payload)).select().single()
     if (error) throw error
     return d
   }
