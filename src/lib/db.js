@@ -839,8 +839,9 @@ export async function getFuec(id) {
 export async function saveFuec(data) {
   const payload = { ...data }
   if (!payload.id) {
-    // Contrato hijo consecutivo por cliente maestro.
+    // Contrato hijo consecutivo por cliente maestro (máximo 9999).
     const n = await contarFuecCliente(payload.cliente_id)
+    if (n >= 9999) throw new Error('Este contrato maestro alcanzó el límite de 9999 FUEC (contrato hijo). No se pueden generar más con este contrato.')
     payload.contrato_hijo = String(n + 1).padStart(4, '0')
     // Número único del FUEC (fecha + maestro + hijo).
     if (!payload.numero_fuec) {

@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import {
   listVehiculos, listConductores, nombreConductor, listClientes, nombreMostrar,
   listDestinos, saveFuec, getFuec, asegurarContratoGrupo,
-  listTransportadoras, nombreTransportadora,
+  listTransportadoras, nombreTransportadora, contarFuecCliente,
 } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
 import { useAuth } from '../context/AuthContext'
@@ -39,6 +39,7 @@ export default function FuecForm() {
   const [selCont, setSelCont] = useState('')
   const [it, setIt] = useState({ depto_origen: '', ciudad_origen: '', depto_destino: '', ciudad_destino: '' })
   const [ocasional, setOcasional] = useState(OCASIONAL_VACIO)
+  const [hijoActual, setHijoActual] = useState(null)
 
   useEffect(() => {
     listVehiculos({ empresaId: empresa?.id }).then(setVehiculos).catch(() => {})
@@ -57,6 +58,13 @@ export default function FuecForm() {
     getFuec(id).then((f) => { if (f) { setForm((prev) => ({ ...prev, ...f })); if (f.ocasional) setOcasional({ ...OCASIONAL_VACIO, ...f.ocasional }) } })
   }, [id])
 
+  // Cuenta cuántos FUEC (contrato hijo) lleva el contratante principal.
+  useEffect(() => {
+    const primary = form.contratantes[0]
+    if (primary?.id) contarFuecCliente(primary.id).then(setHijoActual).catch(() => setHijoActual(null))
+    else setHijoActual(null)
+  }, [form.contratantes])
+
   const vehiculo = useMemo(() => vehiculos.find((v) => String(v.id) === String(form.vehiculo_id)), [vehiculos, form.vehiculo_id])
   const ciudadesDe = (dep) => destinos.filter((d) => d.departamento === dep).map((d) => d.nombre)
 
@@ -74,6 +82,9 @@ export default function FuecForm() {
   const hoyLocal = new Date().toLocaleDateString('en-CA')
   const puedeModificar = editando ? (form.created_at ? new Date(form.created_at).toLocaleDateString('en-CA') === hoyLocal : true) : true
   const forzarNuevo = editando && !puedeModificar
+  // Límite de 9999 contratos hijo (FUEC) por contrato maestro.
+  const creaNuevo = !editando || forzarNuevo
+  const limiteHijo = creaNuevo && hijoActual != null && hijoActual >= 9999
 
   const set = (c, v) => setForm((f) => ({ ...f, [c]: v }))
 
@@ -109,6 +120,7 @@ export default function FuecForm() {
   async function guardar(irAImprimir = false) {
     if (!vehiculo) { setMsg('Selecciona un vehículo (placa).'); return }
     if (!form.contratantes.length) { setMsg('Agrega al menos un contratante.'); return }
+    if (limiteHijo) { setMsg('Este contrato maestro alcanzó el límite de 9999 FUEC. No se pueden generar más con este contrato.'); return }
     if (validacion.bloqueos.length) { setMsg(validacion.bloqueos[0]); return }
     const primary = form.contratantes[0]
     if (primary.es_grupo && !ocasional.nombre && !ocasional.documento && !ocasional.empresa_nit) {
@@ -316,7 +328,12 @@ export default function FuecForm() {
         </div>
       </div>
 
-      {forzarNuevo && (
+      {limiteHijo && (
+        <p className="rounded-xl bg-coral-400/15 px-4 py-2.5 text-sm font-medium text-coral-500">
+          ⛔ Este contrato maestro llegó al límite de <b>9999</b> FUEC (contrato hijo). No se pueden generar más con este contrato.
+        </p>
+      )}
+      {forzarNuevo && !limiteHijo && (
         <p className="rounded-xl bg-amber-100 px-4 py-2.5 text-sm font-medium text-amber-700">
           ⏰ El plazo para modificar este FUEC venció (solo hasta la medianoche del día en que se creó). Si continúas, se generará un <b>FUEC nuevo</b>.
         </p>
@@ -324,7 +341,7 @@ export default function FuecForm() {
       {msg && <p className="rounded-xl bg-coral-400/15 px-4 py-2.5 text-sm font-medium text-coral-500">{msg}</p>}
 
       <div className="flex flex-wrap justify-center gap-2">
-        <button className="btn-accent" onClick={() => guardar(true)} disabled={busy || validacion.bloqueos.length > 0}>
+        <button className="btn-accent" onClick={() => guardar(true)} disabled={busy || validacion.bloqueos.length > 0 || limiteHijo}>
           {busy ? 'Procesando…' : forzarNuevo ? '🖨️ Crear nuevo e imprimir PDF' : editando ? '🖨️ Modificar e imprimir PDF' : '🖨️ Guardar e imprimir PDF'}
         </button>
       </div>
