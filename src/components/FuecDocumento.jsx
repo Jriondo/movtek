@@ -1,11 +1,10 @@
 import mintransporte from '../assets/mintransporte.webp'
 import supertransporte from '../assets/supertransporte.webp'
 
-// Documento FUEC con formato oficial (Resolución 0006652 de 2019).
+// Documento FUEC — réplica del formato oficial (Resolución 0006652 de 2019).
 const fmt = (iso) => (iso ? iso.split('-').reverse().join('/') : '')
-const parte = (iso, i) => (iso ? iso.split('-')[i] : '')
+const dmy = (iso) => (iso ? iso.split('-') : ['', '', '']) // [a, m, d]
 
-// Códigos de la Dirección Territorial (instructivo del número consecutivo).
 const TERRITORIALES = [
   ['Antioquia – Chocó', '305', 'Huila – Caquetá', '441'],
   ['Atlántico', '208', 'Magdalena', '247'],
@@ -19,194 +18,176 @@ const TERRITORIALES = [
   ['Guajira', '241', 'Valle del Cauca', '376'],
 ]
 
-function Encabezado({ razon, e }) {
+function Encabezado({ razon, e, qr, pagina }) {
   return (
-    <table className="head">
-      <tbody>
+    <>
+      <table className="hd"><tbody>
         <tr>
-          <td style={{ width: '28%', textAlign: 'center' }}><img className="logo" src={mintransporte} alt="Ministerio de Transporte" /></td>
-          <td style={{ textAlign: 'center' }}>
-            {e.logo_url && <div><img className="logo-emp" src={e.logo_url} alt={razon} /></div>}
-            <div className="b" style={{ fontSize: '15px', letterSpacing: '.3px' }}>{razon}</div>
-            <div className="sm" style={{ color: '#555' }}>Transporte Terrestre Automotor Especial</div>
+          <td className="hl" style={{ width: '22%' }}><img className="logo" src={mintransporte} alt="Ministerio de Transporte" /></td>
+          <td className="hl" style={{ width: '14%' }}>{qr && <img className="qrh" src={qr} alt="QR" />}</td>
+          <td className="hl center">
+            {e.logo_url
+              ? <img className="logo-emp" src={e.logo_url} alt={razon} />
+              : <><div className="b" style={{ fontSize: '14px' }}>{razon}</div><div className="sm" style={{ color: '#555' }}>Transporte Terrestre Automotor Especial</div></>}
           </td>
-          <td style={{ width: '28%', textAlign: 'center' }}><img className="logo-sup" src={supertransporte} alt="Vigilado SuperTransporte" /></td>
+          <td className="hl" style={{ width: '22%' }}><img className="logo-sup" src={supertransporte} alt="Vigilado SuperTransporte" /></td>
         </tr>
-      </tbody>
-    </table>
-  )
-}
-
-function Titulo({ num, pagina }) {
-  return (
-    <table><tbody>
-      <tr><td className="title">
-        FORMATO ÚNICO DE EXTRACTO DEL CONTRATO DEL SERVICIO PÚBLICO DE<br />
-        TRANSPORTE TERRESTRE AUTOMOTOR ESPECIAL
-        <div className="title-num">NÚMERO: {num || '—'}</div>
-        <div className="pag">Página {pagina} de 2</div>
-      </td></tr>
-    </tbody></table>
+      </tbody></table>
+      <table><tbody>
+        <tr><td className="title">
+          <span className="pg">Page {pagina} of 2</span>
+          <div className="b">FORMATO ÚNICO DE EXTRACTO DEL CONTRATO DEL SERVICIO PÚBLICO DE<br />TRANSPORTE TERRESTRE AUTOMOTOR ESPECIAL</div>
+          <div className="num b">NUMERO:{(e && e._num) || ''}</div>
+        </td></tr>
+      </tbody></table>
+    </>
   )
 }
 
 export default function FuecDocumento({ f, empresa, qr }) {
-  // Usa la "foto" de la empresa guardada en el FUEC; si es un FUEC antiguo sin foto, usa los datos actuales.
-  const e = f?.empresa_snapshot || empresa || {}
+  const e = { ...(f?.empresa_snapshot || empresa || {}), _num: f.numero_fuec || '' }
   const razon = e.razon_social || e.nombre || 'EMPRESA DE TRANSPORTE ESPECIAL'
-  const numero = f.numero_fuec || ''
   const estr = (f.estrategia_comercial || '').toUpperCase()
-  const conValue = (f.estrategia_con && f.estrategia_con.toUpperCase() !== 'NO APLICA') ? f.estrategia_con : 'N/A'
+  const conValue = (f.estrategia_con && f.estrategia_con.toUpperCase() !== 'NO APLICA') ? f.estrategia_con : 'NO APLICA'
+  const [ai, mi, di] = dmy(f.vigencia_inicio)
+  const [av, mv, dv] = dmy(f.vigencia_fin)
+  const marca = (estr === 'CONVENIO' ? 'conv' : estr === 'CONSORCIO' ? 'cons' : estr === 'UNIÓN TEMPORAL' ? 'ut' : '')
 
   return (
     <div className="fuec">
       <style>{`
-        .fuec { width:100%; max-width:820px; margin:0 auto; color:#1a1a1a; font-family: Arial, Helvetica, sans-serif; font-size:11px; }
-        .fuec-page { background:#fff; padding:14px; }
-        .fuec table { width:100%; border-collapse:collapse; }
-        .fuec td, .fuec th { border:1px solid #222; padding:4px 7px; vertical-align:middle; }
-        .fuec .head td { border:none; }
+        .fuec { width:100%; max-width:830px; margin:0 auto; color:#000; font-family: Arial, Helvetica, sans-serif; font-size:9.5px; }
+        .fuec-page { background:#fff; padding:12px; }
+        .fuec table { width:100%; border-collapse:collapse; table-layout:fixed; }
+        .fuec td, .fuec th { border:1px solid #000; padding:2px 5px; vertical-align:middle; word-wrap:break-word; }
+        .fuec .hd td.hl { border:1px solid #000; }
         .fuec .center { text-align:center; }
         .fuec .b { font-weight:bold; }
-        .fuec .title { text-align:center; font-weight:bold; font-size:12.5px; line-height:1.35; padding:7px; }
-        .fuec .title-num { font-weight:normal; font-size:11px; margin-top:3px; letter-spacing:.5px; }
-        .fuec .pag { font-weight:normal; font-size:9px; color:#666; margin-top:1px; }
-        .fuec .lbl { font-weight:bold; width:32%; background:#fafafa; }
-        .fuec .sec { background:#e8eef1; font-weight:bold; text-align:center; letter-spacing:.4px; }
-        .fuec .sm { font-size:9px; }
-        .fuec .logo { height:56px; object-fit:contain; max-width:100%; }
-        .fuec .logo-sup { height:42px; object-fit:contain; max-width:100%; }
-        .fuec .logo-emp { height:48px; object-fit:contain; max-width:100%; margin-bottom:3px; }
-        .fuec .foot { font-size:8.5px; color:#444; margin-top:7px; line-height:1.45; }
-        .fuec .foot p { margin:2px 0; }
-        .fuec .firma-linea { border-top:1px solid #222; margin-top:28px; padding-top:3px; }
+        .fuec .sm { font-size:8px; }
+        .fuec .logo { height:52px; object-fit:contain; max-width:100%; }
+        .fuec .logo-sup { height:40px; object-fit:contain; max-width:100%; }
+        .fuec .logo-emp { height:58px; object-fit:contain; max-width:100%; }
+        .fuec .qrh { height:50px; width:50px; object-fit:contain; }
+        .fuec .title { position:relative; text-align:center; padding:5px 8px; line-height:1.3; }
+        .fuec .title .b { font-size:11px; }
+        .fuec .title .num { font-size:10px; margin-top:2px; }
+        .fuec .title .pg { position:absolute; right:8px; top:50%; transform:translateY(-50%); font-weight:normal; font-size:9px; }
+        .fuec .lbl { font-weight:bold; }
+        .fuec .sec { text-align:center; font-weight:bold; font-size:10px; }
+        .fuec .tall td { height:30px; }
+        .fuec .foot { font-size:8px; line-height:1.4; }
+        .fuec .firma { border-top:1px solid #000; margin:26px 10px 0; padding-top:2px; }
+        .fuec .notas td { font-size:7.5px; line-height:1.35; text-align:left; padding:3px 5px; }
         /* Instructivo */
-        .fuec .ins-wrap { border:2px solid #222; border-radius:16px; padding:18px 22px; margin-top:6px; }
-        .fuec .ins-title { text-align:center; font-weight:bold; font-size:11px; margin-bottom:12px; letter-spacing:.3px; }
+        .fuec .ins-wrap { border:2px solid #000; border-radius:16px; padding:16px 20px; }
+        .fuec .ins-title { text-align:center; font-weight:bold; font-size:10px; margin-bottom:10px; }
         .fuec .ins-list { margin:0; padding:0; list-style:none; }
-        .fuec .ins-list > li { margin:7px 0; line-height:1.4; display:flex; gap:8px; }
+        .fuec .ins-list > li { margin:6px 0; line-height:1.4; display:flex; gap:7px; }
         .fuec .ins-list > li .ln { font-weight:bold; }
-        .fuec .terr { margin:12px auto; width:92%; }
-        .fuec .terr td { padding:2px 8px; font-size:10px; }
-        .fuec .terr .cod { text-align:center; width:12%; font-weight:bold; }
-        .fuec .ej { margin-top:10px; line-height:1.45; }
+        .fuec .terr { width:90%; margin:10px auto; }
+        .fuec .terr td { padding:1px 7px; font-size:9px; }
+        .fuec .terr .cod { text-align:center; width:11%; }
+        .fuec .ej { margin-top:8px; line-height:1.4; }
         .fuec .ej .num { font-weight:bold; letter-spacing:1px; }
-        .fuec .qr-note { text-align:center; font-size:9px; color:#444; margin-top:14px; line-height:1.5; }
+        .fuec .qr-note { text-align:center; font-size:8.5px; color:#222; margin-top:12px; line-height:1.5; }
         @media print {
           @page { size: Letter portrait; margin: 7mm; }
-          .fuec { max-width:none; font-size:9.3px; }
+          .fuec { max-width:none; }
           .fuec-page { padding:0 !important; }
-          .fuec td, .fuec th { padding:2px 5px; }
-          .fuec .title { font-size:11px; padding:4px; }
-          .fuec .logo { height:46px; }
-          .fuec .logo-sup { height:34px; }
-          .fuec .logo-emp { height:38px; }
-          .fuec .foot { font-size:7.5px; margin-top:5px; }
-          .fuec .firma-linea { margin-top:20px; }
-          /* El instructivo siempre inicia en su propia hoja */
           .fuec-page + .fuec-page { page-break-before: always; }
         }
       `}</style>
 
       {/* ===================== PÁGINA 1 ===================== */}
-      <div className="fuec-page pb">
-        <Encabezado razon={razon} e={e} />
-        <Titulo num={numero} pagina={1} />
+      <div className="fuec-page">
+        <Encabezado razon={razon} e={e} qr={qr} pagina={1} />
 
         {/* Datos del contrato */}
-        <table><tbody>
-          <tr><td className="lbl">RAZÓN SOCIAL DE LA EMPRESA DE TRANSPORTE ESPECIAL</td><td>{razon}</td></tr>
-          <tr><td className="lbl">NIT</td><td>{e.nit || '—'}</td></tr>
-          <tr><td className="lbl">CONTRATO No.</td><td className="b">{f.no_maestro}-{f.contrato_hijo}</td></tr>
+        <table><colgroup><col style={{ width: '38%' }} /><col /></colgroup><tbody>
+          <tr><td className="lbl">RAZON SOCIAL DE LA EMPRESA DE TRANSPORTE ESPECIAL</td><td>{razon}</td></tr>
+          <tr><td className="lbl">NIT:</td><td className="center b">{e.nit || ''}</td></tr>
+          <tr><td className="lbl">CONTRATO No:</td><td className="center b">{f.no_maestro}-{f.contrato_hijo}</td></tr>
           <tr><td className="lbl">CONTRATANTE</td><td>{f.contratante_nombre || ''}</td></tr>
-          <tr><td className="lbl">NIT/CC</td><td>{f.contratante_doc || ''}</td></tr>
-          <tr><td className="lbl">OBJETO DE CONTRATO</td><td>{f.objeto_contrato || ''}</td></tr>
-          <tr><td className="lbl">ORIGEN-DESTINO</td><td>{f.origen_destino || ''}</td></tr>
+          <tr><td className="lbl">NIT/CC:</td><td className="center b">{f.contratante_doc || ''}</td></tr>
+          <tr><td className="lbl">OBJETO DE CONTRATO:</td><td>{f.objeto_contrato || ''}</td></tr>
+          <tr className="tall"><td className="lbl">ORIGEN-DESTINO:</td><td>{f.origen_destino || ''}</td></tr>
         </tbody></table>
 
-        {/* Convenio / Consorcio / Unión temporal — marca X en el que corresponda */}
-        <table><tbody>
-          <tr className="center b sm">
-            <td>CONVENIO COLABORACIÓN</td>
-            <td>CONSORCIO</td>
-            <td>UNIÓN TEMPORAL</td>
-            <td rowSpan={2} style={{ width: '10%' }}>CON:</td>
-            <td rowSpan={2}>{conValue}</td>
-          </tr>
-          <tr className="center b" style={{ fontSize: '14px' }}>
-            <td>{estr === 'CONVENIO' ? 'X' : ''}</td>
-            <td>{estr === 'CONSORCIO' ? 'X' : ''}</td>
-            <td>{estr === 'UNIÓN TEMPORAL' ? 'X' : ''}</td>
+        {/* Convenio / consorcio / unión temporal */}
+        <table><colgroup><col style={{ width: '26%' }} /><col style={{ width: '20%' }} /><col style={{ width: '20%' }} /><col style={{ width: '8%' }} /><col /></colgroup><tbody>
+          <tr className="sm">
+            <td>CONVENIO COLABORACIÓN {marca === 'conv' ? ' X' : ''}</td>
+            <td className="center">CONSORCIO {marca === 'cons' ? ' X' : ''}</td>
+            <td className="center">UNION TEMPORAL {marca === 'ut' ? ' X' : ''}</td>
+            <td className="center">CON:</td>
+            <td className="center">{conValue}</td>
           </tr>
         </tbody></table>
 
         {/* Vigencia */}
-        <table><tbody>
+        <table><colgroup><col style={{ width: '38%' }} /><col /><col /><col /></colgroup><tbody>
           <tr><td className="sec" colSpan={4}>VIGENCIA DEL CONTRATO</td></tr>
-          <tr className="center b"><td style={{ width: '32%' }}></td><td>DÍA</td><td>MES</td><td>AÑO</td></tr>
-          <tr className="center"><td className="lbl">FECHA INICIAL</td><td>{parte(f.vigencia_inicio, 2)}</td><td>{parte(f.vigencia_inicio, 1)}</td><td>{parte(f.vigencia_inicio, 0)}</td></tr>
-          <tr className="center"><td className="lbl">FECHA VENCIMIENTO</td><td>{parte(f.vigencia_fin, 2)}</td><td>{parte(f.vigencia_fin, 1)}</td><td>{parte(f.vigencia_fin, 0)}</td></tr>
+          <tr className="center tall"><td className="lbl" style={{ textAlign: 'left' }}>FECHA INICIAL:</td>
+            <td><div className="b">DIA</div>{di}</td><td><div className="b">MES</div>{mi}</td><td><div className="b">AÑO</div>{ai}</td></tr>
+          <tr className="center tall"><td className="lbl" style={{ textAlign: 'left' }}>FECHA VENCIMIENTO:</td>
+            <td><div className="b">DIA</div>{dv}</td><td><div className="b">MES</div>{mv}</td><td><div className="b">AÑO</div>{av}</td></tr>
         </tbody></table>
 
         {/* Vehículo */}
         <table><tbody>
           <tr><td className="sec" colSpan={4}>CARACTERÍSTICAS DEL VEHÍCULO</td></tr>
           <tr className="center b"><td>PLACA</td><td>MODELO</td><td>MARCA</td><td>CLASE</td></tr>
-          <tr className="center"><td className="b">{f.placa}</td><td>{f.modelo || ''}</td><td>{f.marca || ''}</td><td>{f.clase || ''}</td></tr>
+          <tr className="center tall" style={{ fontSize: '11px' }}><td className="b">{f.placa}</td><td>{f.modelo || ''}</td><td>{f.marca || ''}</td><td>{f.clase || ''}</td></tr>
           <tr className="center b"><td colSpan={2}>NÚMERO INTERNO</td><td colSpan={2}>NÚMERO DE TARJETA DE OPERACIÓN</td></tr>
-          <tr className="center"><td colSpan={2}>{f.movil || ''}</td><td colSpan={2}>{f.tarjeta_operacion || ''}</td></tr>
+          <tr className="center tall"><td colSpan={2}>{f.movil || ''}</td><td colSpan={2}>{f.tarjeta_operacion || ''}</td></tr>
         </tbody></table>
 
         {/* Conductores */}
-        <table><tbody>
-          <tr className="center b sm"><td>NOMBRES Y APELLIDOS</td><td>NÚMERO CÉDULA</td><td>NÚMERO DE LICENCIA CONDUCCIÓN</td><td>VIGENCIA</td></tr>
+        <table><colgroup><col style={{ width: '45%' }} /><col style={{ width: '18%' }} /><col style={{ width: '22%' }} /><col style={{ width: '15%' }} /></colgroup><tbody>
+          <tr className="center b sm"><td>NOMBRES Y APELLIDOS.</td><td>NUMERO CÉDULA</td><td>NUMERO DE LICENCIA CONDUCCION</td><td>VIGENCIA</td></tr>
           {(f.conductores || []).map((c, i) => (
-            <tr key={i} className="center"><td>{i + 1}- {c.nombre}</td><td>{c.documento || ''}</td><td>{c.licencia_numero || ''}</td><td>{fmt(c.licencia_vencimiento)}</td></tr>
+            <tr key={i} className="center">
+              <td style={{ textAlign: 'left' }}><span className="sm" style={{ color: '#333' }}>DATOS DEL CONDUCTOR</span>&nbsp;&nbsp;{i + 1}- {c.nombre}</td>
+              <td>{c.documento || ''}</td><td>{c.licencia_numero || ''}</td><td>{fmt(c.licencia_vencimiento)}</td>
+            </tr>
           ))}
           {!(f.conductores || []).length && <tr><td colSpan={4} className="center sm">Sin conductores</td></tr>}
         </tbody></table>
 
         {/* Responsable del contratante */}
-        <table><tbody>
-          <tr className="center b sm">
-            <td rowSpan={2} style={{ width: '20%' }}>RESPONSABLE DEL CONTRATANTE</td>
-            <td>NOMBRE Y APELLIDOS</td><td>NÚMERO DE CÉDULA</td><td>TELÉFONO</td><td>DIRECCIÓN</td>
-          </tr>
-          <tr className="center"><td>{f.resp_nombre || ''}</td><td>{f.resp_cedula || ''}</td><td>{f.resp_telefono || ''}</td><td>{f.resp_direccion || ''}</td></tr>
+        <table><colgroup><col style={{ width: '17%' }} /><col style={{ width: '27%' }} /><col style={{ width: '16%' }} /><col style={{ width: '16%' }} /><col /></colgroup><tbody>
+          <tr className="center b sm"><td rowSpan={2}>RESPONSABLE DEL CONTRATANTE</td><td>NOMBRE Y APELLIDOS</td><td>NUMERO DE CEDULA</td><td>TELEFONO</td><td>DIRECCIÓN</td></tr>
+          <tr className="center tall"><td>{f.resp_nombre || ''}</td><td>{f.resp_cedula || ''}</td><td>{f.resp_telefono || ''}</td><td>{f.resp_direccion || ''}</td></tr>
         </tbody></table>
 
         {/* Pie con QR y firma */}
-        <table><tbody>
-          <tr>
-            <td className="center" style={{ width: '48%' }}>
+        <table><colgroup><col style={{ width: '48%' }} /><col style={{ width: '22%' }} /><col /></colgroup><tbody>
+          <tr className="tall">
+            <td className="center">
               <div className="b">{e.direccion || ''}{e.ciudad ? `, ${e.ciudad}` : ''}</div>
               <div>Tels: {e.telefonos || ''}</div>
               <div>{e.email || ''}</div>
-              <div className="sm" style={{ marginTop: '2px' }}>Extracto válido hasta: {fmt(f.vigencia_fin)}</div>
+              <div className="sm" style={{ marginTop: '3px' }}>Extracto valido hasta: {f.vigencia_fin || ''}</div>
             </td>
-            <td className="center" style={{ width: '22%' }}>
-              {qr && <img src={qr} alt="QR verificación" style={{ width: '96px', height: '96px' }} />}
-              <div className="sm">Escanea para verificar</div>
-            </td>
+            <td className="center">{qr && <img src={qr} alt="QR verificación" style={{ width: '82px', height: '82px' }} />}</td>
             <td className="center">
-              {e.logo_url && <img className="logo-emp" src={e.logo_url} alt={razon} style={{ maxHeight: '34px' }} />}
-              <div className="firma-linea b">{razon}</div>
-              <div className="sm">Firma electrónica Ley 527 de 1999, Decreto 2364 de 2012</div>
+              <div className="firma b">{razon}</div>
+              <div className="sm">Firma electrónica Ley 527 de 1999,, Decreto 2364 de 2012</div>
             </td>
           </tr>
         </tbody></table>
 
-        <div className="foot">
-          <p>El presente Extracto de Contrato no lleva sellos según Decreto 2150, Art. 11 de Diciembre de 1995 y el Decreto ley 019 de Enero de 2012 (Ley Antitrámites).</p>
-          <p><b>Según la guía para la aplicación de la Resolución 3068 del 15 octubre de 2014</b> emitido por el Ministerio de Transporte, el nombre de las personas que se transportan no debe estar relacionado en el FUEC.</p>
-          <p>El presente Extracto de Contrato <b>no lleva descripción de recorrido</b> según Resolución 0006652 del 27 dic 2019.</p>
-        </div>
+        {/* Notas al pie */}
+        <table className="notas"><tbody>
+          <tr><td>El presente Extracto de Contrato, no lleva sellos según Decreto 2150, Art. 11 de Diciembre de 1995 y el Decreto ley 019 de Enero de 2012 (Ley Antitramites).</td></tr>
+          <tr><td><b>***SEGUN LA GUIA PARA LA APLICACION DE LA RESOLUCION 3068 DEL 15 OCTUBRE DE 2014 EMITIDO POR EL MINISTERIO DE TRANSPORTE EN EL PUNTO 2 SE ESPECIFICA, QUE EL NOMBRE DE LAS PERSONAS QUE SE TRANSPORTARAN NO DEBEN ESTAR RELACIONADAS EN EL FUEC***</b></td></tr>
+          <tr><td>El presente Extracto de Contrato, <b>no lleva DESCRIPCIÓN DE RECORRIDO</b> según RESOLUCION 0006652 DEL 27 dic 2019, Y Se actualiza Ficha tecnica del formato ,logos (FUEC)</td></tr>
+        </tbody></table>
       </div>
 
       {/* ===================== PÁGINA 2 · INSTRUCTIVO ===================== */}
       <div className="fuec-page">
-        <Encabezado razon={razon} e={e} />
-        <Titulo num={numero} pagina={2} />
+        <Encabezado razon={razon} e={e} qr={qr} pagina={2} />
 
         <div className="ins-wrap">
           <div className="ins-title">INSTRUCTIVO PARA LA DETERMINACIÓN DEL NÚMERO CONSECUTIVO DEL FUEC</div>
