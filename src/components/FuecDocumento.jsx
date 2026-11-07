@@ -55,6 +55,8 @@ export default function FuecDocumento({ f, empresa, qr }) {
   const e = f?.empresa_snapshot || empresa || {}
   const razon = e.razon_social || e.nombre || 'EMPRESA DE TRANSPORTE ESPECIAL'
   const numero = f.numero_fuec || ''
+  const estr = (f.estrategia_comercial || '').toUpperCase()
+  const conValue = (f.estrategia_con && f.estrategia_con.toUpperCase() !== 'NO APLICA') ? f.estrategia_con : 'N/A'
 
   return (
     <div className="fuec">
@@ -109,7 +111,22 @@ export default function FuecDocumento({ f, empresa, qr }) {
           <tr><td className="lbl">NIT/CC</td><td>{f.contratante_doc || ''}</td></tr>
           <tr><td className="lbl">OBJETO DE CONTRATO</td><td>{f.objeto_contrato || ''}</td></tr>
           <tr><td className="lbl">ORIGEN-DESTINO</td><td>{f.origen_destino || ''}</td></tr>
-          <tr><td className="lbl sm">CONVENIO COLABORACIÓN · CONSORCIO · UNIÓN TEMPORAL · CON:</td><td>{f.estrategia_con || 'NO APLICA'}</td></tr>
+        </tbody></table>
+
+        {/* Convenio / Consorcio / Unión temporal — marca X en el que corresponda */}
+        <table><tbody>
+          <tr className="center b sm">
+            <td>CONVENIO COLABORACIÓN</td>
+            <td>CONSORCIO</td>
+            <td>UNIÓN TEMPORAL</td>
+            <td rowSpan={2} style={{ width: '10%' }}>CON:</td>
+            <td rowSpan={2}>{conValue}</td>
+          </tr>
+          <tr className="center b" style={{ fontSize: '14px' }}>
+            <td>{estr === 'CONVENIO' ? 'X' : ''}</td>
+            <td>{estr === 'CONSORCIO' ? 'X' : ''}</td>
+            <td>{estr === 'UNIÓN TEMPORAL' ? 'X' : ''}</td>
+          </tr>
         </tbody></table>
 
         {/* Vigencia */}
@@ -140,8 +157,11 @@ export default function FuecDocumento({ f, empresa, qr }) {
 
         {/* Responsable del contratante */}
         <table><tbody>
-          <tr className="center b sm"><td style={{ width: '20%' }}>RESPONSABLE DEL CONTRATANTE</td><td>NOMBRE Y APELLIDOS</td><td>NÚMERO DE CÉDULA</td><td>TELÉFONO</td><td>DIRECCIÓN</td></tr>
-          <tr className="center"><td></td><td>{f.resp_nombre || ''}</td><td>{f.resp_cedula || ''}</td><td>{f.resp_telefono || ''}</td><td>{f.resp_direccion || ''}</td></tr>
+          <tr className="center b sm">
+            <td rowSpan={2} style={{ width: '20%' }}>RESPONSABLE DEL CONTRATANTE</td>
+            <td>NOMBRE Y APELLIDOS</td><td>NÚMERO DE CÉDULA</td><td>TELÉFONO</td><td>DIRECCIÓN</td>
+          </tr>
+          <tr className="center"><td>{f.resp_nombre || ''}</td><td>{f.resp_cedula || ''}</td><td>{f.resp_telefono || ''}</td><td>{f.resp_direccion || ''}</td></tr>
         </tbody></table>
 
         {/* Pie con QR y firma */}
