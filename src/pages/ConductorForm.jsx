@@ -16,13 +16,6 @@ const VACIO = {
 
 const TIPOS_ID = ['Cédula de ciudadanía', 'Cédula de extranjería', 'Pasaporte', 'NIT']
 const CATEGORIAS = ['A1', 'A2', 'B1', 'B2', 'B3', 'C1', 'C2', 'C3']
-const COTIZANTE = ['Dependiente', 'Independiente']
-const EPS = ['Sura', 'Sanitas', 'Nueva EPS', 'Compensar', 'Coomeva', 'Salud Total']
-const ARL = ['Sura', 'Positiva', 'Colmena', 'Bolívar']
-const AFP = ['Porvenir', 'Protección', 'Colfondos', 'Colpensiones']
-const CCF = ['Compensar', 'Colsubsidio', 'Cafam']
-const BANCOS = ['Bancolombia', 'Davivienda', 'BBVA', 'Banco de Bogotá', 'Nequi']
-const CUENTAS = ['Ahorros', 'Corriente']
 
 export default function ConductorForm() {
   const { id } = useParams()
@@ -116,30 +109,6 @@ export default function ConductorForm() {
             <input className="input" value={form.direccion} onChange={(e) => set('direccion', e.target.value)} placeholder="Incluye barrio y ciudad" />
             <p className="mt-1 text-xs text-ink-soft">📍 Recuerda colocar el <b>barrio</b> y la <b>ciudad</b>.</p>
           </Field>
-        </div>
-      </div>
-
-      {/* Seguridad social y pagos */}
-      <div className="card p-5 sm:p-6">
-        <h2 className="mb-3 font-display text-sm font-bold uppercase tracking-wide text-ink-faint">Seguridad social y pagos</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="N° de planilla"><input className="input" value={form.no_planilla} onChange={(e) => set('no_planilla', e.target.value)} /></Field>
-          <Field label="Salario base"><input className="input" value={form.salario_base} onChange={(e) => set('salario_base', e.target.value)} /></Field>
-          <Field label="Fecha ingreso EPS"><input type="date" className="input" value={form.fecha_ingreso_eps} onChange={(e) => set('fecha_ingreso_eps', e.target.value)} /></Field>
-          <Field label="Tipo cotizante"><Select value={form.tipo_cotizante} onChange={(v) => set('tipo_cotizante', v)} options={COTIZANTE} /></Field>
-          <Field label="EPS"><Select value={form.eps} onChange={(v) => set('eps', v)} options={EPS} /></Field>
-          <Field label="ARL"><Select value={form.arl} onChange={(v) => set('arl', v)} options={ARL} /></Field>
-          <Field label="AFP"><Select value={form.afp} onChange={(v) => set('afp', v)} options={AFP} /></Field>
-          <Field label="CCF"><Select value={form.ccf} onChange={(v) => set('ccf', v)} options={CCF} /></Field>
-          <Field label="Tipo de cuenta"><Select value={form.tipo_cuenta} onChange={(v) => set('tipo_cuenta', v)} options={CUENTAS} /></Field>
-          <Field label="N° de cuenta"><input className="input" value={form.no_cuenta} onChange={(e) => set('no_cuenta', e.target.value)} /></Field>
-          <Field label="Banco"><Select value={form.banco} onChange={(v) => set('banco', v)} options={BANCOS} /></Field>
-          <Field label="¿Existen comparendos?">
-            <select className="input" value={form.existen_comparendos} onChange={(e) => set('existen_comparendos', e.target.value)}>
-              <option>NO</option><option>SI</option>
-            </select>
-          </Field>
-          <Field label="Última revisión de comparendos"><input type="date" className="input" value={form.ultima_revision_comparendos} onChange={(e) => set('ultima_revision_comparendos', e.target.value)} /></Field>
         </div>
       </div>
 
