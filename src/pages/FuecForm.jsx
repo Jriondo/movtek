@@ -7,6 +7,7 @@ import {
 import { useEmpresa } from '../context/EmpresaContext'
 import { useAuth } from '../context/AuthContext'
 import { DEPARTAMENTOS_NOMBRES } from '../lib/colombia'
+import { validarFuec, documentosVehiculo } from '../lib/fuecValidacion'
 
 const ESTRATEGIAS = ['N/A', 'Promoción', 'Descuento', 'Convenio', 'Tarifa especial']
 
@@ -49,12 +50,20 @@ export default function FuecForm() {
   const vehiculo = useMemo(() => vehiculos.find((v) => String(v.id) === String(form.vehiculo_id)), [vehiculos, form.vehiculo_id])
   const ciudadesDe = (dep) => destinos.filter((d) => d.departamento === dep).map((d) => d.nombre)
 
+  // Validación de documentos (vencidos / por vencer / convenio).
+  const validacion = useMemo(
+    () => validarFuec({ vehiculo, conductores: form.conductores, vigenciaFin: form.vigencia_fin }),
+    [vehiculo, form.conductores, form.vigencia_fin]
+  )
+  const docs = useMemo(() => documentosVehiculo(vehiculo, form.conductores), [vehiculo, form.conductores])
+  const hoy = new Date().toISOString().slice(0, 10)
+
   const set = (c, v) => setForm((f) => ({ ...f, [c]: v }))
 
   function addConductor() {
     const c = conductores.find((x) => String(x.id) === String(selCond))
     if (!c || form.conductores.some((x) => x.id === c.id)) return
-    set('conductores', [...form.conductores, { id: c.id, nombre: nombreConductor(c), documento: c.documento }])
+    set('conductores', [...form.conductores, { id: c.id, nombre: nombreConductor(c), documento: c.documento, licencia_vencimiento: c.licencia_vencimiento || '' }])
     setSelCond('')
   }
   function addContratante() {
@@ -74,6 +83,7 @@ export default function FuecForm() {
   async function guardar(irAImprimir = false) {
     if (!vehiculo) { setMsg('Selecciona un vehículo (placa).'); return }
     if (!form.contratantes.length) { setMsg('Agrega al menos un contratante.'); return }
+    if (validacion.bloqueos.length) { setMsg(validacion.bloqueos[0]); return }
     setBusy(true); setMsg('')
     try {
       const primary = form.contratantes[0]
@@ -120,6 +130,40 @@ export default function FuecForm() {
           )}
         </div>
       </div>
+
+      {/* Estado de documentos (validación) */}
+      {vehiculo && (
+        <div className="card p-5">
+          <h2 className="mb-3 font-display text-sm font-bold uppercase tracking-wide text-ink-faint">Estado de documentos</h2>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {docs.map(([nombre, fecha]) => {
+              const dias = Math.round((new Date(fecha) - new Date(hoy)) / 86400000)
+              const estado = fecha < hoy ? 'vencido' : dias <= 30 ? 'porvencer' : 'vigente'
+              const clase = estado === 'vencido' ? 'bg-coral-400/15 text-coral-500'
+                : estado === 'porvencer' ? 'bg-amber-100 text-amber-700' : 'bg-mint-500/15 text-mint-600'
+              const txt = estado === 'vencido' ? 'Vencido' : estado === 'porvencer' ? `Vence en ${dias} d` : 'Vigente'
+              return (
+                <div key={nombre} className="flex items-center justify-between rounded-lg border border-cloud-line px-3 py-2 text-sm">
+                  <span className="text-ink">{nombre}</span>
+                  <span className={`pill ${clase}`}>{txt} · {fecha.split('-').reverse().join('/')}</span>
+                </div>
+              )
+            })}
+            {docs.length === 0 && <p className="text-sm text-ink-soft">Este vehículo no tiene fechas de documentos registradas.</p>}
+          </div>
+
+          {validacion.bloqueos.length > 0 ? (
+            <div className="mt-4 flex flex-col gap-2 rounded-xl bg-coral-400/15 p-4 text-sm text-coral-500">
+              <b>⛔ No se puede generar el FUEC:</b>
+              <ul className="list-disc pl-5">{validacion.bloqueos.map((b, i) => <li key={i}>{b}</li>)}</ul>
+            </div>
+          ) : validacion.limite ? (
+            <p className="mt-4 rounded-xl bg-brand-50 px-4 py-2.5 text-sm text-brand-600">
+              ✅ Vigencia máxima permitida: <b>{validacion.limite.split('-').reverse().join('/')}</b> (vence {validacion.limiteDoc}).
+            </p>
+          ) : null}
+        </div>
+      )}
 
       {/* Conductores */}
       <ListaCard titulo="Conductores"
@@ -192,15 +236,15 @@ export default function FuecForm() {
           </div>
           <div><label className="label">Con</label><input className="input" value={form.estrategia_con} onChange={(e) => set('estrategia_con', e.target.value)} placeholder="NO APLICA" /></div>
           <div><label className="label">Vigencia — fecha inicial</label><input type="date" className="input" value={form.vigencia_inicio} onChange={(e) => set('vigencia_inicio', e.target.value)} /></div>
-          <div><label className="label">Vigencia — fecha vencimiento</label><input type="date" className="input" value={form.vigencia_fin} onChange={(e) => set('vigencia_fin', e.target.value)} /></div>
+          <div><label className="label">Vigencia — fecha vencimiento</label><input type="date" className="input" value={form.vigencia_fin} max={validacion.limite || undefined} onChange={(e) => set('vigencia_fin', e.target.value)} /></div>
         </div>
       </div>
 
       {msg && <p className="rounded-xl bg-coral-400/15 px-4 py-2.5 text-sm font-medium text-coral-500">{msg}</p>}
 
       <div className="flex flex-wrap justify-center gap-2">
-        <button className="btn-primary" onClick={() => guardar(false)} disabled={busy}>{busy ? 'Guardando…' : '💾 Guardar'}</button>
-        <button className="btn-accent" onClick={() => guardar(true)} disabled={busy}>🖨️ Guardar e imprimir PDF</button>
+        <button className="btn-primary" onClick={() => guardar(false)} disabled={busy || validacion.bloqueos.length > 0}>{busy ? 'Guardando…' : '💾 Guardar'}</button>
+        <button className="btn-accent" onClick={() => guardar(true)} disabled={busy || validacion.bloqueos.length > 0}>🖨️ Guardar e imprimir PDF</button>
         <button className="btn-ghost" onClick={() => navigate('/fuec')} disabled={busy}>Retornar</button>
       </div>
     </div>
