@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import QRCode from 'qrcode'
 import { getFuec, getEmpresa } from '../lib/db'
 import { applyTheme } from '../lib/theme'
 import FuecDocumento from '../components/FuecDocumento'
@@ -9,6 +10,12 @@ export default function VerificarFuec() {
   const { id } = useParams()
   const [f, setF] = useState(undefined)
   const [empresa, setEmpresa] = useState(null)
+  const [qr, setQr] = useState('')
+
+  useEffect(() => {
+    const url = `${window.location.origin}/verificar/${id}`
+    QRCode.toDataURL(url, { margin: 1, width: 200 }).then(setQr).catch(() => {})
+  }, [id])
 
   useEffect(() => {
     getFuec(id).then(async (fuec) => {
@@ -39,7 +46,7 @@ export default function VerificarFuec() {
           FUEC N° {f.numero_fuec} · Vigente del {f.vigencia_inicio} al {f.vigencia_fin}
         </p>
       </div>
-      <FuecDocumento f={f} empresa={empresa} />
+      <FuecDocumento f={f} empresa={empresa} qr={qr} />
     </div>
   )
 }
