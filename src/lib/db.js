@@ -1082,3 +1082,29 @@ export const ROLES = [
   { value: 'propietario', label: 'Propietario' },
 ]
 export const rolLabel = (v) => (ROLES.find((r) => r.value === v)?.label || v || '—')
+
+// Busca un propietario por su documento en toda la base (para el autoregistro desde el login).
+export async function buscarPropietarioGlobalPorDocumento(documento) {
+  const doc = String(documento || '').trim()
+  if (!doc) return null
+  if (isSupabaseConfigured) {
+    const { data, error } = await supabase.from('propietarios').select('*').eq('documento', doc).limit(1)
+    if (error) return null
+    return (data && data[0]) || null
+  }
+  seedPropietarios()
+  return lsAllP().find((p) => String(p.documento || '').trim() === doc) || null
+}
+
+// Registra el usuario de un propietario (rol propietario). Requiere que el propietario ya exista.
+export async function registrarUsuarioPropietario({ documento, nombre, telefono, direccion, email }) {
+  const prop = await buscarPropietarioGlobalPorDocumento(documento)
+  if (!prop) return { ok: false, motivo: 'no-propietario' }
+  // Evita duplicar el usuario.
+  const existentes = await listUsuarios({ empresaId: prop.empresa_id })
+  if (existentes.some((u) => String(u.propietario_id) === String(prop.id))) return { ok: false, motivo: 'ya-existe' }
+  // Actualiza datos de contacto del propietario si los cambió.
+  try { await savePropietario({ ...prop, celular: telefono || prop.celular, direccion: direccion || prop.direccion, correo: email || prop.correo }) } catch {}
+  const usuario = await saveUsuario({ empresa_id: prop.empresa_id, nombre: nombre || nombrePropietario(prop), email, rol: 'propietario', propietario_id: prop.id, estado: 'activo' })
+  return { ok: true, usuario, propietario: prop }
+}

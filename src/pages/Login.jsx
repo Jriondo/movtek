@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { buscarPropietarioGlobalPorDocumento, registrarUsuarioPropietario, nombrePropietario } from '../lib/db'
 import Logo from '../components/Logo'
 
 // Traduce los errores comunes de Supabase a mensajes claros en español.
@@ -14,11 +15,18 @@ function traducirError(msg = '') {
 }
 
 export default function Login() {
-  const { login, demo } = useAuth()
+  const { login, registrar, demo } = useAuth()
+  const [modo, setModo] = useState('login') // 'login' | 'registro'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+
+  // Registro de propietario
+  const [reg, setReg] = useState({ documento: '', nombre: '', telefono: '', direccion: '', correo: '', password: '' })
+  const [propEncontrado, setPropEncontrado] = useState(null)
+  const [nota, setNota] = useState('')
+  const setR = (k, v) => setReg((r) => ({ ...r, [k]: v }))
 
   async function onSubmit(e) {
     e.preventDefault()
@@ -26,6 +34,38 @@ export default function Login() {
     setBusy(true)
     try {
       await login(email, password)
+    } catch (err) {
+      setError(traducirError(err?.message))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Al salir del campo de cédula: verifica si está registrado como propietario.
+  async function verificarCedula() {
+    setNota(''); setPropEncontrado(null)
+    if (!reg.documento.trim()) return
+    const p = await buscarPropietarioGlobalPorDocumento(reg.documento)
+    if (p) {
+      setPropEncontrado(p)
+      setReg((r) => ({ ...r, nombre: r.nombre || nombrePropietario(p), telefono: r.telefono || p.celular || '', direccion: r.direccion || p.direccion || '', correo: r.correo || p.correo || '' }))
+    } else {
+      setNota('⚠️ Aún no apareces en nuestra base de datos. Pídele a la empresa (rol operativo) que registre primero tu información de propietario y tus vehículos.')
+    }
+  }
+
+  async function onRegistrar(e) {
+    e.preventDefault()
+    setError(''); setNota('')
+    if (!reg.documento.trim() || !reg.correo.trim() || !reg.password.trim()) { setError('Completa cédula, correo y contraseña.'); return }
+    setBusy(true)
+    try {
+      const res = await registrarUsuarioPropietario({ documento: reg.documento, nombre: reg.nombre, telefono: reg.telefono, direccion: reg.direccion, email: reg.correo })
+      if (!res.ok) {
+        if (res.motivo === 'no-propietario') { setNota('⚠️ Aún no apareces en nuestra base de datos. Pídele a la empresa (rol operativo) que registre primero tu información.'); setBusy(false); return }
+        if (res.motivo === 'ya-existe') { setError('Ya existe un usuario para este propietario. Inicia sesión.'); setBusy(false); return }
+      }
+      await registrar(reg.correo, reg.password) // crea la cuenta e inicia sesión
     } catch (err) {
       setError(traducirError(err?.message))
     } finally {
@@ -55,25 +95,59 @@ export default function Login() {
       <div className="flex items-center justify-center p-6">
         <div className="w-full max-w-sm">
           <div className="mb-8 lg:hidden"><Logo /></div>
-          <h2 className="font-display text-2xl font-extrabold text-ink">Bienvenido 👋</h2>
-          <p className="mt-1 text-sm text-ink-soft">Ingresa a tu cuenta para continuar.</p>
 
-          <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
-            <div>
-              <label className="label" htmlFor="email">Correo o N° de socio</label>
-              <input id="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)}
-                placeholder="tucorreo@ejemplo.com" autoComplete="username" required />
-            </div>
-            <div>
-              <label className="label" htmlFor="password">Contraseña</label>
-              <input id="password" type="password" className="input" value={password}
-                onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoComplete="current-password" required />
-            </div>
-            {error && <p className="rounded-lg bg-coral-400/15 px-3 py-2 text-sm font-medium text-coral-500">{error}</p>}
-            <button className="btn-primary mt-1 w-full" disabled={busy}>
-              {busy ? 'Ingresando…' : 'Ingresar'}
-            </button>
-          </form>
+          {modo === 'login' ? (
+            <>
+              <h2 className="font-display text-2xl font-extrabold text-ink">Bienvenido 👋</h2>
+              <p className="mt-1 text-sm text-ink-soft">Ingresa a tu cuenta para continuar.</p>
+
+              <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
+                <div>
+                  <label className="label" htmlFor="email">Correo o N° de socio</label>
+                  <input id="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)}
+                    placeholder="tucorreo@ejemplo.com" autoComplete="username" required />
+                </div>
+                <div>
+                  <label className="label" htmlFor="password">Contraseña</label>
+                  <input id="password" type="password" className="input" value={password}
+                    onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoComplete="current-password" required />
+                </div>
+                {error && <p className="rounded-lg bg-coral-400/15 px-3 py-2 text-sm font-medium text-coral-500">{error}</p>}
+                <button className="btn-primary mt-1 w-full" disabled={busy}>{busy ? 'Ingresando…' : 'Ingresar'}</button>
+              </form>
+
+              <p className="mt-5 text-center text-sm text-ink-soft">
+                ¿Eres propietario y es tu primera vez?{' '}
+                <button type="button" className="font-bold text-brand-600 hover:underline" onClick={() => { setModo('registro'); setError('') }}>Crear usuario</button>
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 className="font-display text-2xl font-extrabold text-ink">Crear usuario</h2>
+              <p className="mt-1 text-sm text-ink-soft">Registro de propietario. Escribe tu cédula para empezar.</p>
+
+              <form onSubmit={onRegistrar} className="mt-6 flex flex-col gap-4">
+                <div>
+                  <label className="label">Cédula / Documento</label>
+                  <input className="input" value={reg.documento} onChange={(e) => setR('documento', e.target.value)} onBlur={verificarCedula} placeholder="N° de documento" required />
+                </div>
+                {nota && <p className="rounded-lg bg-amber-100 px-3 py-2.5 text-sm font-medium text-amber-700">{nota}</p>}
+                {propEncontrado && <p className="rounded-lg bg-mint-500/15 px-3 py-2 text-sm font-medium text-mint-600">✅ Propietario encontrado: {nombrePropietario(propEncontrado)}</p>}
+                <div><label className="label">Nombre</label><input className="input" value={reg.nombre} onChange={(e) => setR('nombre', e.target.value)} /></div>
+                <div><label className="label">Teléfono</label><input className="input" value={reg.telefono} onChange={(e) => setR('telefono', e.target.value)} /></div>
+                <div><label className="label">Dirección</label><input className="input" value={reg.direccion} onChange={(e) => setR('direccion', e.target.value)} /></div>
+                <div><label className="label">Correo</label><input type="email" className="input" value={reg.correo} onChange={(e) => setR('correo', e.target.value)} placeholder="tucorreo@ejemplo.com" required /></div>
+                <div><label className="label">Contraseña</label><input type="password" className="input" value={reg.password} onChange={(e) => setR('password', e.target.value)} placeholder="Crea tu contraseña" required /></div>
+                {error && <p className="rounded-lg bg-coral-400/15 px-3 py-2 text-sm font-medium text-coral-500">{error}</p>}
+                <button className="btn-primary mt-1 w-full" disabled={busy || !propEncontrado}>{busy ? 'Creando…' : 'Aceptar y crear usuario'}</button>
+              </form>
+
+              <p className="mt-5 text-center text-sm text-ink-soft">
+                ¿Ya tienes cuenta?{' '}
+                <button type="button" className="font-bold text-brand-600 hover:underline" onClick={() => { setModo('login'); setError(''); setNota('') }}>Iniciar sesión</button>
+              </p>
+            </>
+          )}
 
           {demo && (
             <p className="mt-5 rounded-xl border border-dashed border-cloud-line bg-cloud px-3 py-2.5 text-xs text-ink-soft">

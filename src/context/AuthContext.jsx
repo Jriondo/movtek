@@ -58,6 +58,17 @@ export function AuthProvider({ children }) {
     return demo
   }
 
+  // Crea la cuenta de acceso (para el autoregistro de propietarios desde el login).
+  async function registrar(email, password) {
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase.auth.signUp({ email, password })
+      if (error) throw error
+      if (data.user) { setUser(data.user); await cargarRol(data.user) }
+      return data.user
+    }
+    return login(email, password)
+  }
+
   async function logout() {
     if (isSupabaseConfigured) await supabase.auth.signOut()
     try { localStorage.removeItem(DEMO_KEY) } catch {}
@@ -77,7 +88,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{
-      user, loading, login, logout, demo: !isSupabaseConfigured,
+      user, loading, login, logout, registrar, demo: !isSupabaseConfigured,
       rol, rolReal, esAdmin, esOperativo, esPropietario, propietarioId,
       verComo, setVerComo,
     }}>
