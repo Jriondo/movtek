@@ -259,6 +259,12 @@ alter table fuec enable row level security;
 drop policy if exists "dev_fuec_all" on fuec;
 create policy "dev_fuec_all" on fuec for all to authenticated using (true) with check (true);
 
+-- Lectura pública para la verificación por QR (sin login).
+drop policy if exists "public_fuec_select" on fuec;
+create policy "public_fuec_select" on fuec for select to anon using (true);
+drop policy if exists "public_empresas_select" on empresas;
+create policy "public_empresas_select" on empresas for select to anon using (true);
+
 -- Empresas de ejemplo (opcional)
 insert into empresas (nombre, color_primario, color_acento) values
   ('TransLitoral', '#10b981', '#84cc16'),

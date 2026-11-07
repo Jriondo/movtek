@@ -35,6 +35,12 @@ export async function listEmpresas() {
   return EMPRESAS_DEMO
 }
 
+export async function getEmpresa(id) {
+  if (!id) return null
+  const list = await listEmpresas()
+  return list.find((e) => String(e.id) === String(id)) || null
+}
+
 // ---------------- CLIENTES MAESTROS ----------------
 function seedDemo() {
   if (lsAll().length) return

@@ -17,6 +17,7 @@ import MatrizDestinos from './pages/MatrizDestinos'
 import Fuec from './pages/Fuec'
 import FuecForm from './pages/FuecForm'
 import FuecImprimir from './pages/FuecImprimir'
+import VerificarFuec from './pages/VerificarFuec'
 
 // Protege las rutas internas: si no hay sesión, manda al login.
 function Protected({ children }) {
@@ -30,6 +31,8 @@ export default function App() {
   const { user } = useAuth()
   return (
     <Routes>
+      {/* Verificación pública del FUEC (QR) — sin login */}
+      <Route path="/verificar/:id" element={<VerificarFuec />} />
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
       <Route
         path="/"
