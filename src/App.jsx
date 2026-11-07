@@ -13,6 +13,7 @@ import Transportadoras from './pages/Transportadoras'
 import TransportadoraForm from './pages/TransportadoraForm'
 import Vehiculos from './pages/Vehiculos'
 import VehiculoForm from './pages/VehiculoForm'
+import MatrizDestinos from './pages/MatrizDestinos'
 
 // Protege las rutas internas: si no hay sesión, manda al login.
 function Protected({ children }) {
@@ -51,6 +52,7 @@ export default function App() {
         <Route path="vehiculos" element={<Vehiculos />} />
         <Route path="vehiculos/nuevo" element={<VehiculoForm />} />
         <Route path="vehiculos/:id" element={<VehiculoForm />} />
+        <Route path="destinos" element={<MatrizDestinos />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

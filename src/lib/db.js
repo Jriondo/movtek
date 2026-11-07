@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from './supabase'
+import { catalogoDestinos } from './colombia'
 
 // Capa de datos de Movtek (multiempresa).
 // Con Supabase usa la base real; sin conectar, modo demo en el navegador.
@@ -657,6 +658,92 @@ export function exportVehiculosCsv(rows) {
   a.download = 'vehiculos.csv'
   a.click()
   URL.revokeObjectURL(url)
+}
+
+// ---------------- MÓDULO 4.11: MATRIZ DE DESTINOS (ciudades de Colombia) ----------------
+// Catálogo GLOBAL (compartido por todas las empresas).
+const LS_KEY_D = 'movtek_destinos'
+function lsAllD() { try { return JSON.parse(localStorage.getItem(LS_KEY_D) || '[]') } catch { return [] } }
+function lsSaveD(rows) { try { localStorage.setItem(LS_KEY_D, JSON.stringify(rows)) } catch {} }
+function seedDestinos() {
+  if (lsAllD().length) return
+  lsSaveD(catalogoDestinos().map((c) => ({ id: newId(), ...c })))
+}
+
+export async function contarDestinos() {
+  if (isSupabaseConfigured) {
+    const { count } = await supabase.from('destinos').select('*', { count: 'exact', head: true })
+    return count || 0
+  }
+  seedDestinos()
+  return lsAllD().length
+}
+
+export async function listDestinos({ departamento = '', q = '' } = {}) {
+  if (isSupabaseConfigured) {
+    let query = supabase.from('destinos').select('*').order('nombre')
+    if (departamento) query = query.eq('departamento', departamento)
+    if (q) query = query.ilike('nombre', `%${q}%`)
+    const { data, error } = await query
+    if (error) throw error
+    return data
+  }
+  seedDestinos()
+  let rows = lsAllD().slice().sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''))
+  if (departamento) rows = rows.filter((r) => r.departamento === departamento)
+  if (q) rows = rows.filter((r) => (r.nombre || '').toLowerCase().includes(q.toLowerCase()))
+  return rows
+}
+
+export async function saveDestino(data) {
+  const payload = { ...data }
+  if (isSupabaseConfigured) {
+    if (payload.id) {
+      const { id, created_at, ...rest } = payload
+      const { data: d, error } = await supabase.from('destinos').update(rest).eq('id', id).select().single()
+      if (error) throw error
+      return d
+    }
+    delete payload.id
+    const { data: d, error } = await supabase.from('destinos').insert(payload).select().single()
+    if (error) throw error
+    return d
+  }
+  const rows = lsAllD()
+  if (payload.id) {
+    const i = rows.findIndex((r) => String(r.id) === String(payload.id))
+    if (i >= 0) rows[i] = { ...rows[i], ...payload }
+  } else {
+    payload.id = newId()
+    rows.push(payload)
+  }
+  lsSaveD(rows)
+  return payload
+}
+
+export async function deleteDestino(id) {
+  if (isSupabaseConfigured) {
+    const { error } = await supabase.from('destinos').delete().eq('id', id)
+    if (error) throw error
+    return
+  }
+  lsSaveD(lsAllD().filter((r) => String(r.id) !== String(id)))
+}
+
+// Importa el catálogo completo de Colombia (departamentos + ciudades).
+export async function importarCatalogoDestinos() {
+  const cat = catalogoDestinos()
+  if (isSupabaseConfigured) {
+    // Inserta por lotes para no exceder límites.
+    for (let i = 0; i < cat.length; i += 200) {
+      const lote = cat.slice(i, i + 200)
+      const { error } = await supabase.from('destinos').insert(lote)
+      if (error) throw error
+    }
+    return cat.length
+  }
+  lsSaveD(cat.map((c) => ({ id: newId(), ...c })))
+  return cat.length
 }
 
 export function exportClientesCsv(rows) {

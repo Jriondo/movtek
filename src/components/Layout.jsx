@@ -11,7 +11,7 @@ const nav = [
   { to: '/propietarios', label: 'Propietarios', icon: '🪪' },
   { to: '/transportadoras', label: 'Empresas transp.', icon: '🏢' },
   { to: '/vehiculos', label: 'Vehículos', icon: '🚚' },
-  { label: 'Matriz destinos', icon: '🗺️', soon: true },
+  { to: '/destinos', label: 'Matriz destinos', icon: '🗺️' },
   { label: 'Usuarios', icon: '🔑', soon: true },
   { label: 'Reportes', icon: '📊', soon: true },
 ]

@@ -162,6 +162,18 @@ create table if not exists vehiculos (
 create index if not exists idx_vehiculos_empresa on vehiculos (empresa_id);
 create index if not exists idx_vehiculos_placa on vehiculos (placa);
 
+-- Matriz de destinos: ciudades de Colombia (catálogo global, compartido)
+create table if not exists destinos (
+  id uuid primary key default gen_random_uuid(),
+  departamento text not null,
+  nombre text not null,
+  codigo_postal text,
+  area_metropolitana boolean default false,
+  estado text default 'activo',
+  created_at timestamptz default now()
+);
+create index if not exists idx_destinos_departamento on destinos (departamento);
+
 -- Seguridad a nivel de fila
 alter table empresas enable row level security;
 alter table clientes_maestros enable row level security;
@@ -189,6 +201,10 @@ create policy "dev_transportadoras_all" on empresas_transportadoras for all to a
 alter table vehiculos enable row level security;
 drop policy if exists "dev_vehiculos_all" on vehiculos;
 create policy "dev_vehiculos_all" on vehiculos for all to authenticated using (true) with check (true);
+
+alter table destinos enable row level security;
+drop policy if exists "dev_destinos_all" on destinos;
+create policy "dev_destinos_all" on destinos for all to authenticated using (true) with check (true);
 
 -- Empresas de ejemplo (opcional)
 insert into empresas (nombre, color_primario, color_acento) values
