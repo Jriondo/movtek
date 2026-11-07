@@ -99,8 +99,6 @@ export default function TransportadoraForm() {
             <Field label="Nombres"><input className="input" value={form.nombres} onChange={(e) => set('nombres', e.target.value)} /></Field>
             <Field label="Apellidos"><input className="input" value={form.apellidos} onChange={(e) => set('apellidos', e.target.value)} /></Field>
           </>}
-          <Field label="Teléfono casa"><input className="input" value={form.telefono_casa} onChange={(e) => set('telefono_casa', e.target.value)} /></Field>
-          <Field label="Teléfono oficina"><input className="input" value={form.telefono_oficina} onChange={(e) => set('telefono_oficina', e.target.value)} /></Field>
           <Field label="Celular"><input className="input" value={form.celular} onChange={(e) => set('celular', e.target.value)} /></Field>
           <Field label="Correo electrónico"><input type="email" className="input" value={form.correo} onChange={(e) => set('correo', e.target.value)} /></Field>
 
@@ -136,21 +134,24 @@ export default function TransportadoraForm() {
             )}
           </div>
 
-          <Field label="Estado" className="sm:col-span-2">
-            <div className="flex gap-5 pt-1.5">
-              <Radio label="Activo" checked={form.estado === 'activo'} onChange={() => set('estado', 'activo')} />
-              <Radio label="Inactivo" checked={form.estado === 'inactivo'} onChange={() => set('estado', 'inactivo')} />
-            </div>
-          </Field>
         </div>
 
-        {/* Responsable */}
+        {/* Responsable (arriba del estado) */}
         <div className="mt-5 border-t border-cloud-line pt-5">
           <h2 className="mb-3 font-display text-sm font-bold uppercase tracking-wide text-ink-faint">Datos del responsable</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Documento responsable N°"><input className="input" value={form.doc_responsable} onChange={(e) => set('doc_responsable', e.target.value)} /></Field>
             <Field label="Nombre responsable"><input className="input" value={form.nombre_responsable} onChange={(e) => set('nombre_responsable', e.target.value)} /></Field>
             <Field label="Resolución" className="sm:col-span-2"><input className="input" value={form.resolucion} onChange={(e) => set('resolucion', e.target.value)} placeholder="N° de resolución / permiso" /></Field>
+          </div>
+        </div>
+
+        {/* Estado (al final) */}
+        <div className="mt-5 border-t border-cloud-line pt-5">
+          <span className="label">Estado</span>
+          <div className="flex gap-5 pt-1.5">
+            <Radio label="Activo" checked={form.estado === 'activo'} onChange={() => set('estado', 'activo')} />
+            <Radio label="Inactivo" checked={form.estado === 'inactivo'} onChange={() => set('estado', 'inactivo')} />
           </div>
         </div>
       </div>
