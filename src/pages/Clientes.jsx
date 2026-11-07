@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { listClientes, exportClientesCsv, nombreMostrar } from '../lib/db'
+import { listClientes, exportClientesCsv, nombreMostrar, asegurarContratoGrupo } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
 
 // Consulta de clientes maestros: búsqueda, lista, nuevo y descargar a Excel.
@@ -15,6 +15,7 @@ export default function Clientes() {
   async function cargar(filtros = {}) {
     setLoading(true)
     try {
+      await asegurarContratoGrupo(empresa?.id) // crea el contrato automático "grupo específico"
       setRows(await listClientes({ empresaId: empresa?.id, ...filtros }))
     } finally {
       setLoading(false)

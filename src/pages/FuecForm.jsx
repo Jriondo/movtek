@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   listVehiculos, listConductores, nombreConductor, listClientes, nombreMostrar,
-  listDestinos, saveFuec, getFuec,
+  listDestinos, saveFuec, getFuec, asegurarContratoGrupo,
 } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
 import { useAuth } from '../context/AuthContext'
@@ -10,6 +10,8 @@ import { DEPARTAMENTOS_NOMBRES } from '../lib/colombia'
 import { validarFuec, documentosVehiculo } from '../lib/fuecValidacion'
 
 const ESTRATEGIAS = ['N/A', 'Promoción', 'Descuento', 'Convenio', 'Tarifa especial']
+const TIPOS_DOC = ['Cédula de ciudadanía', 'NIT', 'Cédula de extranjería', 'Pasaporte', 'Tarjeta de identidad']
+const OCASIONAL_VACIO = { tipo_documento: '', documento: '', nombre: '', responsable: true, direccion: '', telefono: '', empresa_nombre: '', empresa_nit: '' }
 
 export default function FuecForm() {
   const { id } = useParams()
@@ -34,12 +36,17 @@ export default function FuecForm() {
   const [selCond, setSelCond] = useState('')
   const [selCont, setSelCont] = useState('')
   const [it, setIt] = useState({ depto_origen: '', ciudad_origen: '', depto_destino: '', ciudad_destino: '' })
+  const [ocasional, setOcasional] = useState(OCASIONAL_VACIO)
 
   useEffect(() => {
     listVehiculos({ empresaId: empresa?.id }).then(setVehiculos).catch(() => {})
     listConductores({ empresaId: empresa?.id }).then(setConductores).catch(() => {})
-    listClientes({ empresaId: empresa?.id }).then(setClientes).catch(() => {})
     listDestinos({}).then((d) => setDestinos(d.filter((x) => x.estado !== 'inactivo'))).catch(() => {})
+    // Asegura el contrato automático "grupo específico" y carga los clientes.
+    ;(async () => {
+      await asegurarContratoGrupo(empresa?.id)
+      setClientes(await listClientes({ empresaId: empresa?.id }))
+    })().catch(() => {})
   }, [empresa?.id])
 
   useEffect(() => {
@@ -57,6 +64,9 @@ export default function FuecForm() {
   )
   const docs = useMemo(() => documentosVehiculo(vehiculo, form.conductores), [vehiculo, form.conductores])
   const hoy = new Date().toISOString().slice(0, 10)
+  const grupo = form.contratantes.find((x) => x.es_grupo)
+  const esNit = ocasional.tipo_documento === 'NIT'
+  const setOc = (k, v) => setOcasional((o) => ({ ...o, [k]: v }))
 
   const set = (c, v) => setForm((f) => ({ ...f, [c]: v }))
 
@@ -74,6 +84,7 @@ export default function FuecForm() {
     if (!c || form.contratantes.some((x) => x.id === c.id)) return
     set('contratantes', [...form.contratantes, {
       id: c.id, nombre: nombreMostrar(c), documento: c.documento || '', no_maestro: c.contrato_maestro_nro || '',
+      es_grupo: !!c.es_grupo_especifico,
       resp_nombre: c.nombre_responsable || '', resp_cedula: c.doc_responsable || '',
       resp_telefono: c.telefono_responsable || '', resp_direccion: c.direccion || '',
     }])
@@ -92,18 +103,30 @@ export default function FuecForm() {
     if (!vehiculo) { setMsg('Selecciona un vehículo (placa).'); return }
     if (!form.contratantes.length) { setMsg('Agrega al menos un contratante.'); return }
     if (validacion.bloqueos.length) { setMsg(validacion.bloqueos[0]); return }
+    const primary = form.contratantes[0]
+    if (primary.es_grupo && !ocasional.nombre && !ocasional.documento && !ocasional.empresa_nit) {
+      setMsg('Completa los datos del contratante (grupo específico).'); return
+    }
     setBusy(true); setMsg('')
     try {
-      const primary = form.contratantes[0]
+      // Datos del contratante: del cliente, o del sub-formulario si es "grupo específico".
+      let c_nombre = primary.nombre, c_doc = primary.documento || ''
+      let r_nombre = primary.resp_nombre || '', r_cedula = primary.resp_cedula || '', r_tel = primary.resp_telefono || '', r_dir = primary.resp_direccion || ''
+      if (primary.es_grupo) {
+        const oc = ocasional
+        if (oc.tipo_documento === 'NIT') { c_nombre = oc.empresa_nombre || oc.nombre; c_doc = oc.empresa_nit || oc.documento }
+        else { c_nombre = oc.nombre; c_doc = oc.documento }
+        r_nombre = oc.responsable ? oc.nombre : ''; r_cedula = oc.documento; r_tel = oc.telefono; r_dir = oc.direccion
+      }
       const payload = {
         ...form,
         empresa_id: empresa?.id,
         placa: vehiculo.placa, movil: vehiculo.numero_interno,
         marca: vehiculo.marca, modelo: vehiculo.modelo, clase: vehiculo.clase, tarjeta_operacion: vehiculo.tarjeta_operacion,
         cliente_id: primary.id, no_maestro: primary.no_maestro || '',
-        contratante_nombre: primary.nombre, contratante_doc: primary.documento || '',
-        resp_nombre: primary.resp_nombre || '', resp_cedula: primary.resp_cedula || '',
-        resp_telefono: primary.resp_telefono || '', resp_direccion: primary.resp_direccion || '',
+        contratante_nombre: c_nombre, contratante_doc: c_doc,
+        resp_nombre: r_nombre, resp_cedula: r_cedula, resp_telefono: r_tel, resp_direccion: r_dir,
+        ocasional: primary.es_grupo ? ocasional : null,
         origen_destino: form.origen_destino || form.itinerarios.map((i) => `${i.ciudad_origen}-${i.ciudad_destino}`).join(', '),
         usuario: (user?.email || '').split('@')[0] || 'usuario',
         estado: 'activo',
@@ -195,6 +218,35 @@ export default function FuecForm() {
         </div>
       </ListaCard>
 
+      {/* Sub-formulario del contratante "grupo específico" (se habilita solo con ese contrato) */}
+      {grupo && (
+        <div className="card border-2 border-brand-300 p-5">
+          <h2 className="mb-3 font-display text-sm font-bold uppercase tracking-wide text-brand-600">Contratante · Grupo específico usuarios-particulares</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Field label="Tipo documento">
+              <Select value={ocasional.tipo_documento} onChange={(v) => setOc('tipo_documento', v)} options={TIPOS_DOC} />
+            </Field>
+            <Field label="Documento"><input className="input" value={ocasional.documento} onChange={(e) => setOc('documento', e.target.value)} /></Field>
+            <Field label="Nombre"><input className="input" value={ocasional.nombre} onChange={(e) => setOc('nombre', e.target.value)} /></Field>
+            <Field label="Responsable">
+              <label className="flex items-center gap-2 pt-2 text-sm font-semibold text-ink">
+                <input type="checkbox" className="h-4 w-4 accent-brand-500" checked={ocasional.responsable} onChange={(e) => setOc('responsable', e.target.checked)} />
+                Responsable
+              </label>
+            </Field>
+            <Field label="Dirección" className="sm:col-span-2"><input className="input" value={ocasional.direccion} onChange={(e) => setOc('direccion', e.target.value)} /></Field>
+            <Field label="Teléfono"><input className="input" value={ocasional.telefono} onChange={(e) => setOc('telefono', e.target.value)} /></Field>
+          </div>
+          {/* Si es NIT, dos campos extra: nombre de la empresa y NIT */}
+          {esNit && (
+            <div className="mt-3 grid gap-4 rounded-xl bg-brand-50 p-3 sm:grid-cols-2">
+              <Field label="Nombre de la empresa"><input className="input" value={ocasional.empresa_nombre} onChange={(e) => setOc('empresa_nombre', e.target.value)} /></Field>
+              <Field label="NIT"><input className="input" value={ocasional.empresa_nit} onChange={(e) => setOc('empresa_nit', e.target.value)} /></Field>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Itinerario */}
       <div className="card p-5">
         <h2 className="mb-3 font-display text-sm font-bold uppercase tracking-wide text-ink-faint">Itinerario (origen – destino)</h2>
@@ -266,6 +318,18 @@ export default function FuecForm() {
 }
 
 function Dato({ k, v }) { return <div><span className="text-xs text-ink-faint">{k}: </span><span className="font-semibold text-ink">{v || '—'}</span></div> }
+
+function Field({ label, children, className = '' }) {
+  return <div className={className}><span className="label">{label}</span>{children}</div>
+}
+function Select({ value, onChange, options }) {
+  return (
+    <select className="input" value={value} onChange={(e) => onChange(e.target.value)}>
+      <option value="">Seleccione…</option>
+      {options.map((o) => <option key={o}>{o}</option>)}
+    </select>
+  )
+}
 
 function ListaCard({ titulo, sel, items, render, onQuitar, children }) {
   return (

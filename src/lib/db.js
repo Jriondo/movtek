@@ -155,6 +155,25 @@ export function nombreMostrar(c) {
   return `${c.nombres || ''} ${c.apellidos || ''}`.trim() || '(Sin nombre)'
 }
 
+// Contrato maestro automático: "Grupo específico de personas o particulares".
+export const OBJETO_GRUPO = 'CONTRATO PARA TRANSPORTE ESPECÍFICO DE USUARIOS (TRANSPORTE DE PERSONAS PARTICULARES) Transporte expreso de un grupo homogéneo de personas desde un mismo lugar de origen a un mismo lugar de destino de acuerdo a las normas legales vigentes que rigen para la prestación del Servicio Público de Transporte Terrestre Automotor Especial'
+
+export async function asegurarContratoGrupo(empresaId) {
+  if (!empresaId) return
+  if (isSupabaseConfigured) {
+    const { data } = await supabase.from('clientes_maestros').select('id').eq('empresa_id', empresaId).eq('es_grupo_especifico', true).limit(1)
+    if (data && data.length) return
+  } else {
+    seedDemo()
+    if (lsAll().some((r) => r.empresa_id === empresaId && r.es_grupo_especifico)) return
+  }
+  await saveCliente({
+    empresa_id: empresaId, tipo_persona: 'juridica',
+    compania: 'CONTRATO GRUPO ESPECÍFICO DE PERSONAS O PARTICULARES',
+    objeto_contrato: OBJETO_GRUPO, asignar_objeto: true, es_grupo_especifico: true, estado: 'activo',
+  })
+}
+
 // Cuenta los FUEC (contratos hijo) generados para un cliente maestro.
 // Cada FUEC generado a nombre del maestro suma un "contrato hijo".
 export async function contarFuecCliente(clienteId) {
@@ -876,8 +895,7 @@ export function itinerarioTexto(f) {
   return its.map((i) => `${i.ciudad_origen || ''}-${i.ciudad_destino || ''}`).join(', ')
 }
 export function ocasionalTexto(f) {
-  const c = f.contratantes || []
-  return c.map((x) => x.nombre).join(', ')
+  return f.contratante_nombre || (f.contratantes || []).map((x) => x.nombre).join(', ')
 }
 
 export function exportFuecCsv(rows) {

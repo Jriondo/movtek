@@ -39,6 +39,7 @@ create table if not exists clientes_maestros (
 
 create index if not exists idx_clientes_empresa on clientes_maestros (empresa_id);
 create index if not exists idx_clientes_documento on clientes_maestros (documento);
+alter table clientes_maestros add column if not exists es_grupo_especifico boolean default false;
 
 -- Módulo 4.2: Conductores (empleados)
 create table if not exists conductores (
