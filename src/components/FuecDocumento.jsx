@@ -23,19 +23,17 @@ const TERRITORIALES = [
 function Encabezado({ razon, e, qr, pagina, logoSrc, isoSrc }) {
   return (
     <>
-      <table className="hd"><tbody>
-        <tr>
-          <td className="hl center" style={{ width: '17%' }}><img className="logo" src={mintransporte} alt="Ministerio de Transporte" /></td>
-          <td className="hl center" style={{ width: '15%' }}><img className="iso" src={isoSrc} alt="ISO 9001" /></td>
-          <td className="hl center" style={{ width: '11%' }}>{qr && <img className="qrh" src={qr} alt="QR" />}</td>
-          <td className="hl center" style={{ width: '35%' }}>
-            <img className="logo-emp" src={logoSrc} alt={razon} />
-            <div className="b" style={{ fontSize: '13px', marginTop: '3px' }}>{razon}</div>
-            <div className="sm" style={{ color: '#555' }}>Transporte Terrestre Automotor Especial</div>
-          </td>
-          <td className="hl center" style={{ width: '22%' }}><img className="logo-sup" src={supertransporte} alt="Vigilado SuperTransporte" /></td>
-        </tr>
-      </tbody></table>
+      <div className="hdbox">
+        <div className="hdcell c-min"><img className="logo" src={mintransporte} alt="Ministerio de Transporte" /></div>
+        <div className="hdcell c-iso"><img className="iso" src={isoSrc} alt="ISO 9001" /></div>
+        <div className="hdcell c-emp">
+          <img className="logo-emp" src={logoSrc} alt={razon} />
+          <div className="emp-name">{razon}</div>
+          <div className="emp-sub">Transporte Terrestre Automotor Especial</div>
+        </div>
+        <div className="hdcell c-qr">{qr && <img className="qrh" src={qr} alt="QR" />}</div>
+        <div className="hdcell c-sup"><img className="logo-sup" src={supertransporte} alt="Vigilado SuperTransporte" /></div>
+      </div>
       <table><tbody>
         <tr><td className="title">
           <span className="pg">Page {pagina} of 2</span>
@@ -69,15 +67,26 @@ export default function FuecDocumento({ f, empresa, qr }) {
         .fuec-page { background:#fff; padding:12px; }
         .fuec table { width:100%; border-collapse:collapse; table-layout:fixed; }
         .fuec td, .fuec th { border:1px solid #000; padding:3px 6px; vertical-align:middle; word-wrap:break-word; }
-        .fuec .hd td.hl { border:1px solid #000; height:84px; padding:4px 8px; }
         .fuec .center { text-align:center; }
         .fuec .b { font-weight:bold; }
         .fuec .sm { font-size:8px; }
-        .fuec .logo { height:66px; object-fit:contain; max-width:96%; }
-        .fuec .logo-sup { height:70px; object-fit:contain; max-width:96%; }
-        .fuec .logo-emp { height:60px; object-fit:contain; max-width:96%; }
-        .fuec .iso { height:66px; object-fit:contain; max-width:96%; }
-        .fuec .qrh { height:60px; width:60px; object-fit:contain; }
+        /* Encabezado tipo tarjeta */
+        .fuec .hdbox { display:flex; align-items:stretch; border:2.5px solid #16306e; border-radius:14px; overflow:hidden; margin-bottom:5px; }
+        .fuec .hdcell { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:8px 6px; border-right:2px solid #16306e; min-height:96px; box-sizing:border-box; }
+        .fuec .hdcell:last-child { border-right:none; }
+        .fuec .hdcell img { object-fit:contain; max-width:100%; }
+        .fuec .c-min { flex:0 0 16%; }
+        .fuec .c-iso { flex:0 0 17%; }
+        .fuec .c-emp { flex:1 1 auto; }
+        .fuec .c-qr { flex:0 0 14%; }
+        .fuec .c-sup { flex:0 0 16%; }
+        .fuec .logo { height:62px; }
+        .fuec .iso { height:76px; }
+        .fuec .logo-emp { height:50px; }
+        .fuec .qrh { height:72px; width:72px; }
+        .fuec .logo-sup { height:62px; }
+        .fuec .emp-name { display:inline-block; font-size:17px; font-weight:bold; color:#16306e; border-bottom:2.5px solid #e8821e; padding-bottom:2px; margin-top:4px; }
+        .fuec .emp-sub { font-style:italic; font-size:10px; color:#333; margin-top:3px; }
         .fuec .title { position:relative; text-align:center; padding:7px 8px; line-height:1.35; }
         .fuec .title .b { font-size:11px; }
         .fuec .title .num { font-size:10px; margin-top:2px; }
