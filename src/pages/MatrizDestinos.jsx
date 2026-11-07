@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { listDestinos, saveDestino, deleteDestino, contarDestinos, importarCatalogoDestinos } from '../lib/db'
+import { listDestinos, saveDestino, deleteDestino, contarDestinos, importarCatalogoDestinos, asegurarAreasMetro } from '../lib/db'
 import { DEPARTAMENTOS_NOMBRES } from '../lib/colombia'
 
 // Módulo — Matriz de destinos (ciudades de Colombia por departamento).
@@ -8,20 +8,19 @@ export default function MatrizDestinos() {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [total, setTotal] = useState(null)
-  const [nuevo, setNuevo] = useState({ nombre: '', area_metropolitana: false })
-  const sembrado = useRef(false)
+  const [nuevo, setNuevo] = useState({ nombre: '' })
+  const prep = useRef(false)
 
   async function cargar() {
     setLoading(true)
     try {
-      // Si la base está vacía (Supabase recién conectado), carga el catálogo automáticamente una vez.
-      let t = await contarDestinos()
-      if (t === 0 && !sembrado.current) {
-        sembrado.current = true
-        await importarCatalogoDestinos()
-        t = await contarDestinos()
+      // Una sola vez: si la base está vacía carga el catálogo, y asegura las áreas metropolitanas.
+      if (!prep.current) {
+        prep.current = true
+        if ((await contarDestinos()) === 0) await importarCatalogoDestinos()
+        await asegurarAreasMetro()
       }
-      setTotal(t)
+      setTotal(await contarDestinos())
       setRows(await listDestinos({ departamento }))
     } finally {
       setLoading(false)
@@ -44,8 +43,8 @@ export default function MatrizDestinos() {
 
   async function agregar() {
     if (!nuevo.nombre.trim()) return
-    await saveDestino({ departamento, estado: 'activo', nombre: nuevo.nombre.trim(), area_metropolitana: nuevo.area_metropolitana })
-    setNuevo({ nombre: '', area_metropolitana: false })
+    await saveDestino({ departamento, estado: 'activo', nombre: nuevo.nombre.trim() })
+    setNuevo({ nombre: '' })
     cargar()
   }
 
@@ -87,7 +86,6 @@ export default function MatrizDestinos() {
               <thead>
                 <tr className="border-b border-cloud-line text-left text-xs uppercase tracking-wide text-ink-faint">
                   <th className="px-4 py-3 font-bold">Ciudad</th>
-                  <th className="px-4 py-3 text-center font-bold">Área metropolitana</th>
                   <th className="px-4 py-3 text-center font-bold">Estado</th>
                   <th className="px-4 py-3 font-bold"></th>
                 </tr>
@@ -96,10 +94,6 @@ export default function MatrizDestinos() {
                 {rows.map((r) => (
                   <tr key={r.id} className="border-b border-cloud-line last:border-0">
                     <td className="px-4 py-2.5 font-semibold text-ink">{r.nombre}</td>
-                    <td className="px-4 py-2.5 text-center">
-                      <input type="checkbox" className="h-4 w-4 accent-brand-500" checked={!!r.area_metropolitana}
-                        onChange={(e) => actualizar(r, { area_metropolitana: e.target.checked })} />
-                    </td>
                     <td className="px-4 py-2.5">
                       <div className="flex items-center justify-center gap-2">
                         <Switch on={r.estado !== 'inactivo'} onClick={() => actualizar(r, { estado: r.estado === 'inactivo' ? 'activo' : 'inactivo' })} />
@@ -115,12 +109,8 @@ export default function MatrizDestinos() {
                 <tr className="bg-cloud/50">
                   <td className="px-4 py-2.5">
                     <input className="input !py-1.5" placeholder="Nueva ciudad" value={nuevo.nombre}
-                      onChange={(e) => setNuevo((n) => ({ ...n, nombre: e.target.value }))}
+                      onChange={(e) => setNuevo({ nombre: e.target.value })}
                       onKeyDown={(e) => e.key === 'Enter' && agregar()} />
-                  </td>
-                  <td className="px-4 py-2.5 text-center">
-                    <input type="checkbox" className="h-4 w-4 accent-brand-500" checked={nuevo.area_metropolitana}
-                      onChange={(e) => setNuevo((n) => ({ ...n, area_metropolitana: e.target.checked }))} />
                   </td>
                   <td className="px-4 py-2.5 text-center text-xs text-ink-faint">Activo</td>
                   <td className="px-4 py-2.5 text-right">

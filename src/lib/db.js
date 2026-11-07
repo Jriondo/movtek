@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from './supabase'
-import { catalogoDestinos } from './colombia'
+import { catalogoDestinos, AREAS_METROPOLITANAS } from './colombia'
 
 // Capa de datos de Movtek (multiempresa).
 // Con Supabase usa la base real; sin conectar, modo demo en el navegador.
@@ -744,6 +744,21 @@ export async function importarCatalogoDestinos() {
   }
   lsSaveD(cat.map((c) => ({ id: newId(), ...c })))
   return cat.length
+}
+
+// Garantiza que cada Área Metropolitana exista como una ciudad (para datos ya cargados).
+export async function asegurarAreasMetro() {
+  for (const am of AREAS_METROPOLITANAS) {
+    let existe = false
+    if (isSupabaseConfigured) {
+      const { data } = await supabase.from('destinos').select('id').eq('departamento', am.departamento).eq('nombre', am.nombre).limit(1)
+      existe = !!(data && data.length)
+    } else {
+      seedDestinos()
+      existe = lsAllD().some((r) => r.departamento === am.departamento && r.nombre === am.nombre)
+    }
+    if (!existe) await saveDestino({ departamento: am.departamento, nombre: am.nombre, estado: 'activo' })
+  }
 }
 
 export function exportClientesCsv(rows) {
