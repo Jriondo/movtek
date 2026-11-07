@@ -120,7 +120,7 @@ export default function FuecForm() {
   function addItinerario() {
     if (!it.ciudad_origen || !it.ciudad_destino) return
     const nuevos = [...form.itinerarios, it]
-    setForm((fm) => ({ ...fm, itinerarios: nuevos, origen_destino: fm.origen_destino || nuevos.map((i) => `${i.ciudad_origen}-${i.ciudad_destino}`).join(', ') }))
+    setForm((fm) => ({ ...fm, itinerarios: nuevos }))
     setIt({ depto_origen: '', ciudad_origen: '', depto_destino: '', ciudad_destino: '' })
   }
   const quitar = (campo, i) => set(campo, form[campo].filter((_, idx) => idx !== i))
@@ -174,7 +174,7 @@ export default function FuecForm() {
         contratante_nombre: c_nombre, contratante_doc: c_doc,
         resp_nombre: r_nombre, resp_cedula: r_cedula, resp_telefono: r_tel, resp_direccion: r_dir,
         ocasional: primary.es_grupo ? ocasional : null,
-        origen_destino: form.origen_destino || form.itinerarios.map((i) => `${i.ciudad_origen}-${i.ciudad_destino}`).join(', '),
+        origen_destino: (form.origen_destino || form.itinerarios.map((i) => `${i.ciudad_origen}-${i.ciudad_destino}`).join(', ')).toUpperCase(),
         usuario: (user?.email || '').split('@')[0] || 'usuario',
         estado: 'activo',
       }
@@ -312,23 +312,23 @@ export default function FuecForm() {
         <h2 className="mb-3 font-display text-sm font-bold uppercase tracking-wide text-ink-faint">Itinerario (origen – destino)</h2>
         <div className="grid gap-3 sm:grid-cols-4">
           <div><label className="label">Depto origen</label>
-            <select className="input" value={it.depto_origen} onChange={(e) => setIt({ ...it, depto_origen: e.target.value, ciudad_origen: '' })}>
+            <select className="input uppercase" value={it.depto_origen} onChange={(e) => setIt({ ...it, depto_origen: e.target.value, ciudad_origen: '' })}>
               <option value="">Seleccione…</option>{DEPARTAMENTOS_NOMBRES.map((d) => <option key={d}>{d}</option>)}
             </select>
           </div>
           <div><label className="label">Ciudad origen</label>
-            <select className="input" value={it.ciudad_origen} onChange={(e) => setIt({ ...it, ciudad_origen: e.target.value })} disabled={!it.depto_origen}>
+            <select className="input uppercase" value={it.ciudad_origen} onChange={(e) => setIt({ ...it, ciudad_origen: e.target.value })} disabled={!it.depto_origen}>
               <option value="">Seleccione…</option>{ciudadesDe(it.depto_origen).map((c) => <option key={c}>{c}</option>)}
             </select>
           </div>
           <div><label className="label">Depto destino</label>
-            <select className="input" value={it.depto_destino} onChange={(e) => setIt({ ...it, depto_destino: e.target.value, ciudad_destino: '' })}>
+            <select className="input uppercase" value={it.depto_destino} onChange={(e) => setIt({ ...it, depto_destino: e.target.value, ciudad_destino: '' })}>
               <option value="">Seleccione…</option>{DEPARTAMENTOS_NOMBRES.map((d) => <option key={d}>{d}</option>)}
             </select>
           </div>
           <div><label className="label">Ciudad destino</label>
             <div className="flex gap-2">
-              <select className="input" value={it.ciudad_destino} onChange={(e) => setIt({ ...it, ciudad_destino: e.target.value })} disabled={!it.depto_destino}>
+              <select className="input uppercase" value={it.ciudad_destino} onChange={(e) => setIt({ ...it, ciudad_destino: e.target.value })} disabled={!it.depto_destino}>
                 <option value="">Seleccione…</option>{ciudadesDe(it.depto_destino).map((c) => <option key={c}>{c}</option>)}
               </select>
               <button type="button" onClick={addItinerario} className="btn-accent !px-3">+</button>
@@ -339,16 +339,16 @@ export default function FuecForm() {
           <ul className="mt-3 flex flex-col gap-1">
             {form.itinerarios.map((i, idx) => (
               <li key={idx} className="flex items-center justify-between rounded-lg bg-cloud px-3 py-2 text-sm">
-                <span className="font-semibold text-ink">{i.ciudad_origen} → {i.ciudad_destino}</span>
+                <span className="font-semibold uppercase text-ink">{i.ciudad_origen} → {i.ciudad_destino}</span>
                 <button onClick={() => quitar('itinerarios', idx)} className="text-ink-faint hover:text-coral-500">✕</button>
               </li>
             ))}
           </ul>
         )}
         <div className="mt-3">
-          <label className="label">Origen – destino (texto para el FUEC)</label>
+          <label className="label">Descripción de recorrido</label>
           <textarea className="input h-16" value={form.origen_destino} onChange={(e) => set('origen_destino', e.target.value)}
-            placeholder="Ej. BARRANQUILLA-AREA METROPOLITANA, realizando recorridos en su área metropolitana incluyendo Soledad, Malambo, Galapa, Puerto Colombia y viceversa." />
+            placeholder="Describe el recorrido si lo necesitas (opcional)." />
         </div>
       </div>
 
