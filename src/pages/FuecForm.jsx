@@ -27,7 +27,7 @@ export default function FuecForm() {
 
   const [form, setForm] = useState({
     vehiculo_id: '', conductores: [], contratantes: [], objeto_contrato: '',
-    itinerarios: [], descripcion_recorrido: '', estrategia_comercial: 'N/A', estrategia_con: '',
+    itinerarios: [], origen_destino: '', descripcion_recorrido: '', estrategia_comercial: 'N/A', estrategia_con: 'NO APLICA',
     vigencia_inicio: '', vigencia_fin: '',
   })
   // selección temporal
@@ -63,19 +63,27 @@ export default function FuecForm() {
   function addConductor() {
     const c = conductores.find((x) => String(x.id) === String(selCond))
     if (!c || form.conductores.some((x) => x.id === c.id)) return
-    set('conductores', [...form.conductores, { id: c.id, nombre: nombreConductor(c), documento: c.documento, licencia_vencimiento: c.licencia_vencimiento || '' }])
+    set('conductores', [...form.conductores, {
+      id: c.id, nombre: nombreConductor(c), documento: c.documento,
+      licencia_numero: c.licencia_numero || '', licencia_vencimiento: c.licencia_vencimiento || '',
+    }])
     setSelCond('')
   }
   function addContratante() {
     const c = clientes.find((x) => String(x.id) === String(selCont))
     if (!c || form.contratantes.some((x) => x.id === c.id)) return
-    set('contratantes', [...form.contratantes, { id: c.id, nombre: nombreMostrar(c), no_maestro: c.contrato_maestro_nro || '' }])
+    set('contratantes', [...form.contratantes, {
+      id: c.id, nombre: nombreMostrar(c), documento: c.documento || '', no_maestro: c.contrato_maestro_nro || '',
+      resp_nombre: c.nombre_responsable || '', resp_cedula: c.doc_responsable || '',
+      resp_telefono: c.telefono_responsable || '', resp_direccion: c.direccion || '',
+    }])
     if (!form.objeto_contrato && c.objeto_contrato) set('objeto_contrato', c.objeto_contrato)
     setSelCont('')
   }
   function addItinerario() {
     if (!it.ciudad_origen || !it.ciudad_destino) return
-    set('itinerarios', [...form.itinerarios, it])
+    const nuevos = [...form.itinerarios, it]
+    setForm((fm) => ({ ...fm, itinerarios: nuevos, origen_destino: fm.origen_destino || nuevos.map((i) => `${i.ciudad_origen}-${i.ciudad_destino}`).join(', ') }))
     setIt({ depto_origen: '', ciudad_origen: '', depto_destino: '', ciudad_destino: '' })
   }
   const quitar = (campo, i) => set(campo, form[campo].filter((_, idx) => idx !== i))
@@ -91,7 +99,12 @@ export default function FuecForm() {
         ...form,
         empresa_id: empresa?.id,
         placa: vehiculo.placa, movil: vehiculo.numero_interno,
+        marca: vehiculo.marca, modelo: vehiculo.modelo, clase: vehiculo.clase, tarjeta_operacion: vehiculo.tarjeta_operacion,
         cliente_id: primary.id, no_maestro: primary.no_maestro || '',
+        contratante_nombre: primary.nombre, contratante_doc: primary.documento || '',
+        resp_nombre: primary.resp_nombre || '', resp_cedula: primary.resp_cedula || '',
+        resp_telefono: primary.resp_telefono || '', resp_direccion: primary.resp_direccion || '',
+        origen_destino: form.origen_destino || form.itinerarios.map((i) => `${i.ciudad_origen}-${i.ciudad_destino}`).join(', '),
         usuario: (user?.email || '').split('@')[0] || 'usuario',
         estado: 'activo',
       }
@@ -221,8 +234,9 @@ export default function FuecForm() {
           </ul>
         )}
         <div className="mt-3">
-          <label className="label">Descripción del recorrido</label>
-          <textarea className="input h-16" value={form.descripcion_recorrido} onChange={(e) => set('descripcion_recorrido', e.target.value)} />
+          <label className="label">Origen – destino (texto para el FUEC)</label>
+          <textarea className="input h-16" value={form.origen_destino} onChange={(e) => set('origen_destino', e.target.value)}
+            placeholder="Ej. BARRANQUILLA-AREA METROPOLITANA, realizando recorridos en su área metropolitana incluyendo Soledad, Malambo, Galapa, Puerto Colombia y viceversa." />
         </div>
       </div>
 

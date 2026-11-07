@@ -201,6 +201,28 @@ create index if not exists idx_fuec_empresa on fuec (empresa_id);
 create index if not exists idx_fuec_cliente on fuec (cliente_id);
 create index if not exists idx_fuec_vehiculo on fuec (vehiculo_id);
 
+-- Columnas adicionales para el formato oficial del FUEC
+alter table empresas add column if not exists razon_social text;
+alter table empresas add column if not exists nit text;
+alter table empresas add column if not exists direccion text;
+alter table empresas add column if not exists ciudad text;
+alter table empresas add column if not exists telefonos text;
+alter table empresas add column if not exists email text;
+alter table empresas add column if not exists resolucion text;
+
+alter table fuec add column if not exists numero_fuec text;
+alter table fuec add column if not exists marca text;
+alter table fuec add column if not exists modelo text;
+alter table fuec add column if not exists clase text;
+alter table fuec add column if not exists tarjeta_operacion text;
+alter table fuec add column if not exists contratante_nombre text;
+alter table fuec add column if not exists contratante_doc text;
+alter table fuec add column if not exists resp_nombre text;
+alter table fuec add column if not exists resp_cedula text;
+alter table fuec add column if not exists resp_telefono text;
+alter table fuec add column if not exists resp_direccion text;
+alter table fuec add column if not exists origen_destino text;
+
 -- Seguridad a nivel de fila
 alter table empresas enable row level security;
 alter table clientes_maestros enable row level security;

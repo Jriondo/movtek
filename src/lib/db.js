@@ -12,10 +12,18 @@ function lsSave(rows) { try { localStorage.setItem(LS_KEY, JSON.stringify(rows))
 
 // ---------------- EMPRESAS (cada una con su color y logo) ----------------
 const EMPRESAS_DEMO = [
-  { id: 'e1', nombre: 'TransLitoral', color_primario: '#10b981', color_acento: '#84cc16' },
-  { id: 'e2', nombre: 'Andina Cargo', color_primario: '#2563eb', color_acento: '#06b6d4' },
-  { id: 'e3', nombre: 'RutaSur Express', color_primario: '#e11d8f', color_acento: '#7c3aed' },
-  { id: 'e4', nombre: 'Costa Trans', color_primario: '#f97316', color_acento: '#0f766e' },
+  { id: 'e1', nombre: 'TransLitoral', color_primario: '#10b981', color_acento: '#84cc16',
+    razon_social: 'TRANSPORTES LITORAL S.A.S', nit: '901450517', direccion: 'CR 15 29 345 BRR Bavaria',
+    ciudad: 'Santa Marta, Magdalena', telefonos: '3145302372', email: 'contacto@translitoral.com', resolucion: 'ANT-2023-1182' },
+  { id: 'e2', nombre: 'Andina Cargo', color_primario: '#2563eb', color_acento: '#06b6d4',
+    razon_social: 'ANDINA CARGO S.A.S', nit: '900111222', direccion: 'Cra 50 # 10-20', ciudad: 'Bogotá D.C.',
+    telefonos: '6015550000', email: 'contacto@andinacargo.com', resolucion: 'MT-2024-0455' },
+  { id: 'e3', nombre: 'RutaSur Express', color_primario: '#e11d8f', color_acento: '#7c3aed',
+    razon_social: 'RUTASUR EXPRESS S.A.S', nit: '900333444', direccion: 'Av. Sur 22-14', ciudad: 'Cali',
+    telefonos: '6025551111', email: 'contacto@rutasur.com', resolucion: 'MT-2024-0781' },
+  { id: 'e4', nombre: 'Costa Trans', color_primario: '#f97316', color_acento: '#0f766e',
+    razon_social: 'COSTA TRANS S.A.S', nit: '900555666', direccion: 'Cll 72 # 40-15', ciudad: 'Barranquilla',
+    telefonos: '6055552222', email: 'contacto@costatrans.com', resolucion: 'MT-2023-0990' },
 ]
 
 export async function listEmpresas() {
@@ -806,6 +814,14 @@ export async function saveFuec(data) {
     // Contrato hijo consecutivo por cliente maestro.
     const n = await contarFuecCliente(payload.cliente_id)
     payload.contrato_hijo = String(n + 1).padStart(4, '0')
+    // Número único del FUEC (fecha + maestro + hijo).
+    if (!payload.numero_fuec) {
+      const d = new Date()
+      const p2 = (x) => String(x).padStart(2, '0')
+      const ymd = `${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}`
+      const maestro = (payload.no_maestro || '').replace(/\D/g, '').padStart(4, '0')
+      payload.numero_fuec = `${ymd}${maestro}${payload.contrato_hijo}`
+    }
   }
   if (isSupabaseConfigured) {
     if (payload.id) {
