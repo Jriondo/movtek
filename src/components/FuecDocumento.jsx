@@ -70,22 +70,22 @@ export default function FuecDocumento({ f, empresa, qr }) {
         .fuec .center { text-align:center; }
         .fuec .b { font-weight:bold; }
         .fuec .sm { font-size:8px; }
-        /* Encabezado tipo tarjeta */
-        .fuec .hdbox { display:flex; align-items:stretch; border:2.5px solid #16306e; border-radius:14px; overflow:hidden; margin-bottom:5px; }
-        .fuec .hdcell { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:8px 6px; border-right:2px solid #16306e; min-height:96px; box-sizing:border-box; }
+        /* Encabezado — pegado a la tabla, bordes negros */
+        .fuec .hdbox { display:flex; align-items:stretch; border:1px solid #000; border-bottom:none; overflow:hidden; }
+        .fuec .hdcell { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:8px 6px; border-right:1px solid #000; min-height:94px; box-sizing:border-box; }
         .fuec .hdcell:last-child { border-right:none; }
         .fuec .hdcell img { object-fit:contain; max-width:100%; }
         .fuec .c-min { flex:0 0 16%; }
         .fuec .c-iso { flex:0 0 17%; }
         .fuec .c-emp { flex:1 1 auto; }
         .fuec .c-qr { flex:0 0 14%; }
-        .fuec .c-sup { flex:0 0 16%; }
+        .fuec .c-sup { flex:0 0 18%; }
         .fuec .logo { height:62px; }
         .fuec .iso { height:76px; }
         .fuec .logo-emp { height:50px; }
         .fuec .qrh { height:72px; width:72px; }
-        .fuec .logo-sup { height:62px; }
-        .fuec .emp-name { display:inline-block; font-size:17px; font-weight:bold; color:#16306e; border-bottom:2.5px solid #e8821e; padding-bottom:2px; margin-top:4px; }
+        .fuec .logo-sup { height:74px; }
+        .fuec .emp-name { display:inline-block; white-space:nowrap; font-size:15px; font-weight:bold; color:#16306e; border-bottom:2.5px solid #e8821e; padding-bottom:2px; margin-top:4px; }
         .fuec .emp-sub { font-style:italic; font-size:10px; color:#333; margin-top:3px; }
         .fuec .title { position:relative; text-align:center; padding:7px 8px; line-height:1.35; }
         .fuec .title .b { font-size:11px; }
@@ -99,7 +99,7 @@ export default function FuecDocumento({ f, empresa, qr }) {
         .fuec .firma { border-top:1px solid #000; margin:34px 10px 0; padding-top:2px; }
         .fuec .notas td { font-size:8px; line-height:1.45; text-align:left; padding:5px 6px; }
         /* Instructivo */
-        .fuec .ins-wrap { border:2px solid #000; border-radius:16px; padding:16px 20px; }
+        .fuec .ins-wrap { border:1px solid #000; border-top:none; padding:16px 20px; }
         .fuec .ins-title { text-align:center; font-weight:bold; font-size:10px; margin-bottom:10px; }
         .fuec .ins-list { margin:0; padding:0; list-style:none; }
         .fuec .ins-list > li { margin:6px 0; line-height:1.4; display:flex; gap:7px; }
