@@ -98,16 +98,16 @@ export default function ConductorForm() {
           <Field label="Categoría de licencia"><Select value={form.categoria_licencia} onChange={(v) => set('categoria_licencia', v)} options={CATEGORIAS} /></Field>
           <Field label="Vigencia de la seguridad social"><input type="date" className="input" value={form.vigencia_seguridad} onChange={(e) => set('vigencia_seguridad', e.target.value)} /></Field>
 
+          <Field label="Dirección" className="sm:col-span-2">
+            <input className="input" value={form.direccion} onChange={(e) => set('direccion', e.target.value)} placeholder="Incluye barrio y ciudad" />
+            <p className="mt-1 text-xs text-ink-soft">📍 Recuerda colocar el <b>barrio</b> y la <b>ciudad</b>.</p>
+          </Field>
+
           <Field label="Estado de habilitación" className="sm:col-span-2">
             <div className="flex gap-5 pt-1.5">
               <Radio label="Activo" checked={form.estado_habilitacion === 'activo'} onChange={() => set('estado_habilitacion', 'activo')} />
               <Radio label="Inactivo" checked={form.estado_habilitacion === 'inactivo'} onChange={() => set('estado_habilitacion', 'inactivo')} />
             </div>
-          </Field>
-
-          <Field label="Dirección" className="sm:col-span-2">
-            <input className="input" value={form.direccion} onChange={(e) => set('direccion', e.target.value)} placeholder="Incluye barrio y ciudad" />
-            <p className="mt-1 text-xs text-ink-soft">📍 Recuerda colocar el <b>barrio</b> y la <b>ciudad</b>.</p>
           </Field>
         </div>
       </div>
