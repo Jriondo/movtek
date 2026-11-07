@@ -14,6 +14,9 @@ import TransportadoraForm from './pages/TransportadoraForm'
 import Vehiculos from './pages/Vehiculos'
 import VehiculoForm from './pages/VehiculoForm'
 import MatrizDestinos from './pages/MatrizDestinos'
+import Fuec from './pages/Fuec'
+import FuecForm from './pages/FuecForm'
+import FuecImprimir from './pages/FuecImprimir'
 
 // Protege las rutas internas: si no hay sesión, manda al login.
 function Protected({ children }) {
@@ -53,6 +56,10 @@ export default function App() {
         <Route path="vehiculos/nuevo" element={<VehiculoForm />} />
         <Route path="vehiculos/:id" element={<VehiculoForm />} />
         <Route path="destinos" element={<MatrizDestinos />} />
+        <Route path="fuec" element={<Fuec />} />
+        <Route path="fuec/nuevo" element={<FuecForm />} />
+        <Route path="fuec/:id" element={<FuecForm />} />
+        <Route path="fuec/:id/imprimir" element={<FuecImprimir />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

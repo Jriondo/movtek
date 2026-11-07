@@ -12,6 +12,7 @@ const nav = [
   { to: '/transportadoras', label: 'Empresas transp.', icon: '🏢' },
   { to: '/vehiculos', label: 'Vehículos', icon: '🚚' },
   { to: '/destinos', label: 'Matriz destinos', icon: '🗺️' },
+  { to: '/fuec', label: 'FUEC', icon: '📄' },
   { label: 'Usuarios', icon: '🔑', soon: true },
   { label: 'Reportes', icon: '📊', soon: true },
 ]

@@ -174,6 +174,33 @@ create table if not exists destinos (
 );
 create index if not exists idx_destinos_departamento on destinos (departamento);
 
+-- Módulo 4.6: FUEC
+create table if not exists fuec (
+  id uuid primary key default gen_random_uuid(),
+  empresa_id uuid references empresas(id) on delete cascade,
+  vehiculo_id uuid references vehiculos(id) on delete set null,
+  placa text,
+  movil text,
+  cliente_id uuid references clientes_maestros(id) on delete set null,
+  no_maestro text,
+  contrato_hijo text,
+  objeto_contrato text,
+  conductores jsonb default '[]',
+  contratantes jsonb default '[]',
+  itinerarios jsonb default '[]',
+  descripcion_recorrido text,
+  estrategia_comercial text,
+  estrategia_con text,
+  vigencia_inicio date,
+  vigencia_fin date,
+  usuario text,
+  estado text default 'activo',
+  created_at timestamptz default now()
+);
+create index if not exists idx_fuec_empresa on fuec (empresa_id);
+create index if not exists idx_fuec_cliente on fuec (cliente_id);
+create index if not exists idx_fuec_vehiculo on fuec (vehiculo_id);
+
 -- Seguridad a nivel de fila
 alter table empresas enable row level security;
 alter table clientes_maestros enable row level security;
@@ -205,6 +232,10 @@ create policy "dev_vehiculos_all" on vehiculos for all to authenticated using (t
 alter table destinos enable row level security;
 drop policy if exists "dev_destinos_all" on destinos;
 create policy "dev_destinos_all" on destinos for all to authenticated using (true) with check (true);
+
+alter table fuec enable row level security;
+drop policy if exists "dev_fuec_all" on fuec;
+create policy "dev_fuec_all" on fuec for all to authenticated using (true) with check (true);
 
 -- Empresas de ejemplo (opcional)
 insert into empresas (nombre, color_primario, color_acento) values

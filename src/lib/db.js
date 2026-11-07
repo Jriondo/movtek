@@ -761,6 +761,141 @@ export async function asegurarAreasMetro() {
   }
 }
 
+// ---------------- MÓDULO 4.6: FUEC ----------------
+const LS_KEY_F = 'movtek_fuec'
+function lsAllF() { try { return JSON.parse(localStorage.getItem(LS_KEY_F) || '[]') } catch { return [] } }
+function lsSaveF(rows) { try { localStorage.setItem(LS_KEY_F, JSON.stringify(rows)) } catch {} }
+
+export async function listFuec({ empresaId = null, placa = '', movil = '', contrato_hijo = '', contrato_maestro = '', desde = '', hasta = '' } = {}) {
+  if (isSupabaseConfigured) {
+    let q = supabase.from('fuec').select('*').order('created_at', { ascending: false })
+    if (empresaId) q = q.eq('empresa_id', empresaId)
+    if (placa) q = q.ilike('placa', `%${placa}%`)
+    if (movil) q = q.ilike('movil', `%${movil}%`)
+    if (contrato_hijo) q = q.ilike('contrato_hijo', `%${contrato_hijo}%`)
+    if (contrato_maestro) q = q.ilike('no_maestro', `%${contrato_maestro}%`)
+    if (desde) q = q.gte('created_at', desde)
+    if (hasta) q = q.lte('created_at', hasta + 'T23:59:59')
+    const { data, error } = await q
+    if (error) throw error
+    return data
+  }
+  let rows = lsAllF()
+  if (empresaId) rows = rows.filter((r) => r.empresa_id === empresaId)
+  if (placa) rows = rows.filter((r) => (r.placa || '').toLowerCase().includes(placa.toLowerCase()))
+  if (movil) rows = rows.filter((r) => (r.movil || '').toLowerCase().includes(movil.toLowerCase()))
+  if (contrato_hijo) rows = rows.filter((r) => (r.contrato_hijo || '').includes(contrato_hijo))
+  if (contrato_maestro) rows = rows.filter((r) => (r.no_maestro || '').includes(contrato_maestro))
+  if (desde) rows = rows.filter((r) => (r.created_at || '').slice(0, 10) >= desde)
+  if (hasta) rows = rows.filter((r) => (r.created_at || '').slice(0, 10) <= hasta)
+  return rows.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+}
+
+export async function getFuec(id) {
+  if (isSupabaseConfigured) {
+    const { data, error } = await supabase.from('fuec').select('*').eq('id', id).single()
+    if (error) throw error
+    return data
+  }
+  return lsAllF().find((r) => String(r.id) === String(id)) || null
+}
+
+export async function saveFuec(data) {
+  const payload = { ...data }
+  if (!payload.id) {
+    // Contrato hijo consecutivo por cliente maestro.
+    const n = await contarFuecCliente(payload.cliente_id)
+    payload.contrato_hijo = String(n + 1).padStart(4, '0')
+  }
+  if (isSupabaseConfigured) {
+    if (payload.id) {
+      const { id, created_at, ...rest } = payload
+      const { data: d, error } = await supabase.from('fuec').update(rest).eq('id', id).select().single()
+      if (error) throw error
+      return d
+    }
+    const { data: d, error } = await supabase.from('fuec').insert(payload).select().single()
+    if (error) throw error
+    return d
+  }
+  const rows = lsAllF()
+  if (payload.id) {
+    const i = rows.findIndex((r) => String(r.id) === String(payload.id))
+    if (i >= 0) rows[i] = { ...rows[i], ...payload }
+  } else {
+    payload.id = newId()
+    payload.created_at = new Date().toISOString()
+    rows.unshift(payload)
+  }
+  lsSaveF(rows)
+  return payload
+}
+
+export async function deleteFuec(id) {
+  if (isSupabaseConfigured) {
+    const { error } = await supabase.from('fuec').delete().eq('id', id)
+    if (error) throw error
+    return
+  }
+  lsSaveF(lsAllF().filter((r) => String(r.id) !== String(id)))
+}
+
+// Duplica un FUEC (genera un nuevo contrato hijo).
+export async function duplicarFuec(id) {
+  const orig = await getFuec(id)
+  if (!orig) return null
+  const { id: _id, contrato_hijo, created_at, ...rest } = orig
+  return saveFuec(rest)
+}
+
+// Texto del itinerario: "CIUDAD ORIGEN - CIUDAD DESTINO".
+export function itinerarioTexto(f) {
+  const its = f.itinerarios || []
+  return its.map((i) => `${i.ciudad_origen || ''}-${i.ciudad_destino || ''}`).join(', ')
+}
+export function ocasionalTexto(f) {
+  const c = f.contratantes || []
+  return c.map((x) => x.nombre).join(', ')
+}
+
+export function exportFuecCsv(rows) {
+  const cols = [
+    ['no_maestro', 'No. Maestro'], ['contrato_hijo', 'Contrato Hijo'], ['placa', 'Placa'], ['movil', 'Móvil'],
+    ['objeto_contrato', 'Contratante'], ['ocasional', 'Ocasional'], ['vigencia', 'Vigencia'],
+    ['itinerario', 'Itinerario'], ['usuario', 'Usuario'], ['fecha', 'Fecha registro'],
+  ]
+  const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
+  const head = cols.map((c) => esc(c[1])).join(';')
+  const body = rows.map((r) => cols.map(([k]) => {
+    if (k === 'ocasional') return esc(ocasionalTexto(r))
+    if (k === 'itinerario') return esc(itinerarioTexto(r))
+    if (k === 'vigencia') return esc(`${r.vigencia_inicio || ''} - ${r.vigencia_fin || ''}`)
+    if (k === 'fecha') return esc((r.created_at || '').slice(0, 10))
+    return esc(r[k])
+  }).join(';')).join('\n')
+  descargarCsv('﻿' + head + '\n' + body, 'fuec.csv')
+}
+
+export function exportFuecConductoresCsv(rows) {
+  const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
+  const head = ['Contrato Hijo', 'Placa', 'Conductor', 'Documento'].map(esc).join(';')
+  const lines = []
+  for (const r of rows) for (const c of (r.conductores || [])) {
+    lines.push([r.contrato_hijo, r.placa, c.nombre, c.documento].map(esc).join(';'))
+  }
+  descargarCsv('﻿' + head + '\n' + lines.join('\n'), 'fuec_conductores.csv')
+}
+
+function descargarCsv(csv, nombre) {
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = nombre
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export function exportClientesCsv(rows) {
   const cols = [
     ['documento', 'Documento'], ['nombre', 'Nombre / Compañía'], ['tipo_persona', 'Tipo'],
