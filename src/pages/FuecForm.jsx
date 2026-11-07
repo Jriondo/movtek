@@ -243,16 +243,11 @@ export default function FuecForm({ duplicar = false }) {
             {docs.length === 0 && <p className="text-sm text-ink-soft">Este vehículo no tiene fechas de documentos registradas.</p>}
           </div>
 
-          {validacion.bloqueos.length > 0 ? (
-            <div className="mt-4 flex flex-col gap-2 rounded-xl bg-coral-400/15 p-4 text-sm text-coral-500">
-              <b>⛔ No se puede generar el FUEC:</b>
-              <ul className="list-disc pl-5">{validacion.bloqueos.map((b, i) => <li key={i}>{b}</li>)}</ul>
-            </div>
-          ) : validacion.limite ? (
+          {validacion.limite && validacion.bloqueos.length === 0 && (
             <p className="mt-4 rounded-xl bg-brand-50 px-4 py-2.5 text-sm text-brand-600">
               ✅ Vigencia máxima permitida: <b>{validacion.limite.split('-').reverse().join('/')}</b> (vence {validacion.limiteDoc}).
             </p>
-          ) : null}
+          )}
         </div>
       )}
 
@@ -380,6 +375,12 @@ export default function FuecForm({ duplicar = false }) {
         <p className="rounded-xl bg-amber-100 px-4 py-2.5 text-sm font-medium text-amber-700">
           ⏰ El plazo para modificar este FUEC venció (solo hasta la medianoche del día en que se creó). Si continúas, se generará un <b>FUEC nuevo</b>.
         </p>
+      )}
+      {validacion.bloqueos.length > 0 && (
+        <div className="flex flex-col gap-2 rounded-xl bg-coral-400/15 p-4 text-sm text-coral-500">
+          <b>⛔ No se puede generar el FUEC:</b>
+          <ul className="list-disc pl-5">{validacion.bloqueos.map((b, i) => <li key={i}>{b}</li>)}</ul>
+        </div>
       )}
       {faltanDatos.length > 0 && (
         <p className="rounded-xl bg-amber-100 px-4 py-2.5 text-sm font-medium text-amber-700">
