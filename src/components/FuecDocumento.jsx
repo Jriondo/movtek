@@ -93,7 +93,7 @@ export default function FuecDocumento({ f, empresa, qr }) {
         .fuec .ej .num { font-weight:bold; letter-spacing:1px; }
         .fuec .qr-note { text-align:center; font-size:9px; color:#444; margin-top:14px; line-height:1.5; }
         @media print {
-          @page { size: A4 portrait; margin: 7mm; }
+          @page { size: Letter portrait; margin: 7mm; }
           .fuec { max-width:none; font-size:9.3px; }
           .fuec-page { padding:0 !important; }
           .fuec td, .fuec th { padding:2px 5px; }
