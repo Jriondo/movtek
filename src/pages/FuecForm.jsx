@@ -83,7 +83,7 @@ export default function FuecForm() {
   const docs = useMemo(() => documentosVehiculo(vehiculo, form.conductores), [vehiculo, form.conductores])
   const hoy = new Date().toISOString().slice(0, 10)
   const grupo = form.contratantes.find((x) => x.es_grupo)
-  const esNit = ocasional.tipo_documento === 'NIT'
+  const mostrarEmpresa = ocasional.responsable === false
   const setOc = (k, v) => setOcasional((o) => ({ ...o, [k]: v }))
   // Un FUEC solo se puede modificar hasta medianoche del día de creación.
   const hoyLocal = new Date().toLocaleDateString('en-CA')
@@ -149,8 +149,12 @@ export default function FuecForm() {
       let r_nombre = primary.resp_nombre || '', r_cedula = primary.resp_cedula || '', r_tel = primary.resp_telefono || '', r_dir = primary.resp_direccion || ''
       if (primary.es_grupo) {
         const oc = ocasional
-        if (oc.tipo_documento === 'NIT') { c_nombre = oc.empresa_nombre || oc.nombre; c_doc = oc.empresa_nit || oc.documento }
-        else { c_nombre = oc.nombre; c_doc = oc.documento }
+        // Si NO es el responsable, el contratante es la empresa (nombre + NIT) y la persona es el responsable.
+        if (!oc.responsable && (oc.empresa_nombre || oc.empresa_nit)) {
+          c_nombre = oc.empresa_nombre || oc.nombre; c_doc = oc.empresa_nit || oc.documento
+        } else {
+          c_nombre = oc.nombre; c_doc = oc.documento
+        }
         r_nombre = oc.nombre; r_cedula = oc.documento; r_tel = oc.telefono; r_dir = oc.direccion
       }
       // "Foto" de los datos de la empresa al momento de generar el FUEC (encabezado inmutable).
@@ -282,10 +286,18 @@ export default function FuecForm() {
             <Field label="Dirección"><input className="input" value={ocasional.direccion} onChange={(e) => setOc('direccion', e.target.value)} placeholder="Dirección" /></Field>
             <Field label="Teléfono"><input className="input" value={ocasional.telefono} onChange={(e) => setOc('telefono', e.target.value)} placeholder="Teléfono" /></Field>
           </div>
-          {/* Si es NIT, dos campos extra: nombre de la empresa y NIT */}
-          {esNit && (
+
+          {/* Selector de responsable: si se desmarca, se habilitan los datos de la empresa */}
+          <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm font-semibold text-ink">
+            <input type="checkbox" className="h-4 w-4 accent-brand-500" checked={ocasional.responsable !== false} onChange={(e) => setOc('responsable', e.target.checked)} />
+            Esta persona es el responsable del contrato
+          </label>
+          <p className="mt-1 text-xs text-ink-soft">Desmárcalo si el contratante es una empresa; así podrás escribir el nombre y el NIT de la empresa.</p>
+
+          {/* Si NO es el responsable (es empresa): nombre de la empresa y NIT */}
+          {mostrarEmpresa && (
             <div className="mt-4 rounded-xl bg-brand-50 p-4">
-              <p className="mb-3 text-xs font-bold uppercase tracking-wide text-brand-600">Datos de la empresa (NIT)</p>
+              <p className="mb-3 text-xs font-bold uppercase tracking-wide text-brand-600">Datos de la empresa</p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Nombre de la empresa"><input className="input" value={ocasional.empresa_nombre} onChange={(e) => setOc('empresa_nombre', e.target.value)} placeholder="Razón social" /></Field>
                 <Field label="NIT"><input className="input" value={ocasional.empresa_nit} onChange={(e) => setOc('empresa_nit', e.target.value)} placeholder="N° de NIT" /></Field>
