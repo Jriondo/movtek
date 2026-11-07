@@ -331,12 +331,12 @@ function seedPropietarios() {
   ])
 }
 
-export async function listPropietarios({ empresaId = null, documento = '', nombre = '', celular = '' } = {}) {
+export async function listPropietarios({ empresaId = null, documento = '', nombre = '', estado = '' } = {}) {
   if (isSupabaseConfigured) {
     let q = supabase.from('propietarios').select('*').order('created_at', { ascending: false })
     if (empresaId) q = q.eq('empresa_id', empresaId)
     if (documento) q = q.ilike('documento', `%${documento}%`)
-    if (celular) q = q.ilike('celular', `%${celular}%`)
+    if (estado) q = q.eq('estado', estado)
     if (nombre) q = q.or(`nombres.ilike.%${nombre}%,apellidos.ilike.%${nombre}%,compania.ilike.%${nombre}%`)
     const { data, error } = await q
     if (error) throw error
@@ -346,7 +346,7 @@ export async function listPropietarios({ empresaId = null, documento = '', nombr
   let rows = lsAllP()
   if (empresaId) rows = rows.filter((r) => r.empresa_id === empresaId)
   if (documento) rows = rows.filter((r) => (r.documento || '').toLowerCase().includes(documento.toLowerCase()))
-  if (celular) rows = rows.filter((r) => (r.celular || '').toLowerCase().includes(celular.toLowerCase()))
+  if (estado) rows = rows.filter((r) => (r.estado || 'activo') === estado)
   if (nombre) {
     const n = nombre.toLowerCase()
     rows = rows.filter((r) => `${r.nombres || ''} ${r.apellidos || ''} ${r.compania || ''}`.toLowerCase().includes(n))
