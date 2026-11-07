@@ -25,15 +25,15 @@ function Encabezado({ razon, e, qr, pagina, logoSrc, isoSrc }) {
     <>
       <table className="hd"><tbody>
         <tr>
-          <td className="hl" style={{ width: '16%' }}><img className="logo" src={mintransporte} alt="Ministerio de Transporte" /></td>
-          <td className="hl" style={{ width: '14%' }}><img className="iso" src={isoSrc} alt="ISO 9001" /></td>
-          <td className="hl" style={{ width: '12%' }}>{qr && <img className="qrh" src={qr} alt="QR" />}</td>
-          <td className="hl center">
+          <td className="hl center" style={{ width: '17%' }}><img className="logo" src={mintransporte} alt="Ministerio de Transporte" /></td>
+          <td className="hl center" style={{ width: '15%' }}><img className="iso" src={isoSrc} alt="ISO 9001" /></td>
+          <td className="hl center" style={{ width: '11%' }}>{qr && <img className="qrh" src={qr} alt="QR" />}</td>
+          <td className="hl center" style={{ width: '35%' }}>
             <img className="logo-emp" src={logoSrc} alt={razon} />
-            <div className="b" style={{ fontSize: '13px', marginTop: '2px' }}>{razon}</div>
+            <div className="b" style={{ fontSize: '13px', marginTop: '3px' }}>{razon}</div>
             <div className="sm" style={{ color: '#555' }}>Transporte Terrestre Automotor Especial</div>
           </td>
-          <td className="hl center" style={{ width: '24%' }}><img className="logo-sup" src={supertransporte} alt="Vigilado SuperTransporte" /></td>
+          <td className="hl center" style={{ width: '22%' }}><img className="logo-sup" src={supertransporte} alt="Vigilado SuperTransporte" /></td>
         </tr>
       </tbody></table>
       <table><tbody>
@@ -69,15 +69,15 @@ export default function FuecDocumento({ f, empresa, qr }) {
         .fuec-page { background:#fff; padding:12px; }
         .fuec table { width:100%; border-collapse:collapse; table-layout:fixed; }
         .fuec td, .fuec th { border:1px solid #000; padding:3px 6px; vertical-align:middle; word-wrap:break-word; }
-        .fuec .hd td.hl { border:1px solid #000; height:76px; }
+        .fuec .hd td.hl { border:1px solid #000; height:84px; padding:4px 8px; }
         .fuec .center { text-align:center; }
         .fuec .b { font-weight:bold; }
         .fuec .sm { font-size:8px; }
-        .fuec .logo { height:58px; object-fit:contain; max-width:100%; }
-        .fuec .logo-sup { height:58px; object-fit:contain; max-width:100%; }
-        .fuec .logo-emp { height:66px; object-fit:contain; max-width:100%; }
-        .fuec .iso { height:60px; object-fit:contain; max-width:100%; }
-        .fuec .qrh { height:56px; width:56px; object-fit:contain; }
+        .fuec .logo { height:66px; object-fit:contain; max-width:96%; }
+        .fuec .logo-sup { height:70px; object-fit:contain; max-width:96%; }
+        .fuec .logo-emp { height:60px; object-fit:contain; max-width:96%; }
+        .fuec .iso { height:66px; object-fit:contain; max-width:96%; }
+        .fuec .qrh { height:60px; width:60px; object-fit:contain; }
         .fuec .title { position:relative; text-align:center; padding:7px 8px; line-height:1.35; }
         .fuec .title .b { font-size:11px; }
         .fuec .title .num { font-size:10px; margin-top:2px; }
