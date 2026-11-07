@@ -3,13 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom'
 import {
   listVehiculos, listConductores, nombreConductor, listClientes, nombreMostrar,
   listDestinos, saveFuec, getFuec, asegurarContratoGrupo,
+  listTransportadoras, nombreTransportadora,
 } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
 import { useAuth } from '../context/AuthContext'
 import { DEPARTAMENTOS_NOMBRES } from '../lib/colombia'
 import { validarFuec, documentosVehiculo } from '../lib/fuecValidacion'
 
-const ESTRATEGIAS = ['N/A', 'Promoción', 'Descuento', 'Convenio', 'Tarifa especial']
+const ESTRATEGIAS = ['N/A', 'CONSORCIO', 'CONVENIO', 'UNIÓN TEMPORAL']
 const TIPOS_DOC = ['Cédula de ciudadanía', 'NIT', 'Cédula de extranjería', 'Pasaporte', 'Tarjeta de identidad']
 const OCASIONAL_VACIO = { tipo_documento: '', documento: '', nombre: '', responsable: true, direccion: '', telefono: '', empresa_nombre: '', empresa_nit: '' }
 
@@ -24,6 +25,7 @@ export default function FuecForm() {
   const [conductores, setConductores] = useState([])
   const [clientes, setClientes] = useState([])
   const [destinos, setDestinos] = useState([])
+  const [transportadoras, setTransportadoras] = useState([])
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
 
@@ -42,6 +44,7 @@ export default function FuecForm() {
     listVehiculos({ empresaId: empresa?.id }).then(setVehiculos).catch(() => {})
     listConductores({ empresaId: empresa?.id }).then(setConductores).catch(() => {})
     listDestinos({}).then((d) => setDestinos(d.filter((x) => x.estado !== 'inactivo'))).catch(() => {})
+    listTransportadoras({ empresaId: empresa?.id }).then(setTransportadoras).catch(() => {})
     // Asegura el contrato automático "grupo específico" y carga los clientes.
     ;(async () => {
       await asegurarContratoGrupo(empresa?.id)
@@ -51,7 +54,7 @@ export default function FuecForm() {
 
   useEffect(() => {
     if (!id) return
-    getFuec(id).then((f) => { if (f) setForm((prev) => ({ ...prev, ...f })) })
+    getFuec(id).then((f) => { if (f) { setForm((prev) => ({ ...prev, ...f })); if (f.ocasional) setOcasional({ ...OCASIONAL_VACIO, ...f.ocasional }) } })
   }, [id])
 
   const vehiculo = useMemo(() => vehiculos.find((v) => String(v.id) === String(form.vehiculo_id)), [vehiculos, form.vehiculo_id])
@@ -67,6 +70,10 @@ export default function FuecForm() {
   const grupo = form.contratantes.find((x) => x.es_grupo)
   const esNit = ocasional.tipo_documento === 'NIT'
   const setOc = (k, v) => setOcasional((o) => ({ ...o, [k]: v }))
+  // Un FUEC solo se puede modificar hasta medianoche del día de creación.
+  const hoyLocal = new Date().toLocaleDateString('en-CA')
+  const puedeModificar = editando ? (form.created_at ? new Date(form.created_at).toLocaleDateString('en-CA') === hoyLocal : true) : true
+  const forzarNuevo = editando && !puedeModificar
 
   const set = (c, v) => setForm((f) => ({ ...f, [c]: v }))
 
@@ -131,6 +138,7 @@ export default function FuecForm() {
         usuario: (user?.email || '').split('@')[0] || 'usuario',
         estado: 'activo',
       }
+      if (forzarNuevo) delete payload.id // pasado el plazo, se crea un FUEC nuevo
       const saved = await saveFuec(payload)
       if (irAImprimir) navigate(`/fuec/${saved.id}/imprimir`)
       else navigate('/fuec')
@@ -297,18 +305,28 @@ export default function FuecForm() {
               {ESTRATEGIAS.map((x) => <option key={x}>{x}</option>)}
             </select>
           </div>
-          <div><label className="label">Con</label><input className="input" value={form.estrategia_con} onChange={(e) => set('estrategia_con', e.target.value)} placeholder="NO APLICA" /></div>
+          <div><label className="label">Con</label>
+            <select className="input" value={form.estrategia_con} onChange={(e) => set('estrategia_con', e.target.value)}>
+              <option>NO APLICA</option>
+              {transportadoras.map((t) => <option key={t.id} value={nombreTransportadora(t)}>{nombreTransportadora(t)}</option>)}
+            </select>
+          </div>
           <div><label className="label">Vigencia — fecha inicial</label><input type="date" className="input" value={form.vigencia_inicio} onChange={(e) => set('vigencia_inicio', e.target.value)} /></div>
           <div><label className="label">Vigencia — fecha vencimiento</label><input type="date" className="input" value={form.vigencia_fin} max={validacion.limite || undefined} onChange={(e) => set('vigencia_fin', e.target.value)} /></div>
         </div>
       </div>
 
+      {forzarNuevo && (
+        <p className="rounded-xl bg-amber-100 px-4 py-2.5 text-sm font-medium text-amber-700">
+          ⏰ El plazo para modificar este FUEC venció (solo hasta la medianoche del día en que se creó). Si continúas, se generará un <b>FUEC nuevo</b>.
+        </p>
+      )}
       {msg && <p className="rounded-xl bg-coral-400/15 px-4 py-2.5 text-sm font-medium text-coral-500">{msg}</p>}
 
       <div className="flex flex-wrap justify-center gap-2">
-        <button className="btn-primary" onClick={() => guardar(false)} disabled={busy || validacion.bloqueos.length > 0}>{busy ? 'Guardando…' : '💾 Guardar'}</button>
-        <button className="btn-accent" onClick={() => guardar(true)} disabled={busy || validacion.bloqueos.length > 0}>🖨️ Guardar e imprimir PDF</button>
-        <button className="btn-ghost" onClick={() => navigate('/fuec')} disabled={busy}>Retornar</button>
+        <button className="btn-accent" onClick={() => guardar(true)} disabled={busy || validacion.bloqueos.length > 0}>
+          {busy ? 'Procesando…' : forzarNuevo ? '🖨️ Crear nuevo e imprimir PDF' : editando ? '🖨️ Modificar e imprimir PDF' : '🖨️ Guardar e imprimir PDF'}
+        </button>
       </div>
     </div>
   )
