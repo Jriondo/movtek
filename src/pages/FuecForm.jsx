@@ -395,7 +395,7 @@ function ListaCard({ titulo, sel, items, render, onQuitar, children }) {
         <ul className="mt-3 flex flex-col gap-1">
           {items.map((x, i) => (
             <li key={i} className="flex items-center justify-between rounded-lg bg-cloud px-3 py-2 text-sm">
-              <span className="font-semibold text-ink">{i === 0 ? '★ ' : ''}{render(x)}</span>
+              <span className="font-semibold text-ink">{render(x)}</span>
               <button onClick={() => onQuitar(i)} className="text-ink-faint hover:text-coral-500">✕</button>
             </li>
           ))}

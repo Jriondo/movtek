@@ -224,6 +224,7 @@ alter table fuec add column if not exists resp_cedula text;
 alter table fuec add column if not exists resp_telefono text;
 alter table fuec add column if not exists resp_direccion text;
 alter table fuec add column if not exists origen_destino text;
+alter table fuec add column if not exists ocasional jsonb;
 
 -- Seguridad a nivel de fila
 alter table empresas enable row level security;
