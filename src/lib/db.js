@@ -367,6 +367,38 @@ export function exportPropietariosCsv(rows) {
   URL.revokeObjectURL(url)
 }
 
+// ---------------- PERSONAS COMPARTIDAS (evitar duplicados) ----------------
+// Busca un documento en conductores y propietarios de la misma empresa.
+export async function buscarPersonaPorDocumento({ empresaId, documento }) {
+  const doc = (documento || '').trim()
+  if (!doc) return { conductor: null, propietario: null }
+  if (isSupabaseConfigured) {
+    const [c, p] = await Promise.all([
+      supabase.from('conductores').select('*').eq('empresa_id', empresaId).eq('documento', doc).limit(1),
+      supabase.from('propietarios').select('*').eq('empresa_id', empresaId).eq('documento', doc).limit(1),
+    ])
+    return { conductor: c.data?.[0] || null, propietario: p.data?.[0] || null }
+  }
+  seedConductores(); seedPropietarios()
+  const match = (rows) => rows.find((r) => r.empresa_id === empresaId && (r.documento || '').trim() === doc) || null
+  return { conductor: match(lsAllC()), propietario: match(lsAllP()) }
+}
+
+// Campos que comparten conductor y propietario (para copiar de uno a otro).
+export function datosComunes(src = {}) {
+  return {
+    tipo_identificacion: src.tipo_identificacion || '',
+    nombres: src.nombres || '',
+    apellidos: src.apellidos || '',
+    telefono_casa: src.telefono_casa || '',
+    celular: src.celular || '',
+    correo: src.correo || '',
+    ciudad: src.ciudad || '',
+    tipo_direccion: src.tipo_direccion || 'catastral',
+    direccion: src.direccion || '',
+  }
+}
+
 export function exportClientesCsv(rows) {
   const cols = [
     ['documento', 'Documento'], ['nombre', 'Nombre / Compañía'], ['tipo_persona', 'Tipo'],

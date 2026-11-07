@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { getConductor, saveConductor } from '../lib/db'
+import { getConductor, saveConductor, buscarPersonaPorDocumento, datosComunes } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
+import DocumentoAviso from '../components/DocumentoAviso'
 
 const VACIO = {
   tipo_identificacion: '', documento: '', nombres: '', apellidos: '',
@@ -42,6 +43,9 @@ export default function ConductorForm() {
   const [form, setForm] = useState(VACIO)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
+  const [dup, setDup] = useState(null)
+  const [prefill, setPrefill] = useState(null)
+  const [aviso, setAviso] = useState('')
   const editando = Boolean(id)
 
   useEffect(() => {
@@ -51,9 +55,32 @@ export default function ConductorForm() {
 
   const set = (campo, valor) => setForm((f) => ({ ...f, [campo]: valor }))
 
+  // Al salir del campo Documento: revisa duplicados y datos reutilizables.
+  async function verificarDocumento() {
+    setDup(null); setPrefill(null)
+    if (!form.documento?.trim()) return
+    const { conductor, propietario } = await buscarPersonaPorDocumento({ empresaId: empresa?.id, documento: form.documento })
+    if (conductor && String(conductor.id) !== String(form.id)) setDup(conductor)
+    else if (propietario) setPrefill(propietario)
+  }
+
+  function usarDatos() {
+    setForm((f) => ({ ...f, ...datosComunes(prefill) }))
+    setAviso('Datos copiados del propietario.')
+    setPrefill(null)
+  }
+
   async function grabar() {
-    setBusy(true); setMsg('')
+    setBusy(true); setMsg(''); setAviso('')
     try {
+      // Evita duplicados: no crear dos conductores con el mismo documento.
+      if (!form.id) {
+        const { conductor } = await buscarPersonaPorDocumento({ empresaId: empresa?.id, documento: form.documento })
+        if (conductor) {
+          setDup(conductor); setMsg('Ya existe un conductor con ese documento. Edita el registro existente.')
+          setBusy(false); return
+        }
+      }
       const payload = { ...form }
       if (!payload.id && empresa?.id) payload.empresa_id = empresa.id
       if (payload.tipo_direccion === 'catastral' && (payload.via_num || payload.placa1 || payload.placa2 || payload.complemento)) {
@@ -95,6 +122,11 @@ export default function ConductorForm() {
         ))}
       </div>
 
+      <DocumentoAviso
+        dup={dup} dupLabel="conductor" onEditarDup={() => navigate(`/conductores/${dup.id}`)}
+        prefill={prefill} prefillLabel="propietario" onUsar={usarDatos} aviso={aviso}
+      />
+
       <div className="card p-5 sm:p-6">
         {/* ---------- DATOS BÁSICOS ---------- */}
         {tab === 0 && (
@@ -102,7 +134,7 @@ export default function ConductorForm() {
             <Field label="Tipo de identificación">
               <Select value={form.tipo_identificacion} onChange={(v) => set('tipo_identificacion', v)} options={TIPOS_ID} />
             </Field>
-            <Field label="Documento"><input className="input" value={form.documento} onChange={(e) => set('documento', e.target.value)} /></Field>
+            <Field label="Documento"><input className="input" value={form.documento} onChange={(e) => set('documento', e.target.value)} onBlur={verificarDocumento} /></Field>
             <Field label="Nombres"><input className="input" value={form.nombres} onChange={(e) => set('nombres', e.target.value)} /></Field>
             <Field label="Apellidos"><input className="input" value={form.apellidos} onChange={(e) => set('apellidos', e.target.value)} /></Field>
             <Field label="Teléfono casa"><input className="input" value={form.telefono_casa} onChange={(e) => set('telefono_casa', e.target.value)} /></Field>

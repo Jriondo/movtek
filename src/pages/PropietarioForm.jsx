@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { getPropietario, savePropietario } from '../lib/db'
+import { getPropietario, savePropietario, buscarPersonaPorDocumento, datosComunes } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
+import DocumentoAviso from '../components/DocumentoAviso'
 
 const VACIO = {
   tipo_identificacion: '', documento: '', tipo_persona: 'natural', compania: '',
@@ -31,6 +32,9 @@ export default function PropietarioForm() {
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
   const [info, setInfo] = useState('')
+  const [dup, setDup] = useState(null)
+  const [prefill, setPrefill] = useState(null)
+  const [aviso, setAviso] = useState('')
   const editando = Boolean(id)
 
   useEffect(() => {
@@ -41,9 +45,31 @@ export default function PropietarioForm() {
   const set = (campo, valor) => setForm((f) => ({ ...f, [campo]: valor }))
   const esJuridica = form.tipo_persona === 'juridica'
 
+  // Al salir del campo Documento: revisa duplicados y datos reutilizables.
+  async function verificarDocumento() {
+    setDup(null); setPrefill(null)
+    if (!form.documento?.trim()) return
+    const { conductor, propietario } = await buscarPersonaPorDocumento({ empresaId: empresa?.id, documento: form.documento })
+    if (propietario && String(propietario.id) !== String(form.id)) setDup(propietario)
+    else if (conductor) setPrefill(conductor)
+  }
+
+  function usarDatos() {
+    setForm((f) => ({ ...f, ...datosComunes(prefill) }))
+    setAviso('Datos copiados del conductor.')
+    setPrefill(null)
+  }
+
   async function grabar() {
-    setBusy(true); setMsg('')
+    setBusy(true); setMsg(''); setAviso('')
     try {
+      if (!form.id) {
+        const { propietario } = await buscarPersonaPorDocumento({ empresaId: empresa?.id, documento: form.documento })
+        if (propietario) {
+          setDup(propietario); setMsg('Ya existe un propietario con ese documento. Edita el registro existente.')
+          setBusy(false); return
+        }
+      }
       const payload = { ...form }
       if (!payload.id && empresa?.id) payload.empresa_id = empresa.id
       if (payload.tipo_direccion === 'catastral' && (payload.via_num || payload.placa1 || payload.placa2 || payload.complemento)) {
@@ -67,12 +93,17 @@ export default function PropietarioForm() {
         <h1 className="mt-1 font-display text-2xl font-extrabold text-ink">{editando ? 'Editar propietario' : 'Nuevo propietario'}</h1>
       </div>
 
+      <DocumentoAviso
+        dup={dup} dupLabel="propietario" onEditarDup={() => navigate(`/propietarios/${dup.id}`)}
+        prefill={prefill} prefillLabel="conductor" onUsar={usarDatos} aviso={aviso}
+      />
+
       <div className="card p-5 sm:p-6">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Tipo de identificación">
             <Select value={form.tipo_identificacion} onChange={(v) => set('tipo_identificacion', v)} options={TIPOS_ID} />
           </Field>
-          <Field label="Documento"><input className="input" value={form.documento} onChange={(e) => set('documento', e.target.value)} /></Field>
+          <Field label="Documento"><input className="input" value={form.documento} onChange={(e) => set('documento', e.target.value)} onBlur={verificarDocumento} /></Field>
 
           <div className="sm:col-span-2 flex flex-wrap gap-5">
             <Radio label="Persona natural" checked={!esJuridica} onChange={() => set('tipo_persona', 'natural')} />
