@@ -82,7 +82,7 @@ export default function Transportadoras() {
                     <th className="px-4 py-3 font-bold">Documento</th>
                     <th className="px-4 py-3 font-bold">Nombre / Compañía</th>
                     <th className="px-4 py-3 font-bold">Responsable</th>
-                    <th className="px-4 py-3 font-bold">Resolución</th>
+                    <th className="px-4 py-3 font-bold">Correo</th>
                     <th className="px-4 py-3 font-bold">Estado</th>
                     <th className="px-4 py-3 font-bold"></th>
                   </tr>
@@ -93,7 +93,7 @@ export default function Transportadoras() {
                       <td className="whitespace-nowrap px-4 py-3 font-semibold tabular-nums text-ink">{t.documento || '—'}</td>
                       <td className="px-4 py-3 text-ink">{nombreTransportadora(t)}</td>
                       <td className="whitespace-nowrap px-4 py-3 text-ink-soft">{t.nombre_responsable || '—'}</td>
-                      <td className="whitespace-nowrap px-4 py-3 tabular-nums text-ink-soft">{t.resolucion || '—'}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-ink-soft">{t.correo || '—'}</td>
                       <td className="whitespace-nowrap px-4 py-3">
                         {t.estado === 'inactivo'
                           ? <span className="pill bg-coral-400/15 text-coral-500">Inactivo</span>

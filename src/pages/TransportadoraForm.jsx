@@ -142,7 +142,6 @@ export default function TransportadoraForm() {
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Documento responsable N°"><input className="input" value={form.doc_responsable} onChange={(e) => set('doc_responsable', e.target.value)} /></Field>
             <Field label="Nombre responsable"><input className="input" value={form.nombre_responsable} onChange={(e) => set('nombre_responsable', e.target.value)} /></Field>
-            <Field label="Resolución" className="sm:col-span-2"><input className="input" value={form.resolucion} onChange={(e) => set('resolucion', e.target.value)} placeholder="N° de resolución / permiso" /></Field>
           </div>
         </div>
 
