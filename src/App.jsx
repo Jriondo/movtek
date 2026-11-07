@@ -18,6 +18,7 @@ import Fuec from './pages/Fuec'
 import FuecForm from './pages/FuecForm'
 import FuecImprimir from './pages/FuecImprimir'
 import VerificarFuec from './pages/VerificarFuec'
+import Usuarios from './pages/Usuarios'
 
 // Protege las rutas internas: si no hay sesión, manda al login.
 function Protected({ children }) {
@@ -64,6 +65,7 @@ export default function App() {
         <Route path="fuec/duplicar/:id" element={<FuecForm duplicar />} />
         <Route path="fuec/:id" element={<FuecForm />} />
         <Route path="fuec/:id/imprimir" element={<FuecImprimir />} />
+        <Route path="usuarios" element={<Usuarios />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

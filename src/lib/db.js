@@ -991,3 +991,94 @@ export function exportClientesCsv(rows) {
   a.click()
   URL.revokeObjectURL(url)
 }
+
+// ---------------- USUARIOS Y ROLES ----------------
+// Roles: 'admin' (todo + gestiona usuarios), 'operativo' (crea/edita datos, no usuarios),
+// 'propietario' (solo ve su vehículo y conductores, crea FUEC con sus vehículos, edita sus datos).
+const LS_KEY_U = 'movtek_usuarios'
+function lsAllU() { try { return JSON.parse(localStorage.getItem(LS_KEY_U) || '[]') } catch { return [] } }
+function lsSaveU(rows) { try { localStorage.setItem(LS_KEY_U, JSON.stringify(rows)) } catch {} }
+
+function seedUsuarios() {
+  if (lsAllU().length) return
+  lsSaveU([
+    { id: 'u1', empresa_id: 'e1', nombre: 'Administrador', email: 'admin@movtek.co', rol: 'admin', propietario_id: null, estado: 'activo' },
+  ])
+}
+
+export async function listUsuarios({ empresaId = null } = {}) {
+  if (isSupabaseConfigured) {
+    let q = supabase.from('usuarios').select('*').order('created_at', { ascending: false })
+    if (empresaId) q = q.eq('empresa_id', empresaId)
+    const { data, error } = await q
+    if (error) throw error
+    return data
+  }
+  seedUsuarios()
+  let rows = lsAllU()
+  if (empresaId) rows = rows.filter((r) => r.empresa_id === empresaId)
+  return rows
+}
+
+export async function getUsuario(id) {
+  if (isSupabaseConfigured) {
+    const { data, error } = await supabase.from('usuarios').select('*').eq('id', id).single()
+    if (error) throw error
+    return data
+  }
+  return lsAllU().find((r) => String(r.id) === String(id)) || null
+}
+
+// Busca el usuario por correo (para determinar su rol al iniciar sesión).
+export async function getUsuarioPorEmail(email) {
+  if (!email) return null
+  if (isSupabaseConfigured) {
+    const { data, error } = await supabase.from('usuarios').select('*').ilike('email', email).limit(1)
+    if (error) return null
+    return (data && data[0]) || null
+  }
+  seedUsuarios()
+  return lsAllU().find((r) => (r.email || '').toLowerCase() === email.toLowerCase()) || null
+}
+
+export async function saveUsuario(data) {
+  const payload = { ...data }
+  if (isSupabaseConfigured) {
+    if (payload.id) {
+      const { id, created_at, ...rest } = payload
+      const { data: d, error } = await supabase.from('usuarios').update(nulls(rest)).eq('id', id).select().single()
+      if (error) throw error
+      return d
+    }
+    delete payload.id
+    const { data: d, error } = await supabase.from('usuarios').insert(nulls(payload)).select().single()
+    if (error) throw error
+    return d
+  }
+  const rows = lsAllU()
+  if (payload.id) {
+    const i = rows.findIndex((r) => String(r.id) === String(payload.id))
+    if (i >= 0) rows[i] = { ...rows[i], ...payload }
+  } else {
+    payload.id = newId()
+    rows.unshift(payload)
+  }
+  lsSaveU(rows)
+  return payload
+}
+
+export async function deleteUsuario(id) {
+  if (isSupabaseConfigured) {
+    const { error } = await supabase.from('usuarios').delete().eq('id', id)
+    if (error) throw error
+    return
+  }
+  lsSaveU(lsAllU().filter((r) => String(r.id) !== String(id)))
+}
+
+export const ROLES = [
+  { value: 'admin', label: 'Administrador' },
+  { value: 'operativo', label: 'Operativo' },
+  { value: 'propietario', label: 'Propietario' },
+]
+export const rolLabel = (v) => (ROLES.find((r) => r.value === v)?.label || v || '—')

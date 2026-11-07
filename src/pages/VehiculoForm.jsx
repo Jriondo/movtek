@@ -3,8 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom'
 import {
   getVehiculo, saveVehiculo, buscarVehiculoPorPlaca,
   listPropietarios, listTransportadoras, nombrePropietario, nombreTransportadora,
+  listConductores, nombreConductor,
 } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
+import { useAuth } from '../context/AuthContext'
 import {
   modelosDisponibles, CLASES, MARCAS, MARCAS_LINEAS, COLORES, CARROCERIAS,
   COMBUSTIBLES, PESO_UNIDADES, SERVICIO, ASEGURADORAS,
@@ -26,6 +28,8 @@ const VACIO = {
   estado: 'activo', desvinculacion: 'NO',
   // adicionales / convenio
   tiene_convenio: 'NO', depto_matricula: '', ciudad_matricula: '', fecha_matricula: '', inicio_convenio: '', caducidad_convenio: '',
+  // conductores asignados a esta placa (para el FUEC)
+  conductores_asignados: [],
 }
 
 const TABS = ['Datos básicos', 'Datos complementarios', 'Datos operacionales', 'Datos adicionales']
@@ -36,6 +40,8 @@ export default function VehiculoForm() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { empresa } = useEmpresa()
+  const { esPropietario } = useAuth()
+  const soloLectura = esPropietario
   const [tab, setTab] = useState(0)
   const [form, setForm] = useState(VACIO)
   const [busy, setBusy] = useState(false)
@@ -43,6 +49,8 @@ export default function VehiculoForm() {
   const [dupPlaca, setDupPlaca] = useState(null)
   const [propietarios, setPropietarios] = useState([])
   const [transportadoras, setTransportadoras] = useState([])
+  const [conductores, setConductores] = useState([])
+  const [selCond, setSelCond] = useState('')
   const editando = Boolean(id)
   const modelos = useMemo(() => modelosDisponibles(), [])
   const lineas = MARCAS_LINEAS[form.marca] || []
@@ -51,12 +59,21 @@ export default function VehiculoForm() {
   useEffect(() => {
     listPropietarios({ empresaId: empresa?.id }).then(setPropietarios).catch(() => {})
     listTransportadoras({ empresaId: empresa?.id }).then(setTransportadoras).catch(() => {})
+    listConductores({ empresaId: empresa?.id }).then(setConductores).catch(() => {})
   }, [empresa?.id])
 
   useEffect(() => {
     if (!id) return
-    getVehiculo(id).then((v) => { if (v) setForm({ ...VACIO, ...v }) })
+    getVehiculo(id).then((v) => { if (v) setForm({ ...VACIO, ...v, conductores_asignados: v.conductores_asignados || [] }) })
   }, [id])
+
+  function agregarConductor() {
+    const c = conductores.find((x) => String(x.id) === String(selCond))
+    if (!c || form.conductores_asignados.some((x) => String(x.id) === String(c.id))) return
+    set('conductores_asignados', [...form.conductores_asignados, { id: c.id, nombre: nombreConductor(c), documento: c.documento || '' }])
+    setSelCond('')
+  }
+  function quitarConductor(i) { set('conductores_asignados', form.conductores_asignados.filter((_, idx) => idx !== i)) }
 
   const set = (campo, valor) => setForm((f) => ({ ...f, [campo]: valor }))
   function setMarca(m) { setForm((f) => ({ ...f, marca: m, linea: '' })) }
@@ -69,6 +86,7 @@ export default function VehiculoForm() {
   }
 
   async function grabar() {
+    if (soloLectura) { setMsg('Tu rol solo permite ver la información del vehículo, no modificarla.'); return }
     const falt = faltantes(form, REQUERIDOS)
     if (falt.length) { setMsg(mensajeFaltantes(falt)); return }
     if (editando && !window.confirm('¿Estás seguro de guardar los cambios?')) return
@@ -222,11 +240,40 @@ export default function VehiculoForm() {
         )}
       </div>
 
+      {/* Conductores asignados a esta placa */}
+      <div className="card p-5 sm:p-6">
+        <h2 className="mb-1 flex items-center gap-2 font-display text-sm font-bold uppercase tracking-wide text-brand-600"><span className="h-4 w-1.5 rounded-full bg-brand-500" />🧑‍✈️ Conductores asignados</h2>
+        <p className="mb-3 text-xs text-ink-soft">Al generar un FUEC con esta placa, solo aparecerán los conductores que asignes aquí.</p>
+        <div className="flex gap-2">
+          <select className="input" value={selCond} onChange={(e) => setSelCond(e.target.value)}>
+            <option value="">Selecciona un conductor…</option>
+            {conductores.filter((c) => !form.conductores_asignados.some((x) => String(x.id) === String(c.id))).map((c) => (
+              <option key={c.id} value={c.id}>{nombreConductor(c)}{c.documento ? ` · ${c.documento}` : ''}</option>
+            ))}
+          </select>
+          <button type="button" className="btn-accent !px-3" onClick={agregarConductor}>+ Agregar</button>
+        </div>
+        {form.conductores_asignados.length > 0 ? (
+          <ul className="mt-3 flex flex-col gap-1">
+            {form.conductores_asignados.map((c, i) => (
+              <li key={i} className="flex items-center justify-between rounded-lg bg-cloud px-3 py-2 text-sm">
+                <span className="font-semibold text-ink">{c.nombre}{c.documento ? ` · ${c.documento}` : ''}</span>
+                <button onClick={() => quitarConductor(i)} className="text-ink-faint hover:text-coral-500">✕</button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2 text-xs text-ink-soft">Aún no has asignado conductores a esta placa.</p>
+        )}
+      </div>
+
       {msg && <p className="rounded-xl bg-coral-400/15 px-4 py-2.5 text-sm font-medium text-coral-500">{msg}</p>}
 
+      {soloLectura && <p className="rounded-xl bg-brand-50 px-4 py-2.5 text-center text-sm font-medium text-brand-600">👁️ Solo lectura: tu rol permite ver la información del vehículo, no modificarla.</p>}
+
       <div className="flex flex-wrap justify-center gap-2">
-        <button className="btn-primary" onClick={grabar} disabled={busy}>{busy ? 'Grabando…' : '💾 Grabar'}</button>
-        <button className="btn-ghost" onClick={limpiar} disabled={busy}>Limpiar</button>
+        {!soloLectura && <button className="btn-primary" onClick={grabar} disabled={busy}>{busy ? 'Grabando…' : '💾 Grabar'}</button>}
+        {!soloLectura && <button className="btn-ghost" onClick={limpiar} disabled={busy}>Limpiar</button>}
         <button className="btn-ghost" onClick={() => navigate('/vehiculos')} disabled={busy}>Retornar</button>
       </div>
     </div>

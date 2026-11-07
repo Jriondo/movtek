@@ -228,6 +228,31 @@ alter table fuec add column if not exists ocasional jsonb;
 alter table fuec add column if not exists empresa_snapshot jsonb;
 alter table fuec add column if not exists tipo_contrato text;
 
+-- Conductores asignados a cada vehículo (para el FUEC)
+alter table vehiculos add column if not exists conductores_asignados jsonb default '[]';
+-- Logo y sello ISO de la empresa
+alter table empresas add column if not exists logo_url text;
+alter table empresas add column if not exists iso_url text;
+alter table empresas add column if not exists color_primario text;
+alter table empresas add column if not exists color_acento text;
+
+-- Usuarios y roles (admin | operativo | propietario)
+create table if not exists usuarios (
+  id uuid primary key default gen_random_uuid(),
+  empresa_id uuid references empresas(id) on delete cascade,
+  nombre text,
+  email text,
+  rol text default 'operativo',
+  propietario_id uuid references propietarios(id) on delete set null,
+  estado text default 'activo',
+  created_at timestamptz default now()
+);
+create index if not exists idx_usuarios_empresa on usuarios (empresa_id);
+create index if not exists idx_usuarios_email on usuarios (lower(email));
+alter table usuarios enable row level security;
+drop policy if exists "dev_usuarios_all" on usuarios;
+create policy "dev_usuarios_all" on usuarios for all to authenticated using (true) with check (true);
+
 -- Seguridad a nivel de fila
 alter table empresas enable row level security;
 alter table clientes_maestros enable row level security;

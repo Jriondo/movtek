@@ -19,7 +19,7 @@ export default function FuecForm({ duplicar = false }) {
   const { id } = useParams()
   const navigate = useNavigate()
   const { empresa } = useEmpresa()
-  const { user } = useAuth()
+  const { user, esPropietario, propietarioId } = useAuth()
   const editando = Boolean(id) && !duplicar
 
   const [vehiculos, setVehiculos] = useState([])
@@ -77,6 +77,26 @@ export default function FuecForm({ duplicar = false }) {
 
   const vehiculo = useMemo(() => vehiculos.find((v) => String(v.id) === String(form.vehiculo_id)), [vehiculos, form.vehiculo_id])
   const ciudadesDe = (dep) => destinos.filter((d) => d.departamento === dep).map((d) => d.nombre)
+
+  // El propietario solo puede usar sus propios vehículos (como propietario o tenedor).
+  const vehiculosDisponibles = useMemo(() => {
+    let lista = vehiculos.filter((v) => v.estado !== 'inactivo' || String(v.id) === String(form.vehiculo_id))
+    if (esPropietario && propietarioId) {
+      lista = lista.filter((v) => String(v.propietario_id) === String(propietarioId) || String(v.tenedor_id) === String(propietarioId))
+    }
+    return lista
+  }, [vehiculos, esPropietario, propietarioId, form.vehiculo_id])
+
+  // Solo los conductores asignados a la placa elegida (si tiene asignados); si no, los activos.
+  const conductoresDisponibles = useMemo(() => {
+    const activos = conductores.filter((c) => c.estado_habilitacion !== 'inactivo')
+    const asignados = vehiculo?.conductores_asignados || []
+    if (asignados.length) {
+      const ids = new Set(asignados.map((a) => String(a.id)))
+      return activos.filter((c) => ids.has(String(c.id)))
+    }
+    return activos
+  }, [conductores, vehiculo])
 
   // Validación de documentos (vencidos / por vencer / convenio).
   const validacion = useMemo(
@@ -210,7 +230,7 @@ export default function FuecForm({ duplicar = false }) {
             <label className="label">Placa</label>
             <select className="input" value={form.vehiculo_id} onChange={(e) => set('vehiculo_id', e.target.value)}>
               <option value="">Seleccione un vehículo…</option>
-              {vehiculos.filter((v) => v.estado !== 'inactivo' || String(v.id) === String(form.vehiculo_id)).map((v) => <option key={v.id} value={v.id}>{v.placa} · {v.marca} {v.linea}</option>)}
+              {vehiculosDisponibles.map((v) => <option key={v.id} value={v.id}>{v.placa} · {v.marca} {v.linea}</option>)}
             </select>
           </div>
           {vehiculo && (
@@ -254,7 +274,7 @@ export default function FuecForm({ duplicar = false }) {
       {/* Conductores */}
       <ListaCard titulo="👤 Conductores"
         sel={<Picker value={selCond} onChange={setSelCond} onAdd={addConductor}
-          options={conductores.filter((c) => c.estado_habilitacion !== 'inactivo').map((c) => ({ id: c.id, label: `${nombreConductor(c)} · ${c.documento || ''}` }))} placeholder="Selecciona conductor…" />}
+          options={conductoresDisponibles.map((c) => ({ id: c.id, label: `${nombreConductor(c)} · ${c.documento || ''}` }))} placeholder={vehiculo ? 'Selecciona conductor…' : 'Elige primero el vehículo'} />}
         items={form.conductores} render={(c) => `${c.nombre} · ${c.documento || ''}`} onQuitar={(i) => quitar('conductores', i)} />
 
       {/* Contratante */}

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getConductor, saveConductor, buscarPersonaPorDocumento, datosComunes } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
+import { useAuth } from '../context/AuthContext'
 import DocumentoAviso from '../components/DocumentoAviso'
 import FechaInput from '../components/FechaInput'
 import { faltantes, mensajeFaltantes } from '../lib/validar'
@@ -23,6 +24,8 @@ export default function ConductorForm() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { empresa } = useEmpresa()
+  const { esPropietario } = useAuth()
+  const soloLectura = esPropietario
   const [form, setForm] = useState(VACIO)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
@@ -57,6 +60,7 @@ export default function ConductorForm() {
       ['tipo_identificacion', 'Tipo de identificación'], ['documento', 'Documento'],
       ['nombres', 'Nombres'], ['apellidos', 'Apellidos'],
     ])
+    if (soloLectura) { setMsg('Tu rol solo permite ver la información del conductor, no modificarla.'); return }
     if (falt.length) { setMsg(mensajeFaltantes(falt)); return }
     if (editando && !window.confirm('¿Estás seguro de guardar los cambios?')) return
     setBusy(true); setMsg(''); setAviso('')
@@ -122,9 +126,11 @@ export default function ConductorForm() {
 
       {msg && <p className="rounded-xl bg-coral-400/15 px-4 py-2.5 text-sm font-medium text-coral-500">{msg}</p>}
 
+      {soloLectura && <p className="rounded-xl bg-brand-50 px-4 py-2.5 text-center text-sm font-medium text-brand-600">👁️ Solo lectura: tu rol permite ver la información del conductor, no modificarla.</p>}
+
       <div className="flex flex-wrap justify-center gap-2">
-        <button className="btn-primary" onClick={grabar} disabled={busy}>{busy ? 'Guardando…' : '💾 Registro completo'}</button>
-        <button className="btn-ghost" onClick={limpiar} disabled={busy}>Limpiar</button>
+        {!soloLectura && <button className="btn-primary" onClick={grabar} disabled={busy}>{busy ? 'Guardando…' : '💾 Registro completo'}</button>}
+        {!soloLectura && <button className="btn-ghost" onClick={limpiar} disabled={busy}>Limpiar</button>}
         <button className="btn-ghost" onClick={() => navigate('/conductores')} disabled={busy}>Retornar</button>
       </div>
     </div>
