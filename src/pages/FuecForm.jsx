@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import {
   listVehiculos, listConductores, nombreConductor, listClientes, nombreMostrar,
   listDestinos, saveFuec, getFuec, asegurarContratoGrupo,
-  listTransportadoras, nombreTransportadora, contarFuecCliente,
+  listTransportadoras, nombreTransportadora, contarFuecCliente, verificarHabilitacionFuec,
 } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
 import { useAuth } from '../context/AuthContext'
@@ -40,6 +40,7 @@ export default function FuecForm() {
   const [it, setIt] = useState({ depto_origen: '', ciudad_origen: '', depto_destino: '', ciudad_destino: '' })
   const [ocasional, setOcasional] = useState(OCASIONAL_VACIO)
   const [hijoActual, setHijoActual] = useState(null)
+  const [avisosHab, setAvisosHab] = useState([])
 
   useEffect(() => {
     listVehiculos({ empresaId: empresa?.id }).then(setVehiculos).catch(() => {})
@@ -55,7 +56,12 @@ export default function FuecForm() {
 
   useEffect(() => {
     if (!id) return
-    getFuec(id).then((f) => { if (f) { setForm((prev) => ({ ...prev, ...f })); if (f.ocasional) setOcasional({ ...OCASIONAL_VACIO, ...f.ocasional }) } })
+    getFuec(id).then((f) => {
+      if (!f) return
+      setForm((prev) => ({ ...prev, ...f }))
+      if (f.ocasional) setOcasional({ ...OCASIONAL_VACIO, ...f.ocasional })
+      verificarHabilitacionFuec(f).then(setAvisosHab).catch(() => {})
+    })
   }, [id])
 
   // Cuenta cuántos FUEC (contrato hijo) lleva el contratante principal.
@@ -167,6 +173,13 @@ export default function FuecForm() {
         <h1 className="mt-1 font-display text-2xl font-extrabold text-ink">{editando ? 'Editar FUEC' : 'Generar FUEC'}</h1>
       </div>
 
+      {avisosHab.length > 0 && (
+        <div className="rounded-xl bg-coral-400/15 px-4 py-3 text-sm text-coral-500">
+          <b>⚠️ Elementos inhabilitados:</b>
+          <ul className="mt-1 list-disc pl-5">{avisosHab.map((a, i) => <li key={i}>{a}</li>)}</ul>
+        </div>
+      )}
+
       {/* Vehículo */}
       <div className="card p-5">
         <h2 className="mb-3 font-display text-sm font-bold uppercase tracking-wide text-ink-faint">Características del vehículo</h2>
@@ -175,7 +188,7 @@ export default function FuecForm() {
             <label className="label">Placa</label>
             <select className="input" value={form.vehiculo_id} onChange={(e) => set('vehiculo_id', e.target.value)}>
               <option value="">Seleccione un vehículo…</option>
-              {vehiculos.map((v) => <option key={v.id} value={v.id}>{v.placa} · {v.marca} {v.linea}</option>)}
+              {vehiculos.filter((v) => v.estado !== 'inactivo' || String(v.id) === String(form.vehiculo_id)).map((v) => <option key={v.id} value={v.id}>{v.placa} · {v.marca} {v.linea}</option>)}
             </select>
           </div>
           {vehiculo && (
@@ -224,13 +237,13 @@ export default function FuecForm() {
       {/* Conductores */}
       <ListaCard titulo="Conductores"
         sel={<Picker value={selCond} onChange={setSelCond} onAdd={addConductor}
-          options={conductores.map((c) => ({ id: c.id, label: `${nombreConductor(c)} · ${c.documento || ''}` }))} placeholder="Selecciona conductor…" />}
+          options={conductores.filter((c) => c.estado_habilitacion !== 'inactivo').map((c) => ({ id: c.id, label: `${nombreConductor(c)} · ${c.documento || ''}` }))} placeholder="Selecciona conductor…" />}
         items={form.conductores} render={(c) => `${c.nombre} · ${c.documento || ''}`} onQuitar={(i) => quitar('conductores', i)} />
 
       {/* Contratante */}
       <ListaCard titulo="Contratante"
         sel={<Picker value={selCont} onChange={setSelCont} onAdd={addContratante}
-          options={clientes.map((c) => ({ id: c.id, label: `${nombreMostrar(c)}${c.contrato_maestro_nro ? ' · ' + c.contrato_maestro_nro : ''}` }))} placeholder="Selecciona contratante…" />}
+          options={clientes.filter((c) => c.estado !== 'inactivo').map((c) => ({ id: c.id, label: `${nombreMostrar(c)}${c.contrato_maestro_nro ? ' · ' + c.contrato_maestro_nro : ''}` }))} placeholder="Selecciona contratante…" />}
         items={form.contratantes} render={(c) => `${c.nombre}${c.no_maestro ? ' · Maestro ' + c.no_maestro : ''}`} onQuitar={(i) => quitar('contratantes', i)}>
         <div className="mt-3">
           <label className="label">Objeto del contrato</label>

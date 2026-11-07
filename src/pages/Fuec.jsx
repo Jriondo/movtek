@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { listFuec, exportFuecCsv, duplicarFuec, itinerarioTexto, ocasionalTexto } from '../lib/db'
+import { listFuec, exportFuecCsv, duplicarFuec, itinerarioTexto, ocasionalTexto, getFuec, verificarHabilitacionFuec } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
 
 // Rango de fechas según el periodo elegido.
@@ -19,6 +19,7 @@ export default function Fuec() {
   const [f, setF] = useState({ placa: '', movil: '', contrato_hijo: '', contrato_maestro: '', periodo: 'todos', desde: '', hasta: '' })
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
+  const [aviso, setAviso] = useState('')
 
   async function cargar(filtros = {}) {
     setLoading(true)
@@ -32,7 +33,13 @@ export default function Fuec() {
 
   useEffect(() => { cargar() }, [empresa?.id])
 
-  async function duplicar(id) { await duplicarFuec(id); cargar() }
+  async function duplicar(id) {
+    setAviso('')
+    const f = await getFuec(id)
+    const avisos = await verificarHabilitacionFuec(f)
+    if (avisos.length) { setAviso('No se puede duplicar. ' + avisos.join(' ')); return }
+    await duplicarFuec(id); cargar()
+  }
 
   const totalConductores = rows.reduce((s, r) => s + (r.conductores?.length || 0), 0)
 
@@ -42,6 +49,8 @@ export default function Fuec() {
         <h1 className="font-display text-2xl font-extrabold text-ink">FUEC</h1>
         <p className="mt-1 text-sm text-ink-soft">Formato Único de Extracto del Contrato. Genera, consulta e imprime.</p>
       </div>
+
+      {aviso && <div className="rounded-xl bg-coral-400/15 px-4 py-3 text-sm font-medium text-coral-500">⚠️ {aviso}</div>}
 
       {/* Filtros */}
       <form onSubmit={(e) => { e.preventDefault(); cargar() }} className="card p-4">

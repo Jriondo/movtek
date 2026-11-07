@@ -893,6 +893,26 @@ export async function duplicarFuec(id) {
   return saveFuec(rest)
 }
 
+// Verifica si el vehículo, conductor(es) o contrato maestro de un FUEC están inhabilitados.
+export async function verificarHabilitacionFuec(f) {
+  if (!f) return []
+  const avisos = []
+  if (f.vehiculo_id) {
+    const v = await getVehiculo(f.vehiculo_id).catch(() => null)
+    if (v && v.estado === 'inactivo') avisos.push(`El vehículo ${v.placa || ''} está inhabilitado.`)
+  }
+  if (f.cliente_id) {
+    const c = await getCliente(f.cliente_id).catch(() => null)
+    if (c && c.estado === 'inactivo') avisos.push(`El contrato maestro "${nombreMostrar(c)}" está inhabilitado.`)
+  }
+  for (const cond of (f.conductores || [])) {
+    if (!cond.id) continue
+    const cc = await getConductor(cond.id).catch(() => null)
+    if (cc && cc.estado_habilitacion === 'inactivo') avisos.push(`El conductor ${cc.nombres || ''} ${cc.apellidos || ''} está inhabilitado.`)
+  }
+  return avisos
+}
+
 // Texto del itinerario: "CIUDAD ORIGEN - CIUDAD DESTINO".
 export function itinerarioTexto(f) {
   const its = f.itinerarios || []
