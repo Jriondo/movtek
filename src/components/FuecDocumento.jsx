@@ -1,5 +1,7 @@
 import mintransporte from '../assets/mintransporte.webp'
 import supertransporte from '../assets/supertransporte.webp'
+import defaultLogo from '../assets/demo-logo.webp'
+import defaultIso from '../assets/iso9001.png'
 
 // Documento FUEC — réplica del formato oficial (Resolución 0006652 de 2019).
 const fmt = (iso) => (iso ? iso.split('-').reverse().join('/') : '')
@@ -18,17 +20,17 @@ const TERRITORIALES = [
   ['Guajira', '241', 'Valle del Cauca', '376'],
 ]
 
-function Encabezado({ razon, e, qr, pagina }) {
+function Encabezado({ razon, e, qr, pagina, logoSrc, isoSrc }) {
   return (
     <>
       <table className="hd"><tbody>
         <tr>
           <td className="hl" style={{ width: '16%' }}><img className="logo" src={mintransporte} alt="Ministerio de Transporte" /></td>
-          <td className="hl" style={{ width: '14%' }}>{e.iso_url && <img className="iso" src={e.iso_url} alt="ISO 9001" />}</td>
+          <td className="hl" style={{ width: '14%' }}><img className="iso" src={isoSrc} alt="ISO 9001" /></td>
           <td className="hl" style={{ width: '12%' }}>{qr && <img className="qrh" src={qr} alt="QR" />}</td>
           <td className="hl center">
-            {e.logo_url && <img className="logo-emp" src={e.logo_url} alt={razon} />}
-            <div className="b" style={{ fontSize: '13px', marginTop: e.logo_url ? '2px' : '0' }}>{razon}</div>
+            <img className="logo-emp" src={logoSrc} alt={razon} />
+            <div className="b" style={{ fontSize: '13px', marginTop: '2px' }}>{razon}</div>
             <div className="sm" style={{ color: '#555' }}>Transporte Terrestre Automotor Especial</div>
           </td>
           <td className="hl center" style={{ width: '24%' }}><img className="logo-sup" src={supertransporte} alt="Vigilado SuperTransporte" /></td>
@@ -50,8 +52,9 @@ export default function FuecDocumento({ f, empresa, qr }) {
   // si la foto no los tiene (para FUEC creados antes de agregar esos campos).
   const live = empresa || {}
   const e = { ...live, ...(f?.empresa_snapshot || {}), _num: f.numero_fuec || '' }
-  if (!e.logo_url) e.logo_url = live.logo_url || ''
-  if (!e.iso_url) e.iso_url = live.iso_url || ''
+  // Logo y sello ISO: usa el de la empresa; si no tiene, usa el de demostración por defecto.
+  const logoSrc = e.logo_url || live.logo_url || defaultLogo
+  const isoSrc = e.iso_url || live.iso_url || defaultIso
   const razon = e.razon_social || e.nombre || 'EMPRESA DE TRANSPORTE ESPECIAL'
   const estr = (f.estrategia_comercial || '').toUpperCase()
   const conValue = (f.estrategia_con && f.estrategia_con.toUpperCase() !== 'NO APLICA') ? f.estrategia_con : 'NO APLICA'
@@ -108,7 +111,7 @@ export default function FuecDocumento({ f, empresa, qr }) {
 
       {/* ===================== PÁGINA 1 ===================== */}
       <div className="fuec-page">
-        <Encabezado razon={razon} e={e} qr={qr} pagina={1} />
+        <Encabezado razon={razon} e={e} qr={qr} pagina={1} logoSrc={logoSrc} isoSrc={isoSrc} />
 
         {/* Datos del contrato */}
         <table><colgroup><col style={{ width: '38%' }} /><col /></colgroup><tbody>
@@ -195,7 +198,7 @@ export default function FuecDocumento({ f, empresa, qr }) {
 
       {/* ===================== PÁGINA 2 · INSTRUCTIVO ===================== */}
       <div className="fuec-page">
-        <Encabezado razon={razon} e={e} qr={qr} pagina={2} />
+        <Encabezado razon={razon} e={e} qr={qr} pagina={2} logoSrc={logoSrc} isoSrc={isoSrc} />
 
         <div className="ins-wrap">
           <div className="ins-title">INSTRUCTIVO PARA LA DETERMINACIÓN DEL NÚMERO CONSECUTIVO DEL FUEC</div>
