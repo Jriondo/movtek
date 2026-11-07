@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { listFuec, exportFuecCsv, duplicarFuec, itinerarioTexto, ocasionalTexto, getFuec, verificarHabilitacionFuec } from '../lib/db'
+import { listFuec, exportFuecCsv, duplicarFuec, itinerarioTexto, ocasionalTexto, getFuec, verificarHabilitacionFuec, deleteFuec } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
 
 // Rango de fechas según el periodo elegido.
@@ -39,6 +39,12 @@ export default function Fuec() {
     const avisos = await verificarHabilitacionFuec(f)
     if (avisos.length) { setAviso('No se puede duplicar. ' + avisos.join(' ')); return }
     await duplicarFuec(id); cargar()
+  }
+
+  // ⚠️ SOLO PRUEBAS — quitar en producción (necesitamos historial)
+  async function eliminar(r) {
+    if (!window.confirm(`¿Eliminar el FUEC ${r.no_maestro}-${r.contrato_hijo}? Esta acción no se puede deshacer.`)) return
+    await deleteFuec(r.id); cargar()
   }
 
   const totalConductores = rows.reduce((s, r) => s + (r.conductores?.length || 0), 0)
@@ -138,6 +144,8 @@ export default function Fuec() {
                         <button title="Imprimir" onClick={() => navigate(`/fuec/${r.id}/imprimir`)} className="rounded-lg px-2 py-1 hover:bg-cloud">🖨️</button>
                         <button title="Editar" onClick={() => navigate(`/fuec/${r.id}`)} className="rounded-lg px-2 py-1 hover:bg-cloud">✎</button>
                         <button title="Duplicar" onClick={() => duplicar(r.id)} className="rounded-lg px-2 py-1 hover:bg-cloud">⧉</button>
+                        {/* ⚠️ SOLO PRUEBAS */}
+                        <button title="Eliminar (pruebas)" onClick={() => eliminar(r)} className="rounded-lg px-2 py-1 text-coral-500 hover:bg-cloud">🗑️</button>
                       </div>
                     </td>
                   </tr>
