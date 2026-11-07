@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { getCliente, saveCliente } from '../lib/db'
+import { getCliente, saveCliente, contarFuecCliente } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
 
 const VACIO = {
@@ -31,11 +31,13 @@ export default function ClienteForm() {
   const [form, setForm] = useState(VACIO)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
+  const [fuecCount, setFuecCount] = useState(0)
   const editando = Boolean(id)
 
   useEffect(() => {
     if (!id) return
     getCliente(id).then((c) => { if (c) setForm({ ...VACIO, ...c }) })
+    contarFuecCliente(id).then(setFuecCount).catch(() => setFuecCount(0))
   }, [id])
 
   const set = (campo, valor) => setForm((f) => ({ ...f, [campo]: valor }))
@@ -137,8 +139,9 @@ export default function ClienteForm() {
             <Field label="Contrato maestro N°">
               <input className="input bg-cloud" value={form.contrato_maestro_nro} placeholder="(se genera al grabar)" readOnly />
             </Field>
-            <Field label="Contrato hijo N°">
-              <input className="input bg-cloud" value={form.contrato_hijo_nro} placeholder="(se genera al grabar)" readOnly />
+            <Field label="Contrato hijo (FUEC generados)">
+              <input className="input bg-cloud" value={editando ? String(fuecCount) : '0'} readOnly />
+              <p className="mt-1 text-xs text-ink-soft">Aumenta automáticamente con cada FUEC que se genere para este cliente (módulo 4.6).</p>
             </Field>
             <div className="sm:col-span-2">
               <label className="flex items-center gap-2 text-sm font-semibold text-ink">

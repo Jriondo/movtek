@@ -98,7 +98,7 @@ export async function saveCliente(data) {
       n = lsAll().filter((r) => r.empresa_id === payload.empresa_id).length + 1
     }
     if (!payload.contrato_maestro_nro) payload.contrato_maestro_nro = 'CM-' + String(n).padStart(4, '0')
-    if (!payload.contrato_hijo_nro) payload.contrato_hijo_nro = 'CH-' + String(n).padStart(4, '0')
+    // El contrato HIJO no se fija aquí: se cuenta según los FUEC generados para este cliente.
   }
 
   if (isSupabaseConfigured) {
@@ -138,6 +138,21 @@ export async function deleteCliente(id) {
 export function nombreMostrar(c) {
   if (c.tipo_persona === 'juridica') return c.compania || '(Sin nombre)'
   return `${c.nombres || ''} ${c.apellidos || ''}`.trim() || '(Sin nombre)'
+}
+
+// Cuenta los FUEC (contratos hijo) generados para un cliente maestro.
+// Cada FUEC generado a nombre del maestro suma un "contrato hijo".
+export async function contarFuecCliente(clienteId) {
+  if (!clienteId) return 0
+  if (isSupabaseConfigured) {
+    const { count, error } = await supabase.from('fuec').select('*', { count: 'exact', head: true }).eq('cliente_id', clienteId)
+    if (error) return 0 // la tabla fuec se crea con el módulo 4.6
+    return count || 0
+  }
+  try {
+    const rows = JSON.parse(localStorage.getItem('movtek_fuec') || '[]')
+    return rows.filter((r) => String(r.cliente_id) === String(clienteId)).length
+  } catch { return 0 }
 }
 
 // ---------------- MÓDULO 4.2: CONDUCTORES (empleados) ----------------
