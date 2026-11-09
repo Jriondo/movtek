@@ -20,7 +20,7 @@ export const slugify = (s) => String(s || '').toLowerCase().normalize('NFD').rep
 // Empresa maestra por defecto (Movtek). El super-administrador crea las demás.
 const MOVTEK_MASTER = {
   id: 'movtek', nombre: 'Movtek', slug: 'movtek', es_maestra: true,
-  color_primario: '#10b981', color_acento: '#84cc16',
+  color_primario: '#1d4ed8', color_acento: '#f97316',
   razon_social: 'MOVTEK', nit: '', direccion: '', ciudad: '', telefonos: '', email: '', resolucion: '',
   logo_url: '', iso_url: '',
 }

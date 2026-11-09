@@ -5,10 +5,10 @@
 :root {
   color-scheme: light;
   /* Tema por defecto (Esmeralda + Lima). Cada empresa lo sobrescribe en runtime. */
-  --brand-50: 236 253 245;  --brand-100: 209 250 229; --brand-200: 167 243 208;
-  --brand-300: 110 231 183; --brand-400: 52 211 153;  --brand-500: 16 185 129;
-  --brand-600: 5 150 105;   --brand-700: 4 120 87;    --brand-800: 6 95 70; --brand-900: 6 78 59;
-  --accent-400: 163 230 53; --accent-500: 132 204 22; --accent-600: 101 163 13;
+  --brand-50: 232 237 251;  --brand-100: 210 220 247; --brand-200: 169 188 240;
+  --brand-300: 124 152 232; --brand-400: 74 113 224;  --brand-500: 29 78 216;
+  --brand-600: 25 67 186;   --brand-700: 21 56 156;   --brand-800: 17 45 125; --brand-900: 13 35 97;
+  --accent-400: 250 143 69; --accent-500: 249 115 22; --accent-600: 214 99 19;
 }
 
 html, body, #root { height: 100%; }

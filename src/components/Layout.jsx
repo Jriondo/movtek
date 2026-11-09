@@ -2,20 +2,21 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useEmpresa } from '../context/EmpresaContext'
 import Logo from './Logo'
+import Icon from './Icon'
 
 // Menú lateral. Cada item define qué roles lo ven (roles: admin, operativo, propietario).
 const nav = [
-  { to: '/', label: 'Inicio', icon: '🏠', end: true, roles: ['admin', 'operativo', 'propietario'] },
-  { to: '/clientes', label: 'Clientes maestros', icon: '👥', roles: ['admin', 'operativo'] },
-  { to: '/conductores', label: 'Conductores', icon: '🧑', roles: ['admin', 'operativo', 'propietario'] },
-  { to: '/propietarios', label: 'Propietarios', icon: '👤', roles: ['admin', 'operativo'] },
-  { to: '/transportadoras', label: 'Empresas transp.', icon: '🏢', roles: ['admin', 'operativo'] },
-  { to: '/vehiculos', label: 'Vehículos', icon: '🚚', roles: ['admin', 'operativo', 'propietario'] },
-  { to: '/destinos', label: 'Matriz destinos', icon: '🗺️', roles: ['admin', 'operativo'] },
-  { to: '/fuec', label: 'FUEC', icon: '📄', roles: ['admin', 'operativo', 'propietario'] },
-  { to: '/empresas', label: 'Empresas', icon: '🏭', roles: ['admin'] },
-  { to: '/usuarios', label: 'Usuarios', icon: '🔑', roles: ['admin'] },
-  { label: 'Reportes', icon: '📊', soon: true, roles: ['admin', 'operativo'] },
+  { to: '/', label: 'Inicio', icon: 'home', end: true, roles: ['admin', 'operativo', 'propietario'] },
+  { to: '/clientes', label: 'Clientes maestros', icon: 'clientes', roles: ['admin', 'operativo'] },
+  { to: '/conductores', label: 'Conductores', icon: 'conductor', roles: ['admin', 'operativo', 'propietario'] },
+  { to: '/propietarios', label: 'Propietarios', icon: 'propietario', roles: ['admin', 'operativo'] },
+  { to: '/transportadoras', label: 'Empresas transp.', icon: 'transportadora', roles: ['admin', 'operativo'] },
+  { to: '/vehiculos', label: 'Vehículos', icon: 'vehiculo', roles: ['admin', 'operativo', 'propietario'] },
+  { to: '/destinos', label: 'Matriz destinos', icon: 'mapa', roles: ['admin', 'operativo'] },
+  { to: '/fuec', label: 'FUEC', icon: 'fuec', roles: ['admin', 'operativo', 'propietario'] },
+  { to: '/empresas', label: 'Empresas', icon: 'empresa', roles: ['admin'] },
+  { to: '/usuarios', label: 'Usuarios', icon: 'usuarios', roles: ['admin'] },
+  { label: 'Reportes', icon: 'reportes', soon: true, roles: ['admin', 'operativo'] },
 ]
 
 const ROLES_UI = [
@@ -60,7 +61,7 @@ export default function Layout() {
           {navVisible.map((item) =>
             item.soon ? (
               <span key={item.label} className="flex cursor-default items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-ink-faint">
-                <span className="w-5 text-center">{item.icon}</span>
+                <Icon name={item.icon} />
                 <span>{item.label}</span>
                 <span className="ml-auto rounded-full bg-cloud px-2 py-0.5 text-[10px] font-bold text-ink-faint">pronto</span>
               </span>
@@ -70,7 +71,7 @@ export default function Layout() {
                   `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
                     isActive ? 'bg-brand-500 text-white shadow-glow' : 'text-ink-soft hover:bg-cloud hover:text-ink'
                   }`}>
-                <span className="w-5 text-center">{item.icon}</span>
+                <Icon name={item.icon} />
                 <span>{item.label}</span>
               </NavLink>
             )
