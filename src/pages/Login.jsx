@@ -100,11 +100,13 @@ export default function Login({ marca = null }) {
     <div className="grid min-h-full lg:grid-cols-2">
       {/* Panel de marca */}
       <div className="relative hidden overflow-hidden bg-gradient-to-br from-brand-600 via-brand-500 to-mint-500 p-12 text-white lg:flex lg:flex-col lg:justify-between">
-        {marca ? (
-          marca.logo_url
-            ? <img src={marca.logo_url} alt={marca.nombre} className="h-14 w-auto rounded-lg bg-white/90 object-contain p-1.5" />
-            : <span className="font-display text-2xl font-extrabold">{marca.nombre}</span>
-        ) : <Logo light />}
+        <div className="inline-flex items-center self-start rounded-2xl bg-white px-6 py-4 shadow-xl">
+          {marca ? (
+            marca.logo_url
+              ? <img src={marca.logo_url} alt={marca.nombre} className="h-16 w-auto max-w-[220px] object-contain" />
+              : <span className="font-display text-2xl font-extrabold text-ink">{marca.nombre}</span>
+          ) : <Logo />}
+        </div>
         <div>
           <h1 className="font-display text-4xl font-extrabold leading-tight">
             {marca ? <>{marca.nombre}</> : <>Tu empresa,<br />en la palma de tu mano.</>}
