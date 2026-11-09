@@ -1034,7 +1034,7 @@ export async function getUsuarioPorEmail(email) {
   if (!email) return null
   if (isSupabaseConfigured) {
     const { data, error } = await supabase.from('usuarios').select('*').ilike('email', email).limit(1)
-    if (error) return null
+    if (error) throw error // deja que el caller distinga error de "no existe"
     return (data && data[0]) || null
   }
   seedUsuarios()

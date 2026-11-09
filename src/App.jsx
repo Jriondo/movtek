@@ -23,9 +23,19 @@ import NuevaPassword from './pages/NuevaPassword'
 
 // Protege las rutas internas: si no hay sesión, manda al login.
 function Protected({ children }) {
-  const { user, loading } = useAuth()
+  const { user, loading, sinAcceso, logout } = useAuth()
   if (loading) return <div className="grid h-full place-items-center text-ink-faint">Cargando…</div>
   if (!user) return <Navigate to="/login" replace />
+  if (sinAcceso) return (
+    <div className="grid min-h-full place-items-center p-6">
+      <div className="card max-w-md p-8 text-center">
+        <div className="text-4xl">🔒</div>
+        <h1 className="mt-3 font-display text-xl font-extrabold text-ink">Sin acceso</h1>
+        <p className="mt-2 text-sm text-ink-soft">Tu cuenta no está habilitada (no tiene un usuario activo en el sistema). Comunícate con el administrador de tu empresa.</p>
+        <button className="btn-primary mt-5" onClick={logout}>Cerrar sesión</button>
+      </div>
+    </div>
+  )
   return children
 }
 

@@ -13,6 +13,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
   const [rolReal, setRolReal] = useState('admin')       // rol según su usuario registrado
   const [propietarioId, setPropietarioId] = useState(null)
+  const [sinAcceso, setSinAcceso] = useState(false)     // true si su cuenta no tiene ficha activa
   const [verComo, setVerComoState] = useState(() => { try { return localStorage.getItem(VERCOMO_KEY) || '' } catch { return '' } })
 
   // Determina el rol del usuario a partir de su correo (si existe en la tabla usuarios).
@@ -21,12 +22,21 @@ export function AuthProvider({ children }) {
   const ROL_DEFECTO = isSupabaseConfigured ? 'propietario' : 'admin'
 
   async function cargarRol(u) {
-    if (!u?.email) { setRolReal(ROL_DEFECTO); setPropietarioId(null); return }
+    if (!u?.email) { setRolReal(ROL_DEFECTO); setPropietarioId(null); setSinAcceso(false); return }
     try {
       const reg = await getUsuarioPorEmail(u.email)
-      if (reg) { setRolReal(reg.rol || 'propietario'); setPropietarioId(reg.propietario_id || null) }
-      else { setRolReal(ROL_DEFECTO); setPropietarioId(null) }
-    } catch { setRolReal(ROL_DEFECTO); setPropietarioId(null) }
+      if (reg && reg.estado !== 'inactivo') {
+        setRolReal(reg.rol || 'propietario'); setPropietarioId(reg.propietario_id || null); setSinAcceso(false)
+      } else if (isSupabaseConfigured) {
+        // Con Supabase, sin ficha activa => sin acceso (p. ej. usuario eliminado o inactivado).
+        setSinAcceso(true); setRolReal('propietario'); setPropietarioId(null)
+      } else {
+        setSinAcceso(false); setRolReal('admin'); setPropietarioId(null) // demo
+      }
+    } catch {
+      // Error de consulta (red/RLS): no bloquear por un fallo temporal.
+      setSinAcceso(false); setRolReal(ROL_DEFECTO); setPropietarioId(null)
+    }
   }
 
   useEffect(() => {
@@ -96,7 +106,7 @@ export function AuthProvider({ children }) {
   async function logout() {
     if (isSupabaseConfigured) await supabase.auth.signOut()
     try { localStorage.removeItem(DEMO_KEY) } catch {}
-    setUser(null); setRolReal('admin'); setPropietarioId(null)
+    setUser(null); setRolReal('admin'); setPropietarioId(null); setSinAcceso(false)
   }
 
   // "Ver como" permite que el admin previsualice la app con otro rol (solo demostración).
@@ -113,7 +123,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{
       user, loading, login, logout, registrar, recuperarPassword, actualizarPassword, demo: !isSupabaseConfigured,
-      rol, rolReal, esAdmin, esOperativo, esPropietario, propietarioId,
+      rol, rolReal, esAdmin, esOperativo, esPropietario, propietarioId, sinAcceso,
       verComo, setVerComo,
     }}>
       {children}
