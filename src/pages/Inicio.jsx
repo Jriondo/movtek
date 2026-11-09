@@ -58,8 +58,7 @@ export default function Inicio() {
           <h2 className="mb-3 font-display text-sm font-bold uppercase tracking-wide text-ink-faint">Usuarios de los propietarios</h2>
           <div className="card p-5">
             <p className="mb-3 text-xs text-ink-soft">
-              Para crear el usuario de un propietario, primero el operativo debe tener registrado en el sistema al propietario y sus vehículos.
-              {esAdmin ? ' Luego crea aquí su acceso.' : ' Luego el administrador crea su acceso.'}
+              Cada propietario que ya esté registrado en el sistema puede crear su propio usuario desde la pantalla de inicio de sesión (opción “Crear usuario”), sin necesidad de aprobación del administrador. Esta lista es solo informativa.
             </p>
             {propietarios.length === 0 ? (
               <p className="text-sm text-ink-soft">Aún no hay propietarios registrados.</p>
@@ -74,8 +73,8 @@ export default function Inicio() {
                         <span className="pill bg-mint-500/15 text-mint-600">✅ Ya tiene usuario</span>
                       ) : (
                         <span className="flex items-center gap-2">
-                          <span className="pill bg-amber-100 text-amber-700">⚠️ No ha creado su usuario</span>
-                          {esAdmin && <button className="btn-accent !px-3 !py-1.5 text-xs" onClick={() => navigate('/usuarios')}>Crear usuario</button>}
+                          <span className="pill bg-amber-100 text-amber-700">⏳ Puede crear su usuario desde el login</span>
+                          {esAdmin && <button className="btn-ghost !px-3 !py-1.5 text-xs" onClick={() => navigate('/usuarios')}>Crear manualmente</button>}
                         </span>
                       )}
                     </li>

@@ -123,7 +123,8 @@ export default function Usuarios() {
 
       {/* Propietarios sin usuario */}
       <div className="card p-5">
-        <h2 className="mb-3 font-display text-sm font-bold text-ink">Propietarios sin usuario ({propSinUsuario.length})</h2>
+        <h2 className="mb-1 font-display text-sm font-bold text-ink">Propietarios sin usuario ({propSinUsuario.length})</h2>
+        <p className="mb-3 text-xs text-ink-soft">Cada propietario ya registrado puede crear su propio usuario desde el login (opción “Crear usuario”), sin que tú lo apruebes. Aquí puedes crearlo manualmente si lo prefieres.</p>
         {propSinUsuario.length === 0 ? (
           <p className="text-sm text-ink-soft">Todos los propietarios activos ya tienen su usuario. ✅</p>
         ) : (
