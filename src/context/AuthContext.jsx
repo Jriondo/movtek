@@ -16,13 +16,17 @@ export function AuthProvider({ children }) {
   const [verComo, setVerComoState] = useState(() => { try { return localStorage.getItem(VERCOMO_KEY) || '' } catch { return '' } })
 
   // Determina el rol del usuario a partir de su correo (si existe en la tabla usuarios).
+  // Rol por defecto cuando el usuario no tiene ficha: en demo admin (para probar),
+  // en Supabase un rol NO administrativo por seguridad.
+  const ROL_DEFECTO = isSupabaseConfigured ? 'propietario' : 'admin'
+
   async function cargarRol(u) {
-    if (!u?.email) { setRolReal('admin'); setPropietarioId(null); return }
+    if (!u?.email) { setRolReal(ROL_DEFECTO); setPropietarioId(null); return }
     try {
       const reg = await getUsuarioPorEmail(u.email)
-      if (reg) { setRolReal(reg.rol || 'operativo'); setPropietarioId(reg.propietario_id || null) }
-      else { setRolReal('admin'); setPropietarioId(null) } // sin registro => admin (arranque)
-    } catch { setRolReal('admin'); setPropietarioId(null) }
+      if (reg) { setRolReal(reg.rol || 'propietario'); setPropietarioId(reg.propietario_id || null) }
+      else { setRolReal(ROL_DEFECTO); setPropietarioId(null) }
+    } catch { setRolReal(ROL_DEFECTO); setPropietarioId(null) }
   }
 
   useEffect(() => {
@@ -61,12 +65,17 @@ export function AuthProvider({ children }) {
   // Crea la cuenta de acceso (para el autoregistro de propietarios desde el login).
   async function registrar(email, password) {
     if (isSupabaseConfigured) {
-      const { data, error } = await supabase.auth.signUp({ email, password })
+      const { data, error } = await supabase.auth.signUp({
+        email, password,
+        options: { emailRedirectTo: `${window.location.origin}/login` },
+      })
       if (error) throw error
-      if (data.user) { setUser(data.user); await cargarRol(data.user) }
-      return data.user
+      // Si hay sesión, entra; si no, es porque Supabase pide confirmar el correo.
+      if (data.session && data.user) { setUser(data.user); await cargarRol(data.user) }
+      return { user: data.user, needsConfirmation: !data.session }
     }
-    return login(email, password)
+    await login(email, password)
+    return { needsConfirmation: false }
   }
 
   // Envía el enlace para restablecer la contraseña (olvido de contraseña).

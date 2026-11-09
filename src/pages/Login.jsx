@@ -29,6 +29,7 @@ export default function Login() {
   const [reg, setReg] = useState({ documento: '', nombre: '', telefono: '', direccion: '', correo: '', password: '' })
   const [propEncontrado, setPropEncontrado] = useState(null)
   const [nota, setNota] = useState('')
+  const [registroOk, setRegistroOk] = useState('')
   const setR = (k, v) => setReg((r) => ({ ...r, [k]: v }))
 
   async function onSubmit(e) {
@@ -81,7 +82,11 @@ export default function Login() {
         if (res.motivo === 'no-propietario') { setNota('⚠️ Aún no apareces en nuestra base de datos. Pídele a la empresa (rol operativo) que registre primero tu información.'); setBusy(false); return }
         if (res.motivo === 'ya-existe') { setError('Ya existe un usuario para este propietario. Inicia sesión.'); setBusy(false); return }
       }
-      await registrar(reg.correo, reg.password) // crea la cuenta e inicia sesión
+      const r = await registrar(reg.correo, reg.password) // crea la cuenta
+      if (r?.needsConfirmation) {
+        setRegistroOk('✅ ¡Cuenta creada! Te enviamos un correo a ' + reg.correo + ' para verificar y activar tu cuenta. Ábrelo y confirma; luego podrás iniciar sesión.')
+      }
+      // Si no requiere confirmación, ya quedó con sesión y entra solo.
     } catch (err) {
       setError(traducirError(err?.message))
     } finally {
@@ -161,6 +166,12 @@ export default function Login() {
               <h2 className="font-display text-2xl font-extrabold text-ink">Crear usuario</h2>
               <p className="mt-1 text-sm text-ink-soft">Registro de propietario. Escribe tu cédula para empezar.</p>
 
+              {registroOk ? (
+                <div className="mt-6">
+                  <p className="rounded-xl bg-mint-500/15 px-4 py-3 text-sm font-medium text-mint-600">{registroOk}</p>
+                  <button type="button" className="btn-primary mt-4 w-full" onClick={() => { setModo('login'); setRegistroOk(''); setError('') }}>Ir a iniciar sesión</button>
+                </div>
+              ) : (
               <form onSubmit={onRegistrar} className="mt-6 flex flex-col gap-4">
                 <div>
                   <label className="label">Cédula / Documento</label>
@@ -176,11 +187,14 @@ export default function Login() {
                 {error && <p className="rounded-lg bg-coral-400/15 px-3 py-2 text-sm font-medium text-coral-500">{error}</p>}
                 <button className="btn-primary mt-1 w-full" disabled={busy || !propEncontrado}>{busy ? 'Creando…' : 'Aceptar y crear usuario'}</button>
               </form>
+              )}
 
-              <p className="mt-5 text-center text-sm text-ink-soft">
-                ¿Ya tienes cuenta?{' '}
-                <button type="button" className="font-bold text-brand-600 hover:underline" onClick={() => { setModo('login'); setError(''); setNota('') }}>Iniciar sesión</button>
-              </p>
+              {!registroOk && (
+                <p className="mt-5 text-center text-sm text-ink-soft">
+                  ¿Ya tienes cuenta?{' '}
+                  <button type="button" className="font-bold text-brand-600 hover:underline" onClick={() => { setModo('login'); setError(''); setNota('') }}>Iniciar sesión</button>
+                </p>
+              )}
             </>
           )}
 
