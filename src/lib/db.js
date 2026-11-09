@@ -1,7 +1,5 @@
 import { supabase, isSupabaseConfigured } from './supabase'
 import { catalogoDestinos, AREAS_METROPOLITANAS } from './colombia'
-import demoLogo from '../assets/demo-logo.webp'
-import demoIso from '../assets/iso9001.png'
 
 // Capa de datos de Movtek (multiempresa).
 // Con Supabase usa la base real; sin conectar, modo demo en el navegador.
@@ -15,42 +13,87 @@ const nulls = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, v 
 function lsAll() { try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]') } catch { return [] } }
 function lsSave(rows) { try { localStorage.setItem(LS_KEY, JSON.stringify(rows)) } catch {} }
 
-// ---------------- EMPRESAS (cada una con su color y logo) ----------------
-const EMPRESAS_DEMO = [
-  { id: 'e1', nombre: 'TransLitoral', color_primario: '#10b981', color_acento: '#84cc16',
-    razon_social: 'TRANSPORTES LITORAL S.A.S', nit: '901450517', direccion: 'CR 15 29 345 BRR Bavaria',
-    ciudad: 'Santa Marta, Magdalena', telefonos: '3145302372', email: 'contacto@translitoral.com', resolucion: 'ANT-2023-1182',
-    logo_url: demoLogo, iso_url: demoIso },
-  { id: 'e2', nombre: 'Andina Cargo', color_primario: '#2563eb', color_acento: '#06b6d4',
-    razon_social: 'ANDINA CARGO S.A.S', nit: '900111222', direccion: 'Cra 50 # 10-20', ciudad: 'Bogotá D.C.',
-    telefonos: '6015550000', email: 'contacto@andinacargo.com', resolucion: 'MT-2024-0455',
-    logo_url: demoLogo, iso_url: demoIso },
-  { id: 'e3', nombre: 'RutaSur Express', color_primario: '#e11d8f', color_acento: '#7c3aed',
-    razon_social: 'RUTASUR EXPRESS S.A.S', nit: '900333444', direccion: 'Av. Sur 22-14', ciudad: 'Cali',
-    telefonos: '6025551111', email: 'contacto@rutasur.com', resolucion: 'MT-2024-0781',
-    logo_url: demoLogo, iso_url: demoIso },
-  { id: 'e4', nombre: 'Costa Trans', color_primario: '#f97316', color_acento: '#0f766e',
-    razon_social: 'COSTA TRANS S.A.S', nit: '900555666', direccion: 'Cll 72 # 40-15', ciudad: 'Barranquilla',
-    telefonos: '6055552222', email: 'contacto@costatrans.com', resolucion: 'MT-2023-0990',
-    logo_url: demoLogo, iso_url: demoIso },
-]
+// ---------------- EMPRESAS (Movtek es la maestra; cada empresa con su marca y link) ----------------
+export const slugify = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+
+// Empresa maestra por defecto (Movtek). El super-administrador crea las demás.
+const MOVTEK_MASTER = {
+  id: 'movtek', nombre: 'Movtek', slug: 'movtek', es_maestra: true,
+  color_primario: '#10b981', color_acento: '#84cc16',
+  razon_social: 'MOVTEK', nit: '', direccion: '', ciudad: '', telefonos: '', email: '', resolucion: '',
+  logo_url: '', iso_url: '',
+}
+
+const LS_KEY_E = 'movtek_empresas'
+function lsAllE() { try { const v = JSON.parse(localStorage.getItem(LS_KEY_E) || 'null'); return v && v.length ? v : [MOVTEK_MASTER] } catch { return [MOVTEK_MASTER] } }
+function lsSaveE(rows) { try { localStorage.setItem(LS_KEY_E, JSON.stringify(rows)) } catch {} }
 
 export async function listEmpresas() {
   if (isSupabaseConfigured) {
     const { data, error } = await supabase.from('empresas').select('*').order('nombre')
     if (error) throw error
-    // Evita mostrar empresas repetidas por nombre (por si quedaron duplicadas en la base).
     const vistos = new Set()
     const unicas = (data || []).filter((e) => (vistos.has(e.nombre) ? false : vistos.add(e.nombre)))
-    return unicas.length ? unicas : EMPRESAS_DEMO
+    return unicas.length ? unicas : [MOVTEK_MASTER]
   }
-  return EMPRESAS_DEMO
+  return lsAllE()
 }
 
 export async function getEmpresa(id) {
   if (!id) return null
   const list = await listEmpresas()
   return list.find((e) => String(e.id) === String(id)) || null
+}
+
+// Busca la empresa por su link (slug) — para la página de acceso de cada empresa.
+export async function getEmpresaPorSlug(slug) {
+  const s = slugify(slug)
+  if (!s) return null
+  if (isSupabaseConfigured) {
+    const { data, error } = await supabase.from('empresas').select('*').eq('slug', s).limit(1)
+    if (error) return null
+    return (data && data[0]) || null
+  }
+  return lsAllE().find((e) => (e.slug || slugify(e.nombre)) === s) || null
+}
+
+export async function saveEmpresa(data) {
+  const payload = { ...data }
+  if (!payload.slug && payload.nombre) payload.slug = slugify(payload.nombre)
+  if (payload.slug) payload.slug = slugify(payload.slug)
+  if (isSupabaseConfigured) {
+    if (payload.id && payload.id !== 'movtek') {
+      const { id, created_at, es_maestra, ...rest } = payload
+      const { data: d, error } = await supabase.from('empresas').update(nulls(rest)).eq('id', id).select().single()
+      if (error) throw error
+      return d
+    }
+    const { id, es_maestra, ...rest } = payload
+    const { data: d, error } = await supabase.from('empresas').insert(nulls(rest)).select().single()
+    if (error) throw error
+    return d
+  }
+  const rows = lsAllE()
+  if (payload.id && payload.id !== 'movtek') {
+    const i = rows.findIndex((r) => String(r.id) === String(payload.id))
+    if (i >= 0) rows[i] = { ...rows[i], ...payload }
+  } else {
+    payload.id = newId()
+    rows.push(payload)
+  }
+  lsSaveE(rows)
+  return payload
+}
+
+export async function deleteEmpresa(id) {
+  if (id === 'movtek') return
+  if (isSupabaseConfigured) {
+    const { error } = await supabase.from('empresas').delete().eq('id', id)
+    if (error) throw error
+    return
+  }
+  lsSaveE(lsAllE().filter((r) => String(r.id) !== String(id)))
 }
 
 // ---------------- CLIENTES MAESTROS ----------------

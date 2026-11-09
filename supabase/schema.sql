@@ -233,6 +233,8 @@ alter table vehiculos add column if not exists conductores_asignados jsonb defau
 -- Logo y sello ISO de la empresa
 alter table empresas add column if not exists logo_url text;
 alter table empresas add column if not exists iso_url text;
+alter table empresas add column if not exists slug text;
+create unique index if not exists uq_empresas_slug on empresas (slug) where slug is not null;
 alter table empresas add column if not exists color_primario text;
 alter table empresas add column if not exists color_acento text;
 

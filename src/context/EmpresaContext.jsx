@@ -12,6 +12,15 @@ export function EmpresaProvider({ children }) {
   const [empresas, setEmpresas] = useState([])
   const [empresa, setEmpresa] = useState(null)
 
+  async function recargarEmpresas() {
+    const list = await listEmpresas()
+    setEmpresas(list)
+    let saved = null
+    try { saved = localStorage.getItem(LS_KEY) } catch {}
+    setEmpresa((prev) => list.find((e) => e.id === (prev?.id || saved)) || prev || list[0] || null)
+    return list
+  }
+
   useEffect(() => {
     listEmpresas().then((list) => {
       setEmpresas(list)
@@ -34,7 +43,7 @@ export function EmpresaProvider({ children }) {
   }
 
   return (
-    <EmpresaContext.Provider value={{ empresa, empresas, cambiarEmpresa }}>
+    <EmpresaContext.Provider value={{ empresa, empresas, cambiarEmpresa, recargarEmpresas }}>
       {children}
     </EmpresaContext.Provider>
   )

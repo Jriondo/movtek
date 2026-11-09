@@ -13,6 +13,7 @@ const nav = [
   { to: '/vehiculos', label: 'Vehículos', icon: '🚚', roles: ['admin', 'operativo', 'propietario'] },
   { to: '/destinos', label: 'Matriz destinos', icon: '🗺️', roles: ['admin', 'operativo'] },
   { to: '/fuec', label: 'FUEC', icon: '📄', roles: ['admin', 'operativo', 'propietario'] },
+  { to: '/empresas', label: 'Empresas', icon: '🏭', roles: ['admin'] },
   { to: '/usuarios', label: 'Usuarios', icon: '🔑', roles: ['admin'] },
   { label: 'Reportes', icon: '📊', soon: true, roles: ['admin', 'operativo'] },
 ]

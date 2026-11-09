@@ -15,7 +15,7 @@ function traducirError(msg = '') {
   return msg || 'No pudimos iniciar sesión. Revisa tu correo y contraseña.'
 }
 
-export default function Login() {
+export default function Login({ marca = null }) {
   const { login, registrar, recuperarPassword, demo } = useAuth()
   const [modo, setModo] = useState('login') // 'login' | 'registro' | 'recuperar'
   const [recuperarEmail, setRecuperarEmail] = useState('')
@@ -100,16 +100,20 @@ export default function Login() {
     <div className="grid min-h-full lg:grid-cols-2">
       {/* Panel de marca */}
       <div className="relative hidden overflow-hidden bg-gradient-to-br from-brand-600 via-brand-500 to-mint-500 p-12 text-white lg:flex lg:flex-col lg:justify-between">
-        <Logo light />
+        {marca ? (
+          marca.logo_url
+            ? <img src={marca.logo_url} alt={marca.nombre} className="h-14 w-auto rounded-lg bg-white/90 object-contain p-1.5" />
+            : <span className="font-display text-2xl font-extrabold">{marca.nombre}</span>
+        ) : <Logo light />}
         <div>
           <h1 className="font-display text-4xl font-extrabold leading-tight">
-            Tu cooperativa,<br />en la palma de tu mano.
+            {marca ? <>{marca.nombre}</> : <>Tu cooperativa,<br />en la palma de tu mano.</>}
           </h1>
           <p className="mt-4 max-w-sm text-white/80">
-            Unidades, aportes, seguros y avisos — todo en un solo lugar, simple y al día.
+            {marca ? 'Accede con tu usuario para gestionar tus FUEC, vehículos y conductores.' : 'Unidades, aportes, seguros y avisos — todo en un solo lugar, simple y al día.'}
           </p>
         </div>
-        <p className="text-sm text-white/60">Movtek · Transporte Conectado</p>
+        <p className="text-sm text-white/60">{marca ? `${marca.nombre} · con tecnología de Movtek` : 'Movtek · Transporte Conectado'}</p>
         <div className="pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full bg-white/10 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-24 right-10 h-72 w-72 rounded-full bg-mint-400/30 blur-2xl" />
       </div>
@@ -117,7 +121,13 @@ export default function Login() {
       {/* Formulario */}
       <div className="flex items-center justify-center p-6">
         <div className="w-full max-w-sm">
-          <div className="mb-8 lg:hidden"><Logo /></div>
+          <div className="mb-8 flex items-center gap-3 lg:hidden">
+            {marca ? (
+              marca.logo_url
+                ? <img src={marca.logo_url} alt={marca.nombre} className="h-10 w-auto object-contain" />
+                : <span className="font-display text-xl font-extrabold text-ink">{marca.nombre}</span>
+            ) : <Logo />}
+          </div>
 
           {modo === 'login' ? (
             <>

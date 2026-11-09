@@ -19,7 +19,9 @@ import FuecForm from './pages/FuecForm'
 import FuecImprimir from './pages/FuecImprimir'
 import VerificarFuec from './pages/VerificarFuec'
 import Usuarios from './pages/Usuarios'
+import Empresas from './pages/Empresas'
 import NuevaPassword from './pages/NuevaPassword'
+import AccesoEmpresa from './pages/AccesoEmpresa'
 
 // Protege las rutas internas: si no hay sesión, manda al login.
 function Protected({ children }) {
@@ -46,6 +48,7 @@ export default function App() {
       {/* Verificación pública del FUEC (QR) — sin login */}
       <Route path="/verificar/:id" element={<VerificarFuec />} />
       <Route path="/nueva-password" element={<NuevaPassword />} />
+      <Route path="/e/:slug" element={<AccesoEmpresa />} />
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
       <Route
         path="/"
@@ -78,6 +81,7 @@ export default function App() {
         <Route path="fuec/:id" element={<FuecForm />} />
         <Route path="fuec/:id/imprimir" element={<FuecImprimir />} />
         <Route path="usuarios" element={<Usuarios />} />
+        <Route path="empresas" element={<Empresas />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
