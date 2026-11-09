@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext'
 
 const MODULOS = [
   { label: 'Clientes maestros', icon: '👥', to: '/clientes', desc: 'Consulta y gestión de clientes', roles: ['admin', 'operativo'] },
-  { label: 'Conductores', icon: '🧑‍✈️', to: '/conductores', desc: 'Empleados y licencias', roles: ['admin', 'operativo', 'propietario'] },
+  { label: 'Conductores', icon: '🧑', to: '/conductores', desc: 'Empleados y licencias', roles: ['admin', 'operativo', 'propietario'] },
   { label: 'Propietarios', icon: '👤', to: '/propietarios', desc: 'Dueños de vehículos', roles: ['admin', 'operativo'] },
   { label: 'Empresas transp.', icon: '🏢', to: '/transportadoras', desc: 'Transportadoras vinculadas', roles: ['admin', 'operativo'] },
   { label: 'Vehículos', icon: '🚚', to: '/vehiculos', desc: 'Flota de la empresa', roles: ['admin', 'operativo', 'propietario'] },
