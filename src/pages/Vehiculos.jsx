@@ -2,11 +2,13 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { listVehiculos, exportVehiculosCsv } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
+import { useAuth } from '../context/AuthContext'
 
 // Módulo 4.5 — Consulta de vehículos.
 export default function Vehiculos() {
   const navigate = useNavigate()
   const { empresa } = useEmpresa()
+  const { esPropietario } = useAuth()
   const [placa, setPlaca] = useState('')
   const [movil, setMovil] = useState('')
   const [estado, setEstado] = useState('activo')
@@ -59,7 +61,7 @@ export default function Vehiculos() {
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
           <button type="submit" className="btn-primary">🔍 Buscar</button>
-          <button type="button" className="btn-accent" onClick={() => navigate('/vehiculos/nuevo')}>+ Nuevo</button>
+          {!esPropietario && <button type="button" className="btn-accent" onClick={() => navigate('/vehiculos/nuevo')}>+ Nuevo</button>}
           <button type="button" className="btn-ghost" onClick={() => exportVehiculosCsv(rows)} disabled={!rows.length}>⭳ Descargar a Excel</button>
         </div>
       </form>
@@ -111,7 +113,7 @@ export default function Vehiculos() {
                         : <span className="pill bg-mint-500/15 text-mint-600">Activo</span>}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-right">
-                      <button className="btn-ghost !px-3 !py-1.5 text-xs" onClick={() => navigate(`/vehiculos/${v.id}`)}>✎ Editar</button>
+                      <button className="btn-ghost !px-3 !py-1.5 text-xs" onClick={() => navigate(`/vehiculos/${v.id}`)}>{esPropietario ? '👁 Ver' : '✎ Editar'}</button>
                     </td>
                   </tr>
                 ))}
