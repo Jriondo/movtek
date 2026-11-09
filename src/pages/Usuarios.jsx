@@ -15,7 +15,9 @@ export default function Usuarios() {
   const [msg, setMsg] = useState('')
 
   async function cargar() {
-    setUsuarios(await listUsuarios({ empresaId: empresa?.id }).catch(() => []))
+    // El admin ve TODOS los usuarios del sistema (sin filtrar por empresa),
+    // para que no se "escondan" los creados bajo otra empresa.
+    setUsuarios(await listUsuarios().catch(() => []))
     setPropietarios(await listPropietarios({ empresaId: empresa?.id, estado: 'activo' }).catch(() => []))
   }
   useEffect(() => { cargar() }, [empresa?.id])
