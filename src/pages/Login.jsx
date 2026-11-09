@@ -98,26 +98,37 @@ export default function Login({ marca = null }) {
 
   return (
     <div className="grid min-h-full lg:grid-cols-2">
-      {/* Panel de marca */}
-      <div className="relative hidden overflow-hidden bg-gradient-to-br from-brand-600 via-brand-500 to-mint-500 p-12 text-white lg:flex lg:flex-col lg:justify-between">
-        <div className="inline-flex items-center self-start rounded-2xl bg-white px-6 py-4 shadow-xl">
-          {marca ? (
-            marca.logo_url
-              ? <img src={marca.logo_url} alt={marca.nombre} className="h-16 w-auto max-w-[220px] object-contain" />
-              : <span className="font-display text-2xl font-extrabold text-ink">{marca.nombre}</span>
-          ) : <Logo />}
-        </div>
-        <div>
-          <h1 className="font-display text-4xl font-extrabold leading-tight">
+      {/* Panel de marca — centrado, moderno */}
+      <div className="relative hidden overflow-hidden bg-gradient-to-br from-brand-700 via-brand-600 to-brand-500 p-12 text-center text-white lg:flex lg:flex-col lg:items-center lg:justify-center">
+        {/* Formas decorativas */}
+        <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-28 -left-16 h-96 w-96 rounded-full bg-mint-500/25 blur-3xl" />
+        <div className="pointer-events-none absolute right-1/4 top-1/3 h-40 w-40 rounded-full bg-mint-400/20 blur-2xl" />
+
+        <div className="relative z-10 flex flex-col items-center">
+          <div className="inline-flex items-center rounded-3xl bg-white px-8 py-6 shadow-2xl ring-1 ring-white/40">
+            {marca ? (
+              marca.logo_url
+                ? <img src={marca.logo_url} alt={marca.nombre} className="h-20 w-auto max-w-[260px] object-contain" />
+                : <span className="font-display text-3xl font-extrabold text-ink">{marca.nombre}</span>
+            ) : <Logo />}
+          </div>
+
+          <h1 className="mt-10 font-display text-4xl font-extrabold leading-tight">
             {marca ? <>{marca.nombre}</> : <>Tu empresa,<br />en la palma de tu mano.</>}
           </h1>
-          <p className="mt-4 max-w-sm text-white/80">
+          <p className="mx-auto mt-4 max-w-md text-white/85">
             {marca ? 'Accede con tu usuario para gestionar tus FUEC, vehículos y conductores.' : 'Tu flota, tus FUEC y tu equipo, todo a tu alcance — simple, rápido y siempre contigo.'}
           </p>
+
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-2 text-xs font-semibold text-white/90">
+            <span className="rounded-full bg-white/15 px-3 py-1 backdrop-blur">FUEC en segundos</span>
+            <span className="rounded-full bg-white/15 px-3 py-1 backdrop-blur">Multiempresa</span>
+            <span className="rounded-full bg-white/15 px-3 py-1 backdrop-blur">100% en la nube</span>
+          </div>
         </div>
-        <p className="text-sm text-white/60">{marca ? `${marca.nombre} · Tecnología Movtek` : 'Tecnología Movtek'}</p>
-        <div className="pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full bg-white/10 blur-2xl" />
-        <div className="pointer-events-none absolute -bottom-24 right-10 h-72 w-72 rounded-full bg-mint-400/30 blur-2xl" />
+
+        <p className="absolute bottom-8 text-sm text-white/60">{marca ? `${marca.nombre} · Tecnología Movtek` : 'Tecnología Movtek'}</p>
       </div>
 
       {/* Formulario */}
