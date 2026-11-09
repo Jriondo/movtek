@@ -78,9 +78,9 @@ export default function Empresas() {
       <div className="card p-5 sm:p-6">
         <h2 className="mb-4 flex items-center gap-2 font-display text-sm font-bold uppercase tracking-wide text-brand-600"><span className="h-4 w-1.5 rounded-full bg-brand-500" />{editando ? '✎ Editar empresa' : '➕ Nueva empresa'}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Nombre de la empresa"><input className="input" value={form.nombre} onChange={(e) => set('nombre', e.target.value)} placeholder="Ej. Transmovilisate Express" /></Field>
+          <Field label="Nombre de la empresa"><input className="input" value={form.nombre} onChange={(e) => set('nombre', e.target.value)} /></Field>
           <Field label="Link de acceso (editable)">
-            <input className="input" value={form.slug} onChange={(e) => set('slug', slugify(e.target.value))} placeholder="transmovilisate" />
+            <input className="input" value={form.slug} onChange={(e) => set('slug', slugify(e.target.value))} />
             <p className="mt-1 break-all text-xs text-ink-soft">{origin}/e/<b>{slugActual || '…'}</b></p>
           </Field>
           <Field label="Razón social"><input className="input" value={form.razon_social} onChange={(e) => set('razon_social', e.target.value)} /></Field>

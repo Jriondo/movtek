@@ -1,8 +1,8 @@
 import { useEmpresa } from '../context/EmpresaContext'
-import movtekLogo from '../assets/demo-logo.webp'
+import movtekLogo from '../assets/movtek-logo.png'
 
-// Logo de la empresa activa. Movtek usa su logo oficial; cada empresa el suyo (logo_url);
-// si no tiene, una marca con su inicial + color.
+// Logo de la empresa activa. Movtek usa su logo oficial (transparente);
+// cada empresa el suyo (logo_url); si no tiene, una marca con su inicial + color.
 export default function Logo({ compact = false, light = false }) {
   const { empresa } = useEmpresa() || {}
   const nombre = empresa?.nombre || 'Movtek'
@@ -10,7 +10,7 @@ export default function Logo({ compact = false, light = false }) {
   const logoUrl = empresa?.logo_url || (esMovtek ? movtekLogo : null)
 
   if (logoUrl) {
-    return <img src={logoUrl} alt={nombre} className="h-10 w-auto max-w-[170px] rounded-lg bg-white object-contain p-1 shadow-sm" />
+    return <img src={logoUrl} alt={nombre} className={`w-auto object-contain ${light ? 'h-16' : 'h-12'} max-w-[200px]`} />
   }
 
   const inicial = nombre.trim()[0]?.toUpperCase() || 'M'
