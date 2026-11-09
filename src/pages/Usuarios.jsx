@@ -60,8 +60,6 @@ export default function Usuarios() {
     )
   }
 
-  const propSinUsuario = propietarios.filter((p) => !propConUsuario.has(String(p.id)))
-
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -123,23 +121,6 @@ export default function Usuarios() {
         </div>
       </div>
 
-      {/* Propietarios sin usuario */}
-      <div className="card p-5">
-        <h2 className="mb-1 font-display text-sm font-bold text-ink">Propietarios sin usuario ({propSinUsuario.length})</h2>
-        <p className="mb-3 text-xs text-ink-soft">Cada propietario ya registrado puede crear su propio usuario desde el login (opción “Crear usuario”), sin que tú lo apruebes. Aquí puedes crearlo manualmente si lo prefieres.</p>
-        {propSinUsuario.length === 0 ? (
-          <p className="text-sm text-ink-soft">Todos los propietarios activos ya tienen su usuario. ✅</p>
-        ) : (
-          <ul className="flex flex-col gap-1">
-            {propSinUsuario.map((p) => (
-              <li key={p.id} className="flex items-center justify-between rounded-lg bg-cloud px-3 py-2 text-sm">
-                <span className="font-semibold text-ink">{nombrePropietario(p)}{p.documento ? ` · ${p.documento}` : ''}</span>
-                <button className="btn-accent !px-3 !py-1.5 text-xs" onClick={() => { setForm({ ...VACIO, rol: 'propietario' }); elegirPropietario(p.id); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>+ Crear su usuario</button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
     </div>
   )
 }
