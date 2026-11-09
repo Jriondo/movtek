@@ -96,50 +96,69 @@ export default function Login({ marca = null }) {
     }
   }
 
+  const logoMarca = marca
+    ? (marca.logo_url
+        ? <img src={marca.logo_url} alt={marca.nombre} className="h-16 w-auto max-w-[240px] object-contain" />
+        : <span className="font-display text-3xl font-extrabold text-ink">{marca.nombre}</span>)
+    : <Logo light={false} />
+
   return (
-    <div className="grid min-h-full lg:grid-cols-2">
-      {/* Panel de marca — centrado, moderno */}
-      <div className="relative hidden overflow-hidden bg-gradient-to-br from-brand-700 via-brand-600 to-brand-500 p-12 text-center text-white lg:flex lg:flex-col lg:items-center lg:justify-center">
-        {/* Formas decorativas */}
-        <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-28 -left-16 h-96 w-96 rounded-full bg-mint-500/25 blur-3xl" />
-        <div className="pointer-events-none absolute right-1/4 top-1/3 h-40 w-40 rounded-full bg-mint-400/20 blur-2xl" />
+    <div className="fusion relative min-h-full overflow-hidden">
+      {/* Estilos para que el formulario (tema claro) se lea sobre la tarjeta de cristal oscura */}
+      <style>{`
+        .fusion-bg { background: radial-gradient(circle at 25% 20%, #16317e, #0a1024 60%); }
+        .fusion-grid { background-image:
+          linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px);
+          background-size: 44px 44px; }
+        .fusion-card .label { color: #c7d2fe; }
+        .fusion-card .input {
+          background: rgba(255,255,255,.08);
+          border-color: rgba(255,255,255,.2);
+          color: #fff;
+        }
+        .fusion-card .input::placeholder { color: rgba(255,255,255,.45); }
+        .fusion-card .input:focus { border-color: rgba(147,180,255,.8); box-shadow: 0 0 0 3px rgba(59,130,246,.3); }
+        .fusion-card .text-ink { color: #fff; }
+        .fusion-card .text-ink-soft { color: #c7d2fe; }
+        .fusion-card .text-brand-600 { color: #93b4ff; }
+        .fusion-card .btn-primary { box-shadow: 0 10px 30px rgba(29,78,216,.5); }
+      `}</style>
 
-        <div className="relative z-10 flex flex-col items-center">
-          <div className="inline-flex items-center rounded-3xl bg-white px-8 py-6 shadow-2xl ring-1 ring-white/40">
-            {marca ? (
-              marca.logo_url
-                ? <img src={marca.logo_url} alt={marca.nombre} className="h-20 w-auto max-w-[260px] object-contain" />
-                : <span className="font-display text-3xl font-extrabold text-ink">{marca.nombre}</span>
-            ) : <Logo />}
+      {/* Fondo tech */}
+      <div className="fusion-bg absolute inset-0" />
+      <div className="fusion-grid absolute inset-0" />
+      <div className="pointer-events-none absolute left-[6%] top-[8%] h-[420px] w-[420px] rounded-full bg-brand-600 opacity-50 blur-[110px]" />
+      <div className="pointer-events-none absolute bottom-[2%] right-[6%] h-[360px] w-[360px] rounded-full bg-accent-500 opacity-50 blur-[110px]" style={{ backgroundColor: '#f97316' }} />
+      <div className="pointer-events-none absolute left-[45%] top-[40%] h-[260px] w-[260px] rounded-full opacity-25 blur-[110px]" style={{ backgroundColor: '#22d3ee' }} />
+
+      <div className="relative z-10 grid min-h-full items-center gap-8 px-6 py-10 lg:grid-cols-2 lg:px-16">
+        {/* Columna izquierda — marca */}
+        <div className="hidden flex-col justify-center text-white lg:flex">
+          <div className="inline-flex max-w-max items-center rounded-2xl bg-white px-6 py-4 shadow-2xl ring-1 ring-white/30">
+            {logoMarca}
           </div>
-
-          <h1 className="mt-10 font-display text-4xl font-extrabold leading-tight">
-            {marca ? <>{marca.nombre}</> : <>Tu empresa,<br />en la palma de tu mano.</>}
+          <h1 className="mt-9 font-display text-4xl font-extrabold leading-[1.1] xl:text-5xl">
+            {marca ? <>{marca.nombre}</> : <>Movilidad y<br />tecnología,<br /><span style={{ color: '#f97316' }}>en una sola app.</span></>}
           </h1>
-          <p className="mx-auto mt-4 max-w-md text-white/85">
-            {marca ? 'Accede con tu usuario para gestionar tus FUEC, vehículos y conductores.' : 'Tu flota, tus FUEC y tu equipo, todo a tu alcance — simple, rápido y siempre contigo.'}
+          <p className="mt-5 max-w-md text-white/75">
+            {marca ? 'Accede con tu usuario para gestionar tus FUEC, vehículos y conductores.' : 'Genera tus FUEC, administra tu flota y tu equipo desde cualquier lugar.'}
           </p>
-
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-2 text-xs font-semibold text-white/90">
-            <span className="rounded-full bg-white/15 px-3 py-1 backdrop-blur">FUEC en segundos</span>
-            <span className="rounded-full bg-white/15 px-3 py-1 backdrop-blur">Multiempresa</span>
-            <span className="rounded-full bg-white/15 px-3 py-1 backdrop-blur">100% en la nube</span>
+          <div className="mt-7 flex flex-wrap gap-2 text-xs font-semibold text-white">
+            <span className="rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5">FUEC en segundos</span>
+            <span className="rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5">Multiempresa</span>
+            <span className="rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5">100% en la nube</span>
           </div>
+          <p className="mt-10 text-sm text-white/55">{marca ? `${marca.nombre} · Tecnología Movtek` : 'Tecnología Movtek'}</p>
         </div>
 
-        <p className="absolute bottom-8 text-sm text-white/60">{marca ? `${marca.nombre} · Tecnología Movtek` : 'Tecnología Movtek'}</p>
-      </div>
-
-      {/* Formulario */}
-      <div className="flex items-center justify-center p-6">
-        <div className="w-full max-w-sm">
-          <div className="mb-8 flex items-center gap-3 lg:hidden">
-            {marca ? (
-              marca.logo_url
-                ? <img src={marca.logo_url} alt={marca.nombre} className="h-10 w-auto object-contain" />
-                : <span className="font-display text-xl font-extrabold text-ink">{marca.nombre}</span>
-            ) : <Logo />}
+        {/* Columna derecha — tarjeta de cristal con el formulario */}
+        <div className="flex items-center justify-center">
+          <div className="fusion-card w-full max-w-md rounded-[28px] border border-white/25 bg-white/10 p-8 shadow-[0_30px_80px_rgba(0,0,0,.45)] backdrop-blur-xl sm:p-10">
+          <div className="mb-7 flex items-center justify-center lg:hidden">
+            <div className="inline-flex items-center rounded-2xl bg-white px-5 py-3 shadow-xl">
+              {logoMarca}
+            </div>
           </div>
 
           {modo === 'login' ? (
@@ -224,10 +243,11 @@ export default function Login({ marca = null }) {
           )}
 
           {demo && (
-            <p className="mt-5 rounded-xl border border-dashed border-cloud-line bg-cloud px-3 py-2.5 text-xs text-ink-soft">
+            <p className="mt-5 rounded-xl border border-dashed border-white/20 bg-white/5 px-3 py-2.5 text-xs text-white/70">
               ⚙️ <b>Modo demo:</b> aún no conectas Supabase, así que cualquier correo y contraseña ingresan. Al conectar tu base de datos, el login será real.
             </p>
           )}
+          </div>
         </div>
       </div>
     </div>
