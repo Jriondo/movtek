@@ -81,6 +81,8 @@ export default function Login() {
       if (!res.ok) {
         if (res.motivo === 'no-propietario') { setNota('⚠️ Aún no apareces en nuestra base de datos. Pídele a la empresa (rol operativo) que registre primero tu información.'); setBusy(false); return }
         if (res.motivo === 'ya-existe') { setError('Ya existe un usuario para este propietario. Inicia sesión.'); setBusy(false); return }
+        // Cualquier otro error: NO creamos la cuenta a medias, avisamos.
+        setError('No se pudo crear tu usuario' + (res.error ? `: ${res.error}` : '') + '. Comunícate con la empresa.'); setBusy(false); return
       }
       const r = await registrar(reg.correo, reg.password) // crea la cuenta
       if (r?.needsConfirmation) {
