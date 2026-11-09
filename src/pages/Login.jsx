@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { buscarPropietarioGlobalPorDocumento, registrarUsuarioPropietario, nombrePropietario } from '../lib/db'
 import Logo from '../components/Logo'
+import PasswordInput from '../components/PasswordInput'
 
 // Traduce los errores comunes de Supabase a mensajes claros en español.
 function traducirError(msg = '') {
@@ -124,8 +125,7 @@ export default function Login() {
                 </div>
                 <div>
                   <label className="label" htmlFor="password">Contraseña</label>
-                  <input id="password" type="password" className="input" value={password}
-                    onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoComplete="current-password" required />
+                  <PasswordInput id="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
                 </div>
                 {error && <p className="rounded-lg bg-coral-400/15 px-3 py-2 text-sm font-medium text-coral-500">{error}</p>}
                 <button className="btn-primary mt-1 w-full" disabled={busy}>{busy ? 'Ingresando…' : 'Ingresar'}</button>
@@ -172,7 +172,7 @@ export default function Login() {
                 <div><label className="label">Teléfono</label><input className="input" value={reg.telefono} onChange={(e) => setR('telefono', e.target.value)} /></div>
                 <div><label className="label">Dirección</label><input className="input" value={reg.direccion} onChange={(e) => setR('direccion', e.target.value)} /></div>
                 <div><label className="label">Correo</label><input type="email" className="input" value={reg.correo} onChange={(e) => setR('correo', e.target.value)} placeholder="tucorreo@ejemplo.com" required /></div>
-                <div><label className="label">Contraseña</label><input type="password" className="input" value={reg.password} onChange={(e) => setR('password', e.target.value)} placeholder="Crea tu contraseña" required /></div>
+                <div><label className="label">Contraseña</label><PasswordInput value={reg.password} onChange={(e) => setR('password', e.target.value)} placeholder="Crea tu contraseña" required /></div>
                 {error && <p className="rounded-lg bg-coral-400/15 px-3 py-2 text-sm font-medium text-coral-500">{error}</p>}
                 <button className="btn-primary mt-1 w-full" disabled={busy || !propEncontrado}>{busy ? 'Creando…' : 'Aceptar y crear usuario'}</button>
               </form>

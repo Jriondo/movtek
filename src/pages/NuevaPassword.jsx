@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Logo from '../components/Logo'
+import PasswordInput from '../components/PasswordInput'
 
 export default function NuevaPassword() {
   const { actualizarPassword } = useAuth()
@@ -37,8 +38,8 @@ export default function NuevaPassword() {
           <p className="mt-6 rounded-xl bg-mint-500/15 px-4 py-3 text-sm font-medium text-mint-600">✅ Contraseña actualizada. Entrando…</p>
         ) : (
           <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
-            <div><label className="label">Nueva contraseña</label><input type="password" className="input" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required /></div>
-            <div><label className="label">Repite la contraseña</label><input type="password" className="input" value={password2} onChange={(e) => setPassword2(e.target.value)} placeholder="••••••••" required /></div>
+            <div><label className="label">Nueva contraseña</label><PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} required /></div>
+            <div><label className="label">Repite la contraseña</label><PasswordInput value={password2} onChange={(e) => setPassword2(e.target.value)} required /></div>
             {error && <p className="rounded-lg bg-coral-400/15 px-3 py-2 text-sm font-medium text-coral-500">{error}</p>}
             <button className="btn-primary mt-1 w-full" disabled={busy}>{busy ? 'Guardando…' : 'Guardar contraseña'}</button>
           </form>

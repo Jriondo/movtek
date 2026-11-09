@@ -8,7 +8,7 @@ const nav = [
   { to: '/', label: 'Inicio', icon: '▣', end: true, roles: ['admin', 'operativo', 'propietario'] },
   { to: '/clientes', label: 'Clientes maestros', icon: '👥', roles: ['admin', 'operativo'] },
   { to: '/conductores', label: 'Conductores', icon: '🧑‍✈️', roles: ['admin', 'operativo', 'propietario'] },
-  { to: '/propietarios', label: 'Propietarios', icon: '🪪', roles: ['admin', 'operativo'] },
+  { to: '/propietarios', label: 'Propietarios', icon: '👤', roles: ['admin', 'operativo'] },
   { to: '/transportadoras', label: 'Empresas transp.', icon: '🏢', roles: ['admin', 'operativo'] },
   { to: '/vehiculos', label: 'Vehículos', icon: '🚚', roles: ['admin', 'operativo', 'propietario'] },
   { to: '/destinos', label: 'Matriz destinos', icon: '🗺️', roles: ['admin', 'operativo'] },
