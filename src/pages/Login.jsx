@@ -103,7 +103,7 @@ export default function Login({ marca = null }) {
     : <Logo light={false} />
 
   return (
-    <div className="fusion relative min-h-full overflow-hidden">
+    <div className="fusion relative min-h-screen overflow-hidden">
       {/* Estilos para que el formulario (tema claro) se lea sobre la tarjeta de cristal oscura */}
       <style>{`
         .fusion-bg { background: radial-gradient(circle at 25% 20%, #16317e, #0a1024 60%); }
@@ -132,7 +132,7 @@ export default function Login({ marca = null }) {
       <div className="pointer-events-none absolute bottom-[2%] right-[6%] h-[360px] w-[360px] rounded-full bg-accent-500 opacity-50 blur-[110px]" style={{ backgroundColor: '#f97316' }} />
       <div className="pointer-events-none absolute left-[45%] top-[40%] h-[260px] w-[260px] rounded-full opacity-25 blur-[110px]" style={{ backgroundColor: '#22d3ee' }} />
 
-      <div className="relative z-10 grid min-h-full items-center gap-8 px-6 py-10 lg:grid-cols-2 lg:px-16">
+      <div className="relative z-10 grid min-h-screen items-center gap-8 px-6 py-10 lg:grid-cols-2 lg:px-16">
         {/* Columna izquierda — marca */}
         <div className="hidden flex-col justify-center text-white lg:flex">
           <div className="inline-flex max-w-max items-center rounded-2xl bg-white px-6 py-4 shadow-2xl ring-1 ring-white/30">
