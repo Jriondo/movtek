@@ -107,13 +107,13 @@ export default function Login({ marca = null }) {
         ) : <Logo light />}
         <div>
           <h1 className="font-display text-4xl font-extrabold leading-tight">
-            {marca ? <>{marca.nombre}</> : <>Tu cooperativa,<br />en la palma de tu mano.</>}
+            {marca ? <>{marca.nombre}</> : <>Tu empresa,<br />en la palma de tu mano.</>}
           </h1>
           <p className="mt-4 max-w-sm text-white/80">
-            {marca ? 'Accede con tu usuario para gestionar tus FUEC, vehículos y conductores.' : 'Unidades, aportes, seguros y avisos — todo en un solo lugar, simple y al día.'}
+            {marca ? 'Accede con tu usuario para gestionar tus FUEC, vehículos y conductores.' : 'Tu flota, tus FUEC y tu equipo, todo a tu alcance — simple, rápido y siempre contigo.'}
           </p>
         </div>
-        <p className="text-sm text-white/60">{marca ? `${marca.nombre} · con tecnología de Movtek` : 'Movtek · Transporte Conectado'}</p>
+        <p className="text-sm text-white/60">{marca ? `${marca.nombre} · Tecnología Movtek` : 'Tecnología Movtek'}</p>
         <div className="pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full bg-white/10 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-24 right-10 h-72 w-72 rounded-full bg-mint-400/30 blur-2xl" />
       </div>

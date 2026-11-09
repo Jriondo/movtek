@@ -10,7 +10,7 @@ export default function Logo({ compact = false, light = false }) {
   const logoUrl = empresa?.logo_url || (esMovtek ? movtekLogo : null)
 
   if (logoUrl) {
-    return <img src={logoUrl} alt={nombre} className={`w-auto object-contain ${light ? 'h-16' : 'h-12'} max-w-[200px]`} />
+    return <img src={logoUrl} alt={nombre} className={`w-auto object-contain ${light ? 'h-24 max-w-[300px]' : 'h-12 max-w-[200px]'}`} />
   }
 
   const inicial = nombre.trim()[0]?.toUpperCase() || 'M'

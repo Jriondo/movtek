@@ -95,7 +95,9 @@ export default function Layout() {
             <p className="truncate text-xs font-bold text-ink">{email}</p>
             <p className="text-[11px] text-ink-faint">{rol === 'admin' ? 'Administrador' : rol === 'operativo' ? 'Operativo' : 'Propietario'}{demo ? ' · demo' : ''}</p>
           </div>
-          <button onClick={logout} title="Salir" className="text-ink-faint hover:text-coral-500">⏻</button>
+          <button onClick={logout} title="Cerrar sesión" aria-label="Cerrar sesión" className="flex-none text-ink-faint hover:text-coral-500">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
+          </button>
         </div>
         <p className="mt-2 text-center text-[10px] font-semibold text-ink-faint">con tecnología de Movtek</p>
       </aside>
