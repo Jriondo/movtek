@@ -258,6 +258,20 @@ alter table usuarios enable row level security;
 drop policy if exists "dev_usuarios_all" on usuarios;
 create policy "dev_usuarios_all" on usuarios for all to authenticated using (true) with check (true);
 
+-- Logos del sistema (ISO, Ministerio de Transporte, Vigilado SuperTransporte).
+-- Fila única (id=1) que solo el administrador cambia; se usan en todos los FUEC.
+create table if not exists ajustes (
+  id int primary key default 1,
+  iso_url text,
+  mintransporte_url text,
+  vigilado_url text
+);
+alter table ajustes enable row level security;
+drop policy if exists "dev_ajustes_all" on ajustes;
+create policy "dev_ajustes_all" on ajustes for all to authenticated using (true) with check (true);
+drop policy if exists "public_ajustes_select" on ajustes;
+create policy "public_ajustes_select" on ajustes for select to anon using (true);
+
 -- Seguridad a nivel de fila
 alter table empresas enable row level security;
 alter table clientes_maestros enable row level security;

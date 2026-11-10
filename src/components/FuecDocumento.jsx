@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react'
 import mintransporte from '../assets/mintransporte.webp'
 import supertransporte from '../assets/supertransporte.webp'
 import defaultLogo from '../assets/demo-logo.webp'
 import defaultIso from '../assets/iso9001.png'
+import { getLogosSistema } from '../lib/db'
 
 // Documento FUEC — réplica del formato oficial (Resolución 0006652 de 2019).
 const fmt = (iso) => (iso ? iso.split('-').reverse().join('/') : '')
@@ -12,7 +14,7 @@ const TERRITORIALES = [
   ['Atlántico', '208', 'Magdalena', '247'],
   ['Bolívar - San Andrés Providencia', '213', 'Meta – Vaupés - Vichada', '550'],
   ['Boyacá – Casanare', '415', 'Nariño – Putumayo', '352'],
-  ['Caldas', '517', 'N/Santander – Arauca', '454'],
+  ['Caldas', '317', 'N/Santander – Arauca', '454'],
   ['Cauca', '319', 'Quindío', '363'],
   ['Cesar', '220', 'Risaralda', '366'],
   ['Córdoba – Sucre', '223', 'Santander', '468'],
@@ -20,11 +22,11 @@ const TERRITORIALES = [
   ['Guajira', '241', 'Valle del Cauca', '376'],
 ]
 
-function Encabezado({ razon, e, qr, pagina, logoSrc, isoSrc }) {
+function Encabezado({ razon, e, qr, pagina, logoSrc, isoSrc, minSrc, supSrc }) {
   return (
     <>
       <div className="hdbox">
-        <div className="hdcell c-min"><img className="logo" src={mintransporte} alt="Ministerio de Transporte" /></div>
+        <div className="hdcell c-min"><img className="logo" src={minSrc} alt="Ministerio de Transporte" /></div>
         <div className="hdcell c-iso"><img className="iso" src={isoSrc} alt="ISO 9001" /></div>
         <div className="hdcell c-emp">
           <img className="logo-emp" src={logoSrc} alt={razon} />
@@ -32,7 +34,7 @@ function Encabezado({ razon, e, qr, pagina, logoSrc, isoSrc }) {
           <div className="emp-sub">Transporte Terrestre Automotor Especial</div>
         </div>
         <div className="hdcell c-qr">{qr && <img className="qrh" src={qr} alt="QR" />}</div>
-        <div className="hdcell c-sup"><img className="logo-sup" src={supertransporte} alt="Vigilado SuperTransporte" /></div>
+        <div className="hdcell c-sup"><img className="logo-sup" src={supSrc} alt="Vigilado SuperTransporte" /></div>
       </div>
       <table><tbody>
         <tr><td className="title">
@@ -50,9 +52,14 @@ export default function FuecDocumento({ f, empresa, qr }) {
   // si la foto no los tiene (para FUEC creados antes de agregar esos campos).
   const live = empresa || {}
   const e = { ...live, ...(f?.empresa_snapshot || {}), _num: f.numero_fuec || '' }
+  // Logos del sistema (ISO, Ministerio, Vigilado): personalizados por el admin, o los de la app.
+  const [sis, setSis] = useState({})
+  useEffect(() => { getLogosSistema().then(setSis).catch(() => {}) }, [])
   // Logo: el de la empresa; si no tiene, el de demostración. El sello ISO es automático para todas.
   const logoSrc = e.logo_url || live.logo_url || defaultLogo
-  const isoSrc = defaultIso
+  const isoSrc = sis.iso_url || defaultIso
+  const minSrc = sis.mintransporte_url || mintransporte
+  const supSrc = sis.vigilado_url || supertransporte
   const razon = e.razon_social || e.nombre || 'EMPRESA DE TRANSPORTE ESPECIAL'
   const estr = (f.estrategia_comercial || '').toUpperCase()
   const conValue = (f.estrategia_con && f.estrategia_con.toUpperCase() !== 'NO APLICA') ? f.estrategia_con : 'NO APLICA'
@@ -120,7 +127,7 @@ export default function FuecDocumento({ f, empresa, qr }) {
 
       {/* ===================== PÁGINA 1 ===================== */}
       <div className="fuec-page">
-        <Encabezado razon={razon} e={e} qr={qr} pagina={1} logoSrc={logoSrc} isoSrc={isoSrc} />
+        <Encabezado razon={razon} e={e} qr={qr} pagina={1} logoSrc={logoSrc} isoSrc={isoSrc} minSrc={minSrc} supSrc={supSrc} />
 
         {/* Datos del contrato */}
         <table><colgroup><col style={{ width: '38%' }} /><col /></colgroup><tbody>
@@ -207,7 +214,7 @@ export default function FuecDocumento({ f, empresa, qr }) {
 
       {/* ===================== PÁGINA 2 · INSTRUCTIVO ===================== */}
       <div className="fuec-page">
-        <Encabezado razon={razon} e={e} qr={qr} pagina={2} logoSrc={logoSrc} isoSrc={isoSrc} />
+        <Encabezado razon={razon} e={e} qr={qr} pagina={2} logoSrc={logoSrc} isoSrc={isoSrc} minSrc={minSrc} supSrc={supSrc} />
 
         <div className="ins-wrap">
           <div className="ins-title">INSTRUCTIVO PARA LA DETERMINACIÓN DEL NÚMERO CONSECUTIVO DEL FUEC</div>

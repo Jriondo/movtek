@@ -87,6 +87,29 @@ export async function saveEmpresa(data) {
   return payload
 }
 
+// --- Logos del sistema (ISO, Ministerio de Transporte, Vigilado SuperTransporte) ---
+// Globales para toda la plataforma; solo el administrador los cambia. Si no hay
+// personalizados, el FUEC usa los que vienen por defecto en la app.
+const LS_KEY_SIS = 'movtek_logos_sistema'
+export async function getLogosSistema() {
+  if (isSupabaseConfigured) {
+    const { data, error } = await supabase.from('ajustes').select('*').eq('id', 1).limit(1)
+    if (error) return {}
+    return (data && data[0]) || {}
+  }
+  try { return JSON.parse(localStorage.getItem(LS_KEY_SIS) || '{}') } catch { return {} }
+}
+export async function saveLogosSistema(data) {
+  const payload = { id: 1, ...data }
+  if (isSupabaseConfigured) {
+    const { data: d, error } = await supabase.from('ajustes').upsert(payload).select().single()
+    if (error) throw error
+    return d
+  }
+  try { localStorage.setItem(LS_KEY_SIS, JSON.stringify(payload)) } catch {}
+  return payload
+}
+
 export async function deleteEmpresa(id) {
   if (id === 'movtek') return
   if (isSupabaseConfigured) {

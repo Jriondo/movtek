@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
-import { listEmpresas, saveEmpresa, deleteEmpresa, slugify } from '../lib/db'
+import { listEmpresas, saveEmpresa, deleteEmpresa, slugify, getLogosSistema, saveLogosSistema } from '../lib/db'
 import { useAuth } from '../context/AuthContext'
 import { useEmpresa } from '../context/EmpresaContext'
 import { DIRECCIONES_TERRITORIALES } from '../lib/fuecNumero'
+import { extraerColoresDeImagen } from '../lib/imagenColores'
 import isoSello from '../assets/iso9001.png'
+import mintransporteImg from '../assets/mintransporte.webp'
+import supertransporteImg from '../assets/supertransporte.webp'
 
 const VACIO = {
   nombre: '', slug: '', razon_social: '', nit: '', direccion: '', ciudad: '',
@@ -31,9 +34,15 @@ export default function Empresas() {
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
   const [editando, setEditando] = useState(false)
+  const [colorAuto, setColorAuto] = useState(false)
+
+  // Logos del sistema (solo administrador)
+  const [sistema, setSistema] = useState({})
+  const [sistemaMsg, setSistemaMsg] = useState('')
+  const [sistemaBusy, setSistemaBusy] = useState(false)
 
   async function cargar() { setRows(await listEmpresas().catch(() => [])) }
-  useEffect(() => { cargar() }, [])
+  useEffect(() => { cargar(); getLogosSistema().then(setSistema).catch(() => {}) }, [])
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
@@ -45,8 +54,30 @@ export default function Empresas() {
   async function subirLogo(e, campo) {
     const file = e.target.files?.[0]
     if (!file) return
-    try { set(campo, await archivoADataUri(file)) } catch (err) { setMsg(err.message) }
+    try {
+      const uri = await archivoADataUri(file)
+      set(campo, uri)
+      // Al subir el logo de la empresa, saca los colores del logo automáticamente.
+      if (campo === 'logo_url') {
+        const col = await extraerColoresDeImagen(uri)
+        if (col) { setForm((f) => ({ ...f, logo_url: uri, color_primario: col.primary, color_acento: col.accent })); setColorAuto(true) }
+      }
+    } catch (err) { setMsg(err.message) }
   }
+
+  // Logos del sistema (ISO / Ministerio / Vigilado) — solo administrador.
+  async function subirLogoSistema(e, campo) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    try { const uri = await archivoADataUri(file, 600); setSistema((s) => ({ ...s, [campo]: uri })) }
+    catch (err) { setSistemaMsg(err.message) }
+  }
+  async function guardarSistema() {
+    setSistemaBusy(true); setSistemaMsg('')
+    try { await saveLogosSistema(sistema); setSistemaMsg('✅ Logos del sistema guardados. Se usarán en todos los FUEC.') }
+    catch (err) { setSistemaMsg('No se pudo guardar. ' + (err?.message || '')) } finally { setSistemaBusy(false) }
+  }
+  function quitarLogoSistema(campo) { setSistema((s) => ({ ...s, [campo]: '' })) }
 
   async function guardar() {
     setMsg('')
@@ -76,13 +107,26 @@ export default function Empresas() {
         <p className="mt-1 text-sm text-ink-soft">Crea la plataforma de cada empresa: su logo, su información del FUEC y su link de acceso.</p>
       </div>
 
+      {/* Logos del sistema — solo el administrador los cambia. Se usan en TODOS los FUEC. */}
+      <div className="card border-2 border-dashed border-brand-300 p-5 sm:p-6">
+        <h2 className="mb-1 flex items-center gap-2 font-display text-sm font-bold uppercase tracking-wide text-brand-600"><span className="h-4 w-1.5 rounded-full bg-brand-500" />🛡️ Logos del sistema (solo administrador)</h2>
+        <p className="mb-4 text-xs text-ink-soft">Estos sellos salen en todos los FUEC de todas las empresas. Solo tú (administrador) puedes cambiarlos. Si no subes nada, se usan los que trae la plataforma.</p>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <LogoSistema label="Sello ISO" def={isoSello} val={sistema.iso_url} onFile={(e) => subirLogoSistema(e, 'iso_url')} onQuitar={() => quitarLogoSistema('iso_url')} />
+          <LogoSistema label="Ministerio de Transporte" def={mintransporteImg} val={sistema.mintransporte_url} onFile={(e) => subirLogoSistema(e, 'mintransporte_url')} onQuitar={() => quitarLogoSistema('mintransporte_url')} />
+          <LogoSistema label="Vigilado SuperTransporte" def={supertransporteImg} val={sistema.vigilado_url} onFile={(e) => subirLogoSistema(e, 'vigilado_url')} onQuitar={() => quitarLogoSistema('vigilado_url')} />
+        </div>
+        {sistemaMsg && <p className="mt-3 rounded-xl bg-brand-50 px-4 py-2.5 text-sm font-medium text-brand-600">{sistemaMsg}</p>}
+        <div className="mt-4"><button className="btn-primary" onClick={guardarSistema} disabled={sistemaBusy}>{sistemaBusy ? 'Guardando…' : '💾 Guardar logos del sistema'}</button></div>
+      </div>
+
       {/* Formulario */}
       <div className="card p-5 sm:p-6">
         <h2 className="mb-4 flex items-center gap-2 font-display text-sm font-bold uppercase tracking-wide text-brand-600"><span className="h-4 w-1.5 rounded-full bg-brand-500" />{editando ? '✎ Editar empresa' : '➕ Nueva empresa'}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Nombre de la empresa"><input className="input" value={form.nombre} onChange={(e) => set('nombre', e.target.value)} /></Field>
           <Field label="Link de acceso (editable)">
-            <input className="input" value={form.slug} onChange={(e) => set('slug', slugify(e.target.value))} />
+            <input className="input" value={slugActual} onChange={(e) => set('slug', slugify(e.target.value))} placeholder="se-genera-del-nombre" />
             <p className="mt-1 break-all text-xs text-ink-soft">{origin}/e/<b>{slugActual || '…'}</b></p>
           </Field>
           <Field label="Razón social"><input className="input" value={form.razon_social} onChange={(e) => set('razon_social', e.target.value)} /></Field>
@@ -107,14 +151,16 @@ export default function Empresas() {
             </div>
             <p className="mt-2 text-xs text-ink-soft">El número del FUEC se arma solo: {form.dir_territorial || 'DT'}·{(form.resolucion || 'RES')}·{form.anio_habilitacion ? form.anio_habilitacion.slice(-2) : 'AA'}·(año actual)·(contrato)·(extracto). El año del extracto y los números de contrato se piden al generar cada FUEC.</p>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Color principal"><input type="color" className="input h-11 p-1" value={form.color_primario} onChange={(e) => set('color_primario', e.target.value)} /></Field>
-            <Field label="Color acento"><input type="color" className="input h-11 p-1" value={form.color_acento} onChange={(e) => set('color_acento', e.target.value)} /></Field>
-          </div>
           <Field label="Logo de la empresa">
             <input type="file" accept="image/*" className="input" onChange={(e) => subirLogo(e, 'logo_url')} />
             {form.logo_url && <img src={form.logo_url} alt="logo" className="mt-2 h-14 object-contain" />}
+            <p className="mt-1 text-xs text-ink-soft">Al subir el logo, los colores de la empresa se toman <b>automáticamente</b> del logo.</p>
           </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Color principal"><input type="color" className="input h-11 p-1" value={form.color_primario} onChange={(e) => { set('color_primario', e.target.value); setColorAuto(false) }} /></Field>
+            <Field label="Color acento"><input type="color" className="input h-11 p-1" value={form.color_acento} onChange={(e) => { set('color_acento', e.target.value); setColorAuto(false) }} /></Field>
+            <p className="col-span-2 text-xs text-ink-soft">{colorAuto ? '🎨 Colores tomados del logo. Puedes ajustarlos a mano si quieres.' : 'Se toman del logo al subirlo; también puedes elegirlos a mano.'}</p>
+          </div>
           <Field label="Sello ISO">
             <div className="flex items-center gap-3 rounded-xl border border-cloud-line bg-cloud px-3 py-2.5">
               <img src={isoSello} alt="ISO 9001" className="h-10 object-contain" />
@@ -169,3 +215,21 @@ export default function Empresas() {
 }
 
 function Field({ label, children }) { return <div><span className="label">{label}</span>{children}</div> }
+
+function LogoSistema({ label, def, val, onFile, onQuitar }) {
+  return (
+    <div className="rounded-xl border border-cloud-line p-3">
+      <p className="mb-2 text-xs font-bold text-ink">{label}</p>
+      <div className="mb-2 grid h-16 place-items-center rounded-lg bg-white">
+        <img src={val || def} alt={label} className="max-h-14 max-w-full object-contain" />
+      </div>
+      {val ? (
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-semibold text-mint-600">Personalizado</span>
+          <button type="button" className="text-[11px] font-semibold text-coral-500 hover:underline" onClick={onQuitar}>Usar el de la app</button>
+        </div>
+      ) : <span className="text-[11px] text-ink-faint">Por defecto (de la app)</span>}
+      <input type="file" accept="image/*" className="input mt-2 text-xs" onChange={onFile} />
+    </div>
+  )
+}
