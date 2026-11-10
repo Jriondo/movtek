@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import mintransporte from '../assets/mintransporte.webp'
-import supertransporte from '../assets/supertransporte.png'
+import supertransporte from '../assets/supertransporte.webp'
 import defaultLogo from '../assets/demo-logo.webp'
 import defaultIso from '../assets/iso9001.png'
 import { getLogosSistema } from '../lib/db'
@@ -89,16 +89,16 @@ export default function FuecDocumento({ f, empresa, qr }) {
         .fuec .hdcell { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:8px 6px; border-right:1px solid #000; min-height:94px; box-sizing:border-box; }
         .fuec .hdcell:last-child { border-right:none; }
         .fuec .hdcell img { object-fit:contain; max-width:100%; }
-        .fuec .c-min { flex:0 0 15%; }
-        .fuec .c-iso { flex:0 0 16%; }
+        .fuec .c-min { flex:0 0 16%; }
+        .fuec .c-iso { flex:0 0 17%; }
         .fuec .c-emp { flex:1 1 auto; }
-        .fuec .c-qr { flex:0 0 13%; }
-        .fuec .c-sup { flex:0 0 24%; }
+        .fuec .c-qr { flex:0 0 14%; }
+        .fuec .c-sup { flex:0 0 18%; }
         .fuec .logo { height:62px; }
         .fuec .iso { height:76px; }
         .fuec .logo-emp { height:50px; }
         .fuec .qrh { height:72px; width:72px; }
-        .fuec .logo-sup { width:97%; height:auto; display:block; margin:0 auto; }
+        .fuec .logo-sup { height:72px; width:auto; max-width:100%; object-fit:contain; display:block; margin:0 auto; }
         .fuec .emp-name { display:inline-block; white-space:nowrap; font-size:15px; font-weight:bold; color:#16306e; border-bottom:2.5px solid #e8821e; padding-bottom:2px; margin-top:4px; }
         .fuec .emp-sub { font-style:italic; font-size:10px; color:#333; margin-top:3px; }
         .fuec .title { position:relative; text-align:center; padding:7px 8px; line-height:1.35; }

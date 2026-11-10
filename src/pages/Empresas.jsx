@@ -7,7 +7,7 @@ import { DIRECCIONES_TERRITORIALES } from '../lib/fuecNumero'
 import { extraerColoresDeImagen } from '../lib/imagenColores'
 import isoSello from '../assets/iso9001.png'
 import mintransporteImg from '../assets/mintransporte.webp'
-import supertransporteImg from '../assets/supertransporte.png'
+import supertransporteImg from '../assets/supertransporte.webp'
 
 const VACIO = {
   nombre: '', slug: '', razon_social: '', nit: '', direccion: '', ciudad: '',
