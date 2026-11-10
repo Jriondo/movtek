@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
+import { useEmpresa } from './context/EmpresaContext'
+import { slugify } from './lib/db'
 import Login from './pages/Login'
 import Layout from './components/Layout'
 import Inicio from './pages/Inicio'
@@ -27,8 +29,14 @@ import AccesoEmpresa from './pages/AccesoEmpresa'
 // Protege las rutas internas: si no hay sesión, manda al login.
 function Protected({ children }) {
   const { user, loading, sinAcceso, logout } = useAuth()
+  const { empresa } = useEmpresa() || {}
   if (loading) return <div className="grid h-full place-items-center text-ink-faint">Cargando…</div>
-  if (!user) return <Navigate to="/login" replace />
+  if (!user) {
+    // Si estabas dentro de una empresa, el login es el de esa empresa (/e/slug); si no, el de Movtek.
+    const esEmpresa = empresa && !(empresa.es_maestra || empresa.id === 'movtek' || (empresa.nombre || '').toLowerCase() === 'movtek')
+    const destino = esEmpresa ? `/e/${empresa.slug || slugify(empresa.nombre)}` : '/login'
+    return <Navigate to={destino} replace />
+  }
   if (sinAcceso) return (
     <div className="grid min-h-full place-items-center p-6">
       <div className="card max-w-md p-8 text-center">
