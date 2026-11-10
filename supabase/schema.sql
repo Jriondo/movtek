@@ -240,6 +240,7 @@ alter table empresas add column if not exists color_acento text;
 -- Datos para la numeración oficial del FUEC (habilitación de la empresa).
 alter table empresas add column if not exists dir_territorial text;   -- código de 3 dígitos de la Dirección Territorial
 alter table empresas add column if not exists anio_habilitacion text; -- año en que la empresa fue habilitada
+alter table empresas add column if not exists firma_url text;         -- firma del representante legal (data URI)
 
 -- Usuarios y roles (admin | operativo | propietario)
 create table if not exists usuarios (

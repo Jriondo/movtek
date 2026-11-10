@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import mintransporte from '../assets/mintransporte.webp'
-import supertransporte from '../assets/supertransporte.webp'
+import supertransporte from '../assets/supertransporte.png'
 import defaultLogo from '../assets/demo-logo.webp'
 import defaultIso from '../assets/iso9001.png'
 import { getLogosSistema } from '../lib/db'
@@ -62,6 +62,8 @@ export default function FuecDocumento({ f, empresa, qr }) {
   const supSrc = sis.vigilado_url || supertransporte
   // Color de la marca de la empresa para la línea bajo el nombre (de la foto, o de la empresa actual).
   const marcaColor = e.color_primario || live.color_primario || '#e8821e'
+  // Firma del representante legal (de la foto del FUEC, o de la empresa actual).
+  const firmaSrc = e.firma_url || live.firma_url || ''
   const razon = e.razon_social || e.nombre || 'EMPRESA DE TRANSPORTE ESPECIAL'
   const estr = (f.estrategia_comercial || '').toUpperCase()
   const conValue = (f.estrategia_con && f.estrategia_con.toUpperCase() !== 'NO APLICA') ? f.estrategia_con : 'NO APLICA'
@@ -72,7 +74,10 @@ export default function FuecDocumento({ f, empresa, qr }) {
   return (
     <div className="fuec">
       <style>{`
-        .fuec { width:100%; max-width:830px; margin:0 auto; color:#000; font-family: Arial, Helvetica, sans-serif; font-size:10px; }
+        .fuec { width:100%; max-width:830px; margin:0 auto; color:#000; font-family: Arial, Helvetica, sans-serif; font-size:10px; text-transform:uppercase; }
+        /* El texto legal / instructivo se deja en su redacción normal (legible). */
+        .fuec .notas, .fuec .ins-wrap, .fuec .qr-note, .fuec .emp-sub, .fuec .firma-legal { text-transform:none; }
+        .fuec, .fuec * { color:#000 !important; }
         .fuec-page { background:#fff; padding:12px; }
         .fuec table { width:100%; border-collapse:collapse; table-layout:fixed; }
         .fuec td, .fuec th { border:1px solid #000; padding:3px 6px; vertical-align:middle; word-wrap:break-word; }
@@ -84,16 +89,16 @@ export default function FuecDocumento({ f, empresa, qr }) {
         .fuec .hdcell { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:8px 6px; border-right:1px solid #000; min-height:94px; box-sizing:border-box; }
         .fuec .hdcell:last-child { border-right:none; }
         .fuec .hdcell img { object-fit:contain; max-width:100%; }
-        .fuec .c-min { flex:0 0 16%; }
-        .fuec .c-iso { flex:0 0 17%; }
+        .fuec .c-min { flex:0 0 15%; }
+        .fuec .c-iso { flex:0 0 16%; }
         .fuec .c-emp { flex:1 1 auto; }
-        .fuec .c-qr { flex:0 0 14%; }
-        .fuec .c-sup { flex:0 0 18%; }
+        .fuec .c-qr { flex:0 0 13%; }
+        .fuec .c-sup { flex:0 0 24%; }
         .fuec .logo { height:62px; }
         .fuec .iso { height:76px; }
         .fuec .logo-emp { height:50px; }
         .fuec .qrh { height:72px; width:72px; }
-        .fuec .logo-sup { height:74px; }
+        .fuec .logo-sup { width:97%; height:auto; display:block; margin:0 auto; }
         .fuec .emp-name { display:inline-block; white-space:nowrap; font-size:15px; font-weight:bold; color:#16306e; border-bottom:2.5px solid #e8821e; padding-bottom:2px; margin-top:4px; }
         .fuec .emp-sub { font-style:italic; font-size:10px; color:#333; margin-top:3px; }
         .fuec .title { position:relative; text-align:center; padding:7px 8px; line-height:1.35; }
@@ -106,7 +111,8 @@ export default function FuecDocumento({ f, empresa, qr }) {
         .fuec .xtall td { height:56px; }
         .fuec .foot { font-size:8px; line-height:1.4; }
         .fuec .firma { border-top:1px solid #000; margin:34px 10px 0; padding-top:2px; }
-        .fuec .notas td { font-size:8px; line-height:1.45; text-align:left; padding:5px 6px; }
+        .fuec .notas td { font-size:8px; line-height:1.45; text-align:left; padding:6px 8px; }
+        .fuec .notas p { margin:0 0 5px; } .fuec .notas p:last-child { margin-bottom:0; }
         /* Instructivo */
         .fuec .ins-wrap { border:1px solid #000; border-top:none; padding:16px 20px; }
         .fuec .ins-title { text-align:center; font-weight:bold; font-size:10px; margin-bottom:10px; }
@@ -200,17 +206,20 @@ export default function FuecDocumento({ f, empresa, qr }) {
             </td>
             <td className="center">{qr && <img src={qr} alt="QR verificación" style={{ width: '82px', height: '82px' }} />}</td>
             <td className="center">
+              {firmaSrc && <img src={firmaSrc} alt="Firma del representante legal" style={{ maxHeight: '44px', maxWidth: '92%', display: 'block', margin: '0 auto 2px' }} />}
               <div className="firma b">{razon}</div>
-              <div className="sm">Firma electrónica Ley 527 de 1999,, Decreto 2364 de 2012</div>
+              <div className="sm firma-legal">Firma electrónica Ley 527 de 1999, Decreto 2364 de 2012</div>
             </td>
           </tr>
         </tbody></table>
 
-        {/* Notas al pie */}
+        {/* Notas al pie — todo en una sola barra */}
         <table className="notas"><tbody>
-          <tr><td>El presente Extracto de Contrato, no lleva sellos según Decreto 2150, Art. 11 de Diciembre de 1995 y el Decreto ley 019 de Enero de 2012 (Ley Antitramites).</td></tr>
-          <tr><td><b>***SEGUN LA GUIA PARA LA APLICACION DE LA RESOLUCION 3068 DEL 15 OCTUBRE DE 2014 EMITIDO POR EL MINISTERIO DE TRANSPORTE EN EL PUNTO 2 SE ESPECIFICA, QUE EL NOMBRE DE LAS PERSONAS QUE SE TRANSPORTARAN NO DEBEN ESTAR RELACIONADAS EN EL FUEC***</b></td></tr>
-          <tr><td>El presente Extracto de Contrato, <b>no lleva DESCRIPCIÓN DE RECORRIDO</b> según RESOLUCION 0006652 DEL 27 dic 2019, Y Se actualiza Ficha tecnica del formato ,logos (FUEC)</td></tr>
+          <tr><td>
+            <p>El presente Extracto de Contrato, no lleva sellos según Decreto 2150, Art. 11 de Diciembre de 1995 y el Decreto ley 019 de Enero de 2012 (Ley Antitramites).</p>
+            <p><b>***SEGUN LA GUIA PARA LA APLICACION DE LA RESOLUCION 3068 DEL 15 OCTUBRE DE 2014 EMITIDO POR EL MINISTERIO DE TRANSPORTE EN EL PUNTO 2 SE ESPECIFICA, QUE EL NOMBRE DE LAS PERSONAS QUE SE TRANSPORTARAN NO DEBEN ESTAR RELACIONADAS EN EL FUEC***</b></p>
+            <p>El presente Extracto de Contrato, <b>no lleva DESCRIPCIÓN DE RECORRIDO</b> según RESOLUCION 0006652 DEL 27 dic 2019, Y Se actualiza Ficha tecnica del formato ,logos (FUEC)</p>
+          </td></tr>
         </tbody></table>
       </div>
 

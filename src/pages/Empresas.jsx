@@ -7,12 +7,12 @@ import { DIRECCIONES_TERRITORIALES } from '../lib/fuecNumero'
 import { extraerColoresDeImagen } from '../lib/imagenColores'
 import isoSello from '../assets/iso9001.png'
 import mintransporteImg from '../assets/mintransporte.webp'
-import supertransporteImg from '../assets/supertransporte.webp'
+import supertransporteImg from '../assets/supertransporte.png'
 
 const VACIO = {
   nombre: '', slug: '', razon_social: '', nit: '', direccion: '', ciudad: '',
   telefonos: '', email: '', resolucion: '', dir_territorial: '', anio_habilitacion: '',
-  color_primario: '#10b981', color_acento: '#84cc16', logo_url: '',
+  color_primario: '#10b981', color_acento: '#84cc16', logo_url: '', firma_url: '',
 }
 
 // Convierte un archivo de imagen a data URI (para guardar el logo sin almacenamiento aparte).
@@ -175,6 +175,11 @@ export default function Empresas() {
             <input type="file" accept="image/*" className="input" onChange={(e) => subirLogo(e, 'logo_url')} />
             {form.logo_url && <img src={form.logo_url} alt="logo" className="mt-2 h-14 object-contain" />}
             <p className="mt-1 text-xs text-ink-soft">Al subir el logo, los colores de la empresa se toman <b>automáticamente</b> del logo.</p>
+          </Field>
+          <Field label="Firma del representante legal">
+            <input type="file" accept="image/*" className="input" onChange={(e) => subirLogo(e, 'firma_url')} />
+            {form.firma_url && <img src={form.firma_url} alt="firma" className="mt-2 h-14 object-contain" />}
+            <p className="mt-1 text-xs text-ink-soft">Se coloca <b>automáticamente</b> en todos los FUEC de esta empresa (firma electrónica Ley 527 de 1999).</p>
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Color principal"><input type="color" className="input h-11 p-1" value={form.color_primario} onChange={(e) => { set('color_primario', e.target.value); setColorAuto(false) }} /></Field>
