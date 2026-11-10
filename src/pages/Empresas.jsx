@@ -175,39 +175,39 @@ export default function Empresas() {
         </div>
       </div>
 
-      {/* Lista */}
-      <div className="card overflow-hidden">
-        <div className="border-b border-cloud-line px-4 py-3"><h2 className="font-display text-sm font-bold text-ink">Empresas ({rows.length})</h2></div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead><tr className="border-b border-cloud-line text-left text-xs uppercase tracking-wide text-ink-faint">
-              <th className="px-4 py-3 font-bold">Empresa</th><th className="px-4 py-3 font-bold">Link de acceso</th><th className="px-4 py-3 font-bold">NIT</th><th className="px-4 py-3 font-bold"></th>
-            </tr></thead>
-            <tbody>
-              {rows.map((e) => (
-                <tr key={e.id} className="border-b border-cloud-line last:border-0 hover:bg-cloud/60">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      {e.logo_url ? <img src={e.logo_url} alt="" className="h-7 w-7 rounded object-contain" /> : <span className="grid h-7 w-7 place-items-center rounded bg-brand-100 text-xs font-bold text-brand-600">{(e.nombre || '?')[0]}</span>}
-                      <span className="font-semibold text-ink">{e.nombre}{e.es_maestra || e.id === 'movtek' ? ' · maestra' : ''}</span>
+      {/* Lista en tarjetas */}
+      <div>
+        <h2 className="mb-3 font-display text-sm font-bold text-ink">Empresas ({rows.length})</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {rows.map((e) => {
+            const esMaestra = e.es_maestra || e.id === 'movtek'
+            const color = e.color_primario || '#1d4ed8'
+            const link = `${origin}/e/${e.slug || slugify(e.nombre)}`
+            return (
+              <div key={e.id} className="flex flex-col overflow-hidden rounded-2xl border border-cloud-line bg-white shadow-sm transition hover:shadow-md">
+                <div className="h-1.5 w-full" style={{ backgroundColor: color }} />
+                <div className="flex flex-1 flex-col gap-3 p-4">
+                  <div className="flex items-start gap-3">
+                    {e.logo_url
+                      ? <img src={e.logo_url} alt="" className="h-11 w-11 flex-none rounded-lg border border-cloud-line bg-white object-contain p-0.5" />
+                      : <span className="grid h-11 w-11 flex-none place-items-center rounded-lg text-sm font-extrabold text-white" style={{ backgroundColor: color }}>{(e.nombre || '?')[0]?.toUpperCase()}</span>}
+                    <div className="min-w-0 flex-1">
+                      <p className="font-display text-sm font-extrabold leading-snug text-ink">{e.nombre}{esMaestra && <span className="ml-1 align-middle text-[10px] font-bold uppercase text-brand-500">· maestra</span>}</p>
+                      {e.nit && <p className="text-xs font-semibold tabular-nums text-ink-soft">NIT {e.nit}</p>}
                     </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    {e.id === 'movtek' ? <span className="text-ink-faint">—</span> : (
-                      <a href={`${origin}/e/${e.slug || slugify(e.nombre)}`} target="_blank" rel="noreferrer" className="break-all text-brand-600 hover:underline">/e/{e.slug || slugify(e.nombre)}</a>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 tabular-nums text-ink-soft">{e.nit || '—'}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right">
-                    <div className="flex justify-end gap-1">
-                      <button className="btn-ghost !px-3 !py-1.5 text-xs" onClick={() => editar(e)}>✎ Editar</button>
-                      {e.id !== 'movtek' && <button className="btn-ghost !px-2 !py-1.5 text-xs text-coral-500" onClick={() => eliminar(e)}>🗑️</button>}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                  <div className="text-xs text-ink-soft">
+                    {(e.direccion || e.telefonos) && <p className="truncate">{[e.direccion, e.telefonos].filter(Boolean).join(' · ')}</p>}
+                    {!esMaestra && <a href={link} target="_blank" rel="noreferrer" className="mt-0.5 block truncate font-semibold text-brand-600 hover:underline">/e/{e.slug || slugify(e.nombre)}</a>}
+                  </div>
+                  <div className="mt-auto flex gap-2 pt-1">
+                    <button className="btn-ghost !px-3 !py-1.5 text-xs" onClick={() => editar(e)}>✎ Editar</button>
+                    {!esMaestra && <button className="btn-ghost !px-3 !py-1.5 text-xs text-coral-500" onClick={() => eliminar(e)}>🗑️ Eliminar</button>}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>
