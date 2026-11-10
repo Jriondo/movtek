@@ -50,9 +50,9 @@ export default function FuecDocumento({ f, empresa, qr }) {
   // si la foto no los tiene (para FUEC creados antes de agregar esos campos).
   const live = empresa || {}
   const e = { ...live, ...(f?.empresa_snapshot || {}), _num: f.numero_fuec || '' }
-  // Logo y sello ISO: usa el de la empresa; si no tiene, usa el de demostración por defecto.
+  // Logo: el de la empresa; si no tiene, el de demostración. El sello ISO es automático para todas.
   const logoSrc = e.logo_url || live.logo_url || defaultLogo
-  const isoSrc = e.iso_url || live.iso_url || defaultIso
+  const isoSrc = defaultIso
   const razon = e.razon_social || e.nombre || 'EMPRESA DE TRANSPORTE ESPECIAL'
   const estr = (f.estrategia_comercial || '').toUpperCase()
   const conValue = (f.estrategia_con && f.estrategia_con.toUpperCase() !== 'NO APLICA') ? f.estrategia_con : 'NO APLICA'

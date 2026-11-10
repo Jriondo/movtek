@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import { listEmpresas, saveEmpresa, deleteEmpresa, slugify } from '../lib/db'
 import { useAuth } from '../context/AuthContext'
 import { useEmpresa } from '../context/EmpresaContext'
+import { DIRECCIONES_TERRITORIALES } from '../lib/fuecNumero'
+import isoSello from '../assets/iso9001.png'
 
 const VACIO = {
   nombre: '', slug: '', razon_social: '', nit: '', direccion: '', ciudad: '',
-  telefonos: '', email: '', resolucion: '', color_primario: '#10b981', color_acento: '#84cc16',
-  logo_url: '', iso_url: '',
+  telefonos: '', email: '', resolucion: '', dir_territorial: '', anio_habilitacion: '',
+  color_primario: '#10b981', color_acento: '#84cc16', logo_url: '',
 }
 
 // Convierte un archivo de imagen a data URI (para guardar el logo sin almacenamiento aparte).
@@ -89,7 +91,22 @@ export default function Empresas() {
           <Field label="Ciudad"><input className="input" value={form.ciudad} onChange={(e) => set('ciudad', e.target.value)} /></Field>
           <Field label="Teléfonos"><input className="input" value={form.telefonos} onChange={(e) => set('telefonos', e.target.value)} /></Field>
           <Field label="Correo"><input type="email" className="input" value={form.email} onChange={(e) => set('email', e.target.value)} /></Field>
-          <Field label="Resolución"><input className="input" value={form.resolucion} onChange={(e) => set('resolucion', e.target.value)} /></Field>
+
+          {/* Datos para la numeración oficial del FUEC */}
+          <div className="sm:col-span-2 mt-1 rounded-xl bg-brand-50 p-4">
+            <p className="mb-3 text-xs font-bold uppercase tracking-wide text-brand-600">Numeración del FUEC (habilitación de la empresa)</p>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Field label="Dirección Territorial (a)">
+                <select className="input" value={form.dir_territorial} onChange={(e) => set('dir_territorial', e.target.value)}>
+                  <option value="">Seleccione…</option>
+                  {DIRECCIONES_TERRITORIALES.map((d) => <option key={d.codigo} value={d.codigo}>{d.nombre} ({d.codigo})</option>)}
+                </select>
+              </Field>
+              <Field label="N° de resolución (b)"><input className="input" value={form.resolucion} onChange={(e) => set('resolucion', e.target.value)} placeholder="Ej: 0155" /></Field>
+              <Field label="Año de habilitación (c)"><input className="input" inputMode="numeric" maxLength={4} value={form.anio_habilitacion} onChange={(e) => set('anio_habilitacion', e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="Ej: 2012" /></Field>
+            </div>
+            <p className="mt-2 text-xs text-ink-soft">El número del FUEC se arma solo: {form.dir_territorial || 'DT'}·{(form.resolucion || 'RES')}·{form.anio_habilitacion ? form.anio_habilitacion.slice(-2) : 'AA'}·(año actual)·(contrato)·(extracto). El año del extracto y los números de contrato se piden al generar cada FUEC.</p>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Color principal"><input type="color" className="input h-11 p-1" value={form.color_primario} onChange={(e) => set('color_primario', e.target.value)} /></Field>
             <Field label="Color acento"><input type="color" className="input h-11 p-1" value={form.color_acento} onChange={(e) => set('color_acento', e.target.value)} /></Field>
@@ -98,9 +115,11 @@ export default function Empresas() {
             <input type="file" accept="image/*" className="input" onChange={(e) => subirLogo(e, 'logo_url')} />
             {form.logo_url && <img src={form.logo_url} alt="logo" className="mt-2 h-14 object-contain" />}
           </Field>
-          <Field label="Sello ISO (opcional)">
-            <input type="file" accept="image/*" className="input" onChange={(e) => subirLogo(e, 'iso_url')} />
-            {form.iso_url && <img src={form.iso_url} alt="iso" className="mt-2 h-14 object-contain" />}
+          <Field label="Sello ISO">
+            <div className="flex items-center gap-3 rounded-xl border border-cloud-line bg-cloud px-3 py-2.5">
+              <img src={isoSello} alt="ISO 9001" className="h-10 object-contain" />
+              <p className="text-xs text-ink-soft">El sello ISO 9001 se coloca <b>automáticamente</b> en todos los FUEC. No necesitas subirlo.</p>
+            </div>
           </Field>
         </div>
         {msg && <p className="mt-3 rounded-xl bg-coral-400/15 px-4 py-2.5 text-sm font-medium text-coral-500">{msg}</p>}

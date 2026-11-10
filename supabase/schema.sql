@@ -237,6 +237,9 @@ alter table empresas add column if not exists slug text;
 create unique index if not exists uq_empresas_slug on empresas (slug) where slug is not null;
 alter table empresas add column if not exists color_primario text;
 alter table empresas add column if not exists color_acento text;
+-- Datos para la numeración oficial del FUEC (habilitación de la empresa).
+alter table empresas add column if not exists dir_territorial text;   -- código de 3 dígitos de la Dirección Territorial
+alter table empresas add column if not exists anio_habilitacion text; -- año en que la empresa fue habilitada
 
 -- Usuarios y roles (admin | operativo | propietario)
 create table if not exists usuarios (

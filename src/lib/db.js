@@ -60,6 +60,7 @@ export async function getEmpresaPorSlug(slug) {
 
 export async function saveEmpresa(data) {
   const payload = { ...data }
+  delete payload.iso_url // el sello ISO es automático; no se guarda por empresa
   if (!payload.slug && payload.nombre) payload.slug = slugify(payload.nombre)
   if (payload.slug) payload.slug = slugify(payload.slug)
   if (isSupabaseConfigured) {
@@ -898,8 +899,11 @@ export async function saveFuec(data) {
     // Contrato hijo consecutivo por cliente maestro (máximo 9999).
     const n = await contarFuecCliente(payload.cliente_id)
     if (n >= 9999) throw new Error('Este contrato maestro alcanzó el límite de 9999 FUEC (contrato hijo). No se pueden generar más con este contrato.')
-    payload.contrato_hijo = String(n + 1).padStart(4, '0')
-    // Número único del FUEC (fecha + maestro + hijo).
+    // Usa el consecutivo indicado en el formulario; si no, el siguiente automático.
+    payload.contrato_hijo = (payload.contrato_hijo && String(payload.contrato_hijo).replace(/\D/g, ''))
+      ? String(payload.contrato_hijo).replace(/\D/g, '').padStart(4, '0')
+      : String(n + 1).padStart(4, '0')
+    // Número único del FUEC: si el formulario ya lo calculó (formato oficial), se respeta.
     if (!payload.numero_fuec) {
       const d = new Date()
       const p2 = (x) => String(x).padStart(2, '0')

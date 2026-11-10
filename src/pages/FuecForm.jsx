@@ -9,6 +9,7 @@ import { useEmpresa } from '../context/EmpresaContext'
 import { useAuth } from '../context/AuthContext'
 import { DEPARTAMENTOS_NOMBRES } from '../lib/colombia'
 import { validarFuec, documentosVehiculo } from '../lib/fuecValidacion'
+import { generarNumeroFuec } from '../lib/fuecNumero'
 import FechaInput from '../components/FechaInput'
 
 const ESTRATEGIAS = ['N/A', 'CONSORCIO', 'CONVENIO', 'UNIÓN TEMPORAL']
@@ -33,7 +34,7 @@ export default function FuecForm({ duplicar = false }) {
   const [form, setForm] = useState({
     vehiculo_id: '', conductores: [], contratantes: [], objeto_contrato: '',
     itinerarios: [], origen_destino: '', descripcion_recorrido: '', estrategia_comercial: 'N/A', estrategia_con: 'NO APLICA',
-    vigencia_inicio: '', vigencia_fin: '',
+    vigencia_inicio: '', vigencia_fin: '', num_maestro: '', num_extracto: '',
   })
   // selección temporal
   const [selCond, setSelCond] = useState('')
@@ -62,6 +63,8 @@ export default function FuecForm({ duplicar = false }) {
       const base = { ...f }
       // Al duplicar: se carga la info pero se crea un FUEC NUEVO (se limpia identidad).
       if (duplicar) { delete base.id; delete base.created_at; delete base.numero_fuec; delete base.contrato_hijo }
+      base.num_maestro = String(base.no_maestro || '').replace(/\D/g, '')
+      base.num_extracto = duplicar ? '' : String(base.contrato_hijo || '').replace(/\D/g, '')
       setForm((prev) => ({ ...prev, ...base }))
       if (f.ocasional) setOcasional({ ...OCASIONAL_VACIO, ...f.ocasional })
       verificarHabilitacionFuec(f).then(setAvisosHab).catch(() => {})
@@ -74,6 +77,12 @@ export default function FuecForm({ duplicar = false }) {
     if (primary?.id) contarFuecCliente(primary.id).then(setHijoActual).catch(() => setHijoActual(null))
     else setHijoActual(null)
   }, [form.contratantes])
+
+  // Sugiere el consecutivo del extracto (contrato hijo) = siguiente número. El usuario puede editarlo.
+  useEffect(() => {
+    if (editando) return
+    if (hijoActual != null && !form.num_extracto) set('num_extracto', String(hijoActual + 1).padStart(4, '0'))
+  }, [hijoActual, editando])
 
   const vehiculo = useMemo(() => vehiculos.find((v) => String(v.id) === String(form.vehiculo_id)), [vehiculos, form.vehiculo_id])
   const ciudadesDe = (dep) => destinos.filter((d) => d.departamento === dep).map((d) => d.nombre)
@@ -116,6 +125,11 @@ export default function FuecForm({ duplicar = false }) {
   const creaNuevo = !editando || forzarNuevo
   const limiteHijo = creaNuevo && hijoActual != null && hijoActual >= 9999
   const faltanDatos = camposFaltantesFuec(form, vehiculo)
+  const numeroFuecPreview = useMemo(
+    () => generarNumeroFuec({ empresa, contratoMaestro: form.num_maestro, contratoHijo: form.num_extracto }),
+    [empresa, form.num_maestro, form.num_extracto]
+  )
+  const faltaNumeracionEmpresa = !empresa?.dir_territorial || !empresa?.resolucion || !empresa?.anio_habilitacion
 
   const set = (c, v) => setForm((f) => ({ ...f, [c]: v }))
 
@@ -139,6 +153,7 @@ export default function FuecForm({ duplicar = false }) {
       resp_telefono: c.telefono_responsable || '', resp_direccion: c.direccion || '',
     }])
     if (!form.objeto_contrato && c.objeto_contrato) set('objeto_contrato', c.objeto_contrato)
+    if (!form.num_maestro && c.contrato_maestro_nro) set('num_maestro', String(c.contrato_maestro_nro).replace(/\D/g, ''))
     setSelCont('')
   }
   function addItinerario() {
@@ -181,15 +196,24 @@ export default function FuecForm({ duplicar = false }) {
       const empresa_snapshot = {
         razon_social: emp.razon_social || '', nombre: emp.nombre || '', nit: emp.nit || '',
         direccion: emp.direccion || '', ciudad: emp.ciudad || '', telefonos: emp.telefonos || '',
-        email: emp.email || '', logo_url: emp.logo_url || '', iso_url: emp.iso_url || '', resolucion: emp.resolucion || '',
+        email: emp.email || '', logo_url: emp.logo_url || '', resolucion: emp.resolucion || '',
+        dir_territorial: emp.dir_territorial || '', anio_habilitacion: emp.anio_habilitacion || '',
       }
+      // Número oficial del FUEC (solo al crear uno nuevo; al editar se conserva el existente).
+      const num_maestro = form.num_maestro || primary.no_maestro || ''
+      const num_extracto = form.num_extracto || ''
+      const numero_fuec = (editando && !forzarNuevo && form.numero_fuec)
+        ? form.numero_fuec
+        : generarNumeroFuec({ empresa: emp, contratoMaestro: num_maestro, contratoHijo: num_extracto })
       const payload = {
         ...form,
         empresa_id: empresa?.id,
         empresa_snapshot,
+        numero_fuec,
+        contrato_hijo: num_extracto || undefined,
         placa: vehiculo.placa, movil: vehiculo.numero_interno,
         marca: vehiculo.marca, modelo: vehiculo.modelo, clase: vehiculo.clase, tarjeta_operacion: vehiculo.tarjeta_operacion,
-        cliente_id: primary.id, no_maestro: primary.no_maestro || '', tipo_contrato: primary.tipo_contrato || '',
+        cliente_id: primary.id, no_maestro: num_maestro, tipo_contrato: primary.tipo_contrato || '',
         contratante_nombre: c_nombre, contratante_doc: c_doc,
         resp_nombre: r_nombre, resp_cedula: r_cedula, resp_telefono: r_tel, resp_direccion: r_dir,
         ocasional: primary.es_grupo ? ocasional : null,
@@ -197,6 +221,9 @@ export default function FuecForm({ duplicar = false }) {
         usuario: (user?.email || '').split('@')[0] || 'usuario',
         estado: 'activo',
       }
+      // Estos van aparte (no son columnas de la tabla fuec).
+      delete payload.num_maestro
+      delete payload.num_extracto
       if (forzarNuevo) delete payload.id // pasado el plazo, se crea un FUEC nuevo
       const saved = await saveFuec(payload)
       if (irAImprimir) navigate(`/fuec/${saved.id}/imprimir`)
@@ -321,6 +348,32 @@ export default function FuecForm({ duplicar = false }) {
           )}
         </div>
       )}
+
+      {/* Numeración del FUEC */}
+      <div className="card p-5">
+        <h2 className="mb-4 flex items-center gap-2 font-display text-sm font-bold uppercase tracking-wide text-brand-600"><span className="h-4 w-1.5 rounded-full bg-brand-500" />🔢 Numeración del FUEC</h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="label">N° de contrato (maestro)</label>
+            <input className="input" inputMode="numeric" value={form.num_maestro} onChange={(e) => set('num_maestro', e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="Ej: 0255" />
+          </div>
+          <div>
+            <label className="label">N° de extracto (contrato hijo)</label>
+            <input className="input" inputMode="numeric" value={form.num_extracto} onChange={(e) => set('num_extracto', e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="Ej: 0001" />
+            <p className="mt-1 text-xs text-ink-soft">Se sugiere el siguiente consecutivo; puedes cambiarlo.</p>
+          </div>
+        </div>
+        <div className="mt-4 rounded-xl bg-brand-50 px-4 py-3">
+          <p className="text-xs font-bold uppercase tracking-wide text-brand-600">Número oficial del FUEC</p>
+          <p className="mt-1 break-all font-mono text-lg font-extrabold tracking-wide text-ink">{numeroFuecPreview}</p>
+          <p className="mt-1 text-xs text-ink-soft">Territorial · resolución · año habilitación · <b>{new Date().getFullYear()}</b> (año actual) · contrato · extracto. El año se pone solo.</p>
+        </div>
+        {faltaNumeracionEmpresa && (
+          <p className="mt-3 rounded-xl bg-amber-100 px-4 py-2.5 text-sm font-medium text-amber-700">
+            ⚠️ Esta empresa aún no tiene completos los datos de habilitación (Dirección Territorial, resolución y año). Complétalos en <b>Empresas</b> para que el número salga correcto.
+          </p>
+        )}
+      </div>
 
       {/* Itinerario */}
       <div className="card p-5">
