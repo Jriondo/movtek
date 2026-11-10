@@ -110,7 +110,7 @@ export default function FuecDocumento({ f, empresa, qr }) {
         .fuec .tall td { height:38px; }
         .fuec .xtall td { height:56px; }
         .fuec .foot { font-size:8px; line-height:1.4; }
-        .fuec .firma { border-top:1px solid #000; margin:34px 10px 0; padding-top:2px; }
+        .fuec .firma { border-top:1px solid #000; margin:2px 10px 0; padding-top:2px; }
         .fuec .notas td { font-size:8px; line-height:1.45; text-align:left; padding:6px 8px; }
         .fuec .notas p { margin:0 0 5px; } .fuec .notas p:last-child { margin-bottom:0; }
         /* Instructivo */
@@ -206,7 +206,7 @@ export default function FuecDocumento({ f, empresa, qr }) {
             </td>
             <td className="center">{qr && <img src={qr} alt="QR verificación" style={{ width: '82px', height: '82px' }} />}</td>
             <td className="center">
-              {firmaSrc && <img src={firmaSrc} alt="Firma del representante legal" style={{ maxHeight: '44px', maxWidth: '92%', display: 'block', margin: '0 auto 2px' }} />}
+              {firmaSrc && <img src={firmaSrc} alt="Firma del representante legal" style={{ maxHeight: '46px', maxWidth: '92%', display: 'block', margin: '30px auto -4px' }} />}
               <div className="firma b">{razon}</div>
               <div className="sm firma-legal">Firma electrónica Ley 527 de 1999, Decreto 2364 de 2012</div>
             </td>
