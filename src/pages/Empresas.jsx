@@ -30,10 +30,17 @@ function archivoADataUri(file, maxKB = 400) {
 export default function Empresas() {
   const navigate = useNavigate()
   const { esAdmin } = useAuth()
-  const { recargarEmpresas, cambiarEmpresa, empresa: empresaActiva } = useEmpresa()
+  const { recargarEmpresas, cambiarEmpresa, irAMovtek, empresa: empresaActiva } = useEmpresa()
+  const [copiado, setCopiado] = useState('')
 
   // Ingresar a la plataforma de una empresa (cambia la empresa activa y va al inicio).
   function ingresar(e) { cambiarEmpresa?.(e.id); navigate('/') }
+  function volverAMovtek() { irAMovtek?.(); navigate('/') }
+
+  async function copiarLink(link, id) {
+    try { await navigator.clipboard.writeText(link); setCopiado(id); setTimeout(() => setCopiado(''), 1800) }
+    catch { setCopiado('') }
+  }
   const [rows, setRows] = useState([])
   const [form, setForm] = useState(VACIO)
   const [busy, setBusy] = useState(false)
@@ -52,6 +59,8 @@ export default function Empresas() {
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
   const slugActual = form.slug || slugify(form.nombre)
+  // Solo empresas de transporte en la lista; Movtek es el sistema, no una empresa.
+  const empresasTransporte = rows.filter((e) => !(e.es_maestra || e.id === 'movtek' || (e.nombre || '').toLowerCase() === 'movtek'))
 
   function nuevo() { setForm(VACIO); setEditando(false); setMsg('') }
   function editar(e) { setForm({ ...VACIO, ...e, slug: e.slug || slugify(e.nombre) }); setEditando(true); setMsg(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }
@@ -107,9 +116,14 @@ export default function Empresas() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-display text-2xl font-extrabold text-ink">Empresas</h1>
-        <p className="mt-1 text-sm text-ink-soft">Crea la plataforma de cada empresa: su logo, su información del FUEC y su link de acceso.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-2xl font-extrabold text-ink">Empresas</h1>
+          <p className="mt-1 text-sm text-ink-soft">Movtek es el sistema que administra a las empresas. Aquí creas la plataforma de cada una: su logo, su información del FUEC y su link de acceso.</p>
+        </div>
+        {empresaActiva && !(empresaActiva.es_maestra || empresaActiva.id === 'movtek') && (
+          <button className="btn-ghost text-sm" onClick={volverAMovtek}>↩︎ Volver a Movtek (sistema)</button>
+        )}
       </div>
 
       {/* Logos del sistema — solo el administrador los cambia. Se usan en TODOS los FUEC. */}
@@ -180,14 +194,14 @@ export default function Empresas() {
         </div>
       </div>
 
-      {/* Lista en tarjetas */}
+      {/* Lista en tarjetas (solo empresas de transporte; Movtek es el sistema) */}
       <div>
-        <h2 className="mb-3 font-display text-sm font-bold text-ink">Empresas ({rows.length})</h2>
+        <h2 className="mb-3 font-display text-sm font-bold text-ink">Empresas de transporte ({empresasTransporte.length})</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {rows.map((e) => {
-            const esMaestra = e.es_maestra || e.id === 'movtek'
+          {empresasTransporte.map((e) => {
             const color = e.color_primario || '#1d4ed8'
-            const link = `${origin}/e/${e.slug || slugify(e.nombre)}`
+            const slug = e.slug || slugify(e.nombre)
+            const link = `${origin}/e/${slug}`
             return (
               <div key={e.id} className="flex flex-col overflow-hidden rounded-2xl border border-cloud-line bg-white shadow-sm transition hover:shadow-md">
                 <div className="h-1.5 w-full" style={{ backgroundColor: color }} />
@@ -197,25 +211,35 @@ export default function Empresas() {
                       ? <img src={e.logo_url} alt="" className="h-11 w-11 flex-none rounded-lg border border-cloud-line bg-white object-contain p-0.5" />
                       : <span className="grid h-11 w-11 flex-none place-items-center rounded-lg text-sm font-extrabold text-white" style={{ backgroundColor: color }}>{(e.nombre || '?')[0]?.toUpperCase()}</span>}
                     <div className="min-w-0 flex-1">
-                      <p className="font-display text-sm font-extrabold leading-snug text-ink">{e.nombre}{esMaestra && <span className="ml-1 align-middle text-[10px] font-bold uppercase text-brand-500">· maestra</span>}</p>
+                      <p className="font-display text-sm font-extrabold leading-snug text-ink">{e.nombre}</p>
                       {e.nit && <p className="text-xs font-semibold tabular-nums text-ink-soft">NIT {e.nit}</p>}
                     </div>
                   </div>
-                  <div className="text-xs text-ink-soft">
-                    {(e.direccion || e.telefonos) && <p className="truncate">{[e.direccion, e.telefonos].filter(Boolean).join(' · ')}</p>}
-                    {!esMaestra && <a href={link} target="_blank" rel="noreferrer" className="mt-0.5 block truncate font-semibold text-brand-600 hover:underline">/e/{e.slug || slugify(e.nombre)}</a>}
+                  {(e.direccion || e.telefonos) && <p className="truncate text-xs text-ink-soft">{[e.direccion, e.telefonos].filter(Boolean).join(' · ')}</p>}
+
+                  {/* Link de acceso completo + copiar */}
+                  <div className="rounded-lg bg-cloud px-2.5 py-2">
+                    <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-ink-faint">Link de acceso</p>
+                    <div className="flex items-center gap-2">
+                      <input readOnly value={link} onFocus={(ev) => ev.target.select()} className="min-w-0 flex-1 bg-transparent text-xs text-ink outline-none" />
+                      <button className="flex-none rounded-md bg-white px-2 py-1 text-[11px] font-bold text-brand-600 shadow-sm hover:bg-brand-50" onClick={() => copiarLink(link, e.id)}>
+                        {copiado === e.id ? '✓ Copiado' : '📋 Copiar'}
+                      </button>
+                    </div>
                   </div>
+
                   <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
                     <button className="btn-primary !px-3 !py-1.5 text-xs" onClick={() => ingresar(e)} style={{ backgroundColor: color }}>
-                      {empresaActiva?.id === e.id ? '✓ Estás aquí · Ingresar' : '➜ Ingresar'}
+                      {empresaActiva?.id === e.id ? '✓ Estás aquí' : '➜ Ingresar'}
                     </button>
                     <button className="btn-ghost !px-3 !py-1.5 text-xs" onClick={() => editar(e)}>✎ Editar</button>
-                    {!esMaestra && <button className="btn-ghost !px-2.5 !py-1.5 text-xs text-coral-500" onClick={() => eliminar(e)}>🗑️</button>}
+                    <button className="btn-ghost !px-2.5 !py-1.5 text-xs text-coral-500" onClick={() => eliminar(e)}>🗑️</button>
                   </div>
                 </div>
               </div>
             )
           })}
+          {!empresasTransporte.length && <p className="text-sm text-ink-soft">Aún no has creado ninguna empresa. Usa “Nueva empresa” arriba.</p>}
         </div>
       </div>
     </div>

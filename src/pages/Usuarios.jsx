@@ -23,7 +23,8 @@ export default function Usuarios() {
   async function cargar() {
     // El admin ve TODOS los usuarios del sistema (sin filtrar por empresa),
     // para que no se "escondan" los creados bajo otra empresa.
-    setUsuarios(await listUsuarios().catch(() => []))
+    const todos = await listUsuarios().catch(() => [])
+    setUsuarios(dedupPorCorreo(todos))
     // Los propietarios disponibles son los de la empresa seleccionada en el formulario.
     setPropietarios(await listPropietarios({ empresaId: empresaSel, estado: 'activo' }).catch(() => []))
   }
@@ -57,7 +58,28 @@ export default function Usuarios() {
 
   async function eliminar(u) {
     if (!window.confirm(`¿Eliminar el usuario ${u.nombre || u.email}?`)) return
-    await deleteUsuario(u.id); cargar()
+    // Borra TODAS las filas con el mismo correo (por si quedaron duplicadas).
+    const todos = await listUsuarios().catch(() => [])
+    const mismos = todos.filter((x) => (x.email || '').toLowerCase() === (u.email || '').toLowerCase())
+    for (const x of (mismos.length ? mismos : [u])) { await deleteUsuario(x.id).catch(() => {}) }
+    cargar()
+  }
+
+  // Quita la duplicación: una fila por correo, conservando la de mayor rango (admin > operativo > propietario) y activa.
+  async function limpiarDuplicados() {
+    const todos = await listUsuarios().catch(() => [])
+    const porCorreo = {}
+    for (const u of todos) { const k = (u.email || '').toLowerCase(); (porCorreo[k] = porCorreo[k] || []).push(u) }
+    let borrados = 0
+    for (const k of Object.keys(porCorreo)) {
+      const grupo = porCorreo[k]
+      if (grupo.length < 2) continue
+      const peso = (u) => (u.rol === 'admin' ? 3 : u.rol === 'operativo' ? 2 : 1) + (u.estado !== 'inactivo' ? 0.5 : 0)
+      const ordenado = [...grupo].sort((a, b) => peso(b) - peso(a))
+      for (const x of ordenado.slice(1)) { await deleteUsuario(x.id).catch(() => {}); borrados++ }
+    }
+    setMsg(borrados ? `✅ Se quitaron ${borrados} usuario(s) duplicado(s).` : 'No había usuarios duplicados.')
+    cargar()
   }
 
   if (!esAdmin) {
@@ -117,7 +139,10 @@ export default function Usuarios() {
 
       {/* Usuarios existentes */}
       <div className="card overflow-hidden">
-        <div className="border-b border-cloud-line px-4 py-3"><h2 className="font-display text-sm font-bold text-ink">Usuarios del sistema ({usuarios.length})</h2></div>
+        <div className="flex items-center justify-between border-b border-cloud-line px-4 py-3">
+          <h2 className="font-display text-sm font-bold text-ink">Usuarios del sistema ({usuarios.length})</h2>
+          <button className="btn-ghost !px-3 !py-1.5 text-xs" onClick={limpiarDuplicados}>🧹 Quitar duplicados</button>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead><tr className="border-b border-cloud-line text-left text-xs uppercase tracking-wide text-ink-faint">
@@ -128,8 +153,8 @@ export default function Usuarios() {
                 <tr key={u.id} className="border-b border-cloud-line last:border-0 hover:bg-cloud/60">
                   <td className="px-4 py-3 font-semibold text-ink">{u.nombre || '—'}</td>
                   <td className="px-4 py-3 text-ink-soft">{u.email}</td>
-                  <td className="px-4 py-3"><span className="pill bg-brand-50 text-brand-600">{rolLabel(u.rol)}</span></td>
-                  <td className="px-4 py-3 text-ink-soft">{u.rol === 'admin' ? 'Movtek (maestra)' : (empresas.find((e) => e.id === u.empresa_id)?.nombre || '—')}</td>
+                  <td className="px-4 py-3"><span className="pill bg-brand-50 text-brand-600">{u.rol === 'admin' ? 'Superadministrador' : rolLabel(u.rol)}</span></td>
+                  <td className="px-4 py-3 text-ink-soft">{u.rol === 'admin' ? 'Movtek (sistema)' : (empresas.find((e) => e.id === u.empresa_id)?.nombre || '—')}</td>
                   <td className="px-4 py-3 text-ink-soft">{u.propietario_id ? (propietarios.find((p) => String(p.id) === String(u.propietario_id)) ? nombrePropietario(propietarios.find((p) => String(p.id) === String(u.propietario_id))) : 'Propietario') : '—'}</td>
                   <td className="px-4 py-3 text-right"><button className="btn-ghost !px-2 !py-1.5 text-xs text-coral-500" onClick={() => eliminar(u)}>🗑️</button></td>
                 </tr>
@@ -142,6 +167,17 @@ export default function Usuarios() {
 
     </div>
   )
+}
+
+// Una fila por correo (conserva la de mayor rango y activa).
+function dedupPorCorreo(lista) {
+  const peso = (u) => (u.rol === 'admin' ? 3 : u.rol === 'operativo' ? 2 : 1) + (u.estado !== 'inactivo' ? 0.5 : 0)
+  const porCorreo = {}
+  for (const u of lista) {
+    const k = (u.email || u.id || '').toLowerCase()
+    if (!porCorreo[k] || peso(u) > peso(porCorreo[k])) porCorreo[k] = u
+  }
+  return Object.values(porCorreo)
 }
 
 function descripcionRol(rol) {
