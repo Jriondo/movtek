@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { supabase, supabaseAux, isSupabaseConfigured } from '../lib/supabase'
 import { getUsuarioPorEmail } from '../lib/db'
 
 const AuthContext = createContext(null)
@@ -89,6 +89,28 @@ export function AuthProvider({ children }) {
     return { needsConfirmation: false }
   }
 
+  // Crea el acceso (cuenta) de otro usuario y le envía el correo de verificación,
+  // SIN cerrar la sesión del administrador (usa un cliente auxiliar).
+  async function crearAccesoUsuario(email) {
+    if (!isSupabaseConfigured) return { ok: true, demo: true }
+    const tempPassword = 'Mv' + Math.random().toString(36).slice(2) + '!A9'
+    const { data, error } = await supabaseAux.auth.signUp({
+      email, password: tempPassword,
+      options: { emailRedirectTo: `${window.location.origin}/nueva-password` },
+    })
+    // Cierra la sesión auxiliar por si el proyecto no exige confirmación.
+    try { await supabaseAux.auth.signOut() } catch {}
+    if (error) {
+      // Si la cuenta ya existía, enviamos el enlace para que ponga su contraseña.
+      if ((error.message || '').toLowerCase().includes('already')) {
+        try { await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/nueva-password` }) } catch {}
+        return { ok: true, yaExiste: true }
+      }
+      return { ok: false, error: error.message }
+    }
+    return { ok: true, needsConfirmation: !data.session }
+  }
+
   // Envía el enlace para restablecer la contraseña (olvido de contraseña).
   async function recuperarPassword(email) {
     if (!isSupabaseConfigured) throw new Error('demo: La recuperación de contraseña funciona cuando Supabase está conectado.')
@@ -123,7 +145,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{
-      user, loading, login, logout, registrar, recuperarPassword, actualizarPassword, demo: !isSupabaseConfigured,
+      user, loading, login, logout, registrar, recuperarPassword, actualizarPassword, crearAccesoUsuario, demo: !isSupabaseConfigured,
       rol, rolReal, esAdmin, esOperativo, esPropietario, propietarioId, empresaIdUsuario, sinAcceso,
       verComo, setVerComo,
     }}>
