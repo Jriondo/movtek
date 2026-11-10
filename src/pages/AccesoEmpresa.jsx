@@ -3,18 +3,22 @@ import { useParams, Navigate } from 'react-router-dom'
 import { getEmpresaPorSlug } from '../lib/db'
 import { applyTheme } from '../lib/theme'
 import { useAuth } from '../context/AuthContext'
+import { useEmpresa } from '../context/EmpresaContext'
 import Login from './Login'
 
 // Página de acceso con la marca de cada empresa: movtek.app/e/<slug>
 export default function AccesoEmpresa() {
   const { slug } = useParams()
   const { user } = useAuth()
+  const { entrarAEmpresa } = useEmpresa() || {}
   const [empresa, setEmpresa] = useState(undefined)
 
   useEffect(() => {
     getEmpresaPorSlug(slug).then((e) => {
       setEmpresa(e || null)
       if (e?.color_primario) applyTheme({ primary: e.color_primario, accent: e.color_acento })
+      // Deja fijada esta empresa para que, al iniciar sesión, la plataforma sea la suya.
+      if (e) entrarAEmpresa?.(e)
     }).catch(() => setEmpresa(null))
   }, [slug])
 

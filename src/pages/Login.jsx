@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useEmpresa } from '../context/EmpresaContext'
 import { buscarPropietarioGlobalPorDocumento, registrarUsuarioPropietario, nombrePropietario } from '../lib/db'
 import Logo from '../components/Logo'
 import PasswordInput from '../components/PasswordInput'
@@ -17,6 +18,10 @@ function traducirError(msg = '') {
 
 export default function Login({ marca = null }) {
   const { login, registrar, recuperarPassword, demo } = useAuth()
+  const { irAMovtek } = useEmpresa() || {}
+
+  // En el login principal (sin marca de empresa), la plataforma es Movtek.
+  useEffect(() => { if (!marca) irAMovtek?.() }, [marca])
   const [modo, setModo] = useState('login') // 'login' | 'registro' | 'recuperar'
   const [recuperarEmail, setRecuperarEmail] = useState('')
   const [recuperarMsg, setRecuperarMsg] = useState('')

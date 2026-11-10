@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useEmpresa } from '../context/EmpresaContext'
 import Icon from '../components/Icon'
 
 const MODULOS = [
@@ -17,13 +18,15 @@ const MODULOS = [
 export default function Inicio() {
   const navigate = useNavigate()
   const { rol } = useAuth()
+  const { empresa } = useEmpresa() || {}
   const modulos = MODULOS.filter((m) => m.roles.includes(rol))
+  const nombreEmp = empresa?.nombre || 'Movtek'
 
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="font-display text-2xl font-extrabold text-ink">Inicio</h1>
-        <p className="mt-1 text-sm text-ink-soft">Panel de Movtek. Accede rápido a tus módulos.</p>
+        <p className="mt-1 text-sm text-ink-soft">Panel de {nombreEmp}. Accede rápido a tus módulos.</p>
       </div>
 
       <div>

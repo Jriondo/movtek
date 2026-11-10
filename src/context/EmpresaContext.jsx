@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { listEmpresas } from '../lib/db'
+import { listEmpresas, empresaMaestra } from '../lib/db'
 import { applyTheme } from '../lib/theme'
 import { useAuth } from './AuthContext'
 
@@ -18,21 +18,24 @@ export function EmpresaProvider({ children }) {
   // El administrador de Movtek sí puede moverse entre todas.
   const bloqueado = !!rolReal && rolReal !== 'admin' && !!empresaIdUsuario
 
+  // Elige la empresa activa inicial: la guardada (si existe) o Movtek (maestra) para el admin.
+  function elegirInicial(list) {
+    let saved = null
+    try { saved = localStorage.getItem(LS_KEY) } catch {}
+    return list.find((e) => e.id === saved) || empresaMaestra(list)
+  }
+
   async function recargarEmpresas() {
     const list = await listEmpresas()
     setEmpresas(list)
-    let saved = null
-    try { saved = localStorage.getItem(LS_KEY) } catch {}
-    setEmpresa((prev) => list.find((e) => e.id === (prev?.id || saved)) || prev || list[0] || null)
+    setEmpresa((prev) => list.find((e) => e.id === prev?.id) || elegirInicial(list))
     return list
   }
 
   useEffect(() => {
     listEmpresas().then((list) => {
       setEmpresas(list)
-      let saved = null
-      try { saved = localStorage.getItem(LS_KEY) } catch {}
-      setEmpresa(list.find((e) => e.id === saved) || list[0] || null)
+      setEmpresa(elegirInicial(list))
     })
   }, [])
 
@@ -56,8 +59,23 @@ export function EmpresaProvider({ children }) {
     if (e) setEmpresa(e)
   }
 
+  // Entrar a una empresa por su link (/e/slug): fija cuál empresa se verá al iniciar sesión.
+  function entrarAEmpresa(emp) {
+    if (!emp?.id) return
+    try { localStorage.setItem(LS_KEY, emp.id) } catch {}
+    // Si ya está cargada en la lista, la activamos de una.
+    setEmpresa((prev) => (emp.id === prev?.id ? prev : (empresas.find((e) => e.id === emp.id) || emp)))
+  }
+
+  // Volver a la plataforma principal (Movtek).
+  function irAMovtek() {
+    const m = empresaMaestra(empresas)
+    try { localStorage.setItem(LS_KEY, m.id) } catch {}
+    setEmpresa(m)
+  }
+
   return (
-    <EmpresaContext.Provider value={{ empresa, empresas, cambiarEmpresa, recargarEmpresas, bloqueado }}>
+    <EmpresaContext.Provider value={{ empresa, empresas, cambiarEmpresa, recargarEmpresas, entrarAEmpresa, irAMovtek, bloqueado }}>
       {children}
     </EmpresaContext.Provider>
   )

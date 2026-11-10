@@ -35,9 +35,16 @@ export async function listEmpresas() {
     if (error) throw error
     const vistos = new Set()
     const unicas = (data || []).filter((e) => (vistos.has(e.nombre) ? false : vistos.add(e.nombre)))
-    return unicas.length ? unicas : [MOVTEK_MASTER]
+    // Movtek (plataforma maestra) siempre va primero, aunque no exista como fila en la BD.
+    const tieneMaestra = unicas.some((e) => e.es_maestra || e.id === 'movtek' || (e.nombre || '').toLowerCase() === 'movtek')
+    return tieneMaestra ? unicas : [MOVTEK_MASTER, ...unicas]
   }
   return lsAllE()
+}
+
+// La empresa maestra (Movtek) dentro de una lista de empresas.
+export function empresaMaestra(list = []) {
+  return list.find((e) => e.es_maestra || e.id === 'movtek' || (e.nombre || '').toLowerCase() === 'movtek') || MOVTEK_MASTER
 }
 
 export async function getEmpresa(id) {
@@ -1100,15 +1107,22 @@ export async function getUsuario(id) {
 }
 
 // Busca el usuario por correo (para determinar su rol al iniciar sesión).
+// Si hay varias filas con el mismo correo (credenciales duplicadas), prioriza:
+// admin > operativo > propietario, y entre iguales, la que esté activa.
+function mejorUsuario(rows) {
+  const peso = (u) => (u.rol === 'admin' ? 3 : u.rol === 'operativo' ? 2 : 1) + (u.estado !== 'inactivo' ? 0.5 : 0)
+  return [...rows].sort((a, b) => peso(b) - peso(a))[0] || null
+}
+
 export async function getUsuarioPorEmail(email) {
   if (!email) return null
   if (isSupabaseConfigured) {
-    const { data, error } = await supabase.from('usuarios').select('*').ilike('email', email).limit(1)
+    const { data, error } = await supabase.from('usuarios').select('*').ilike('email', email)
     if (error) throw error // deja que el caller distinga error de "no existe"
-    return (data && data[0]) || null
+    return mejorUsuario(data || [])
   }
   seedUsuarios()
-  return lsAllU().find((r) => (r.email || '').toLowerCase() === email.toLowerCase()) || null
+  return mejorUsuario(lsAllU().filter((r) => (r.email || '').toLowerCase() === email.toLowerCase()))
 }
 
 export async function saveUsuario(data) {
