@@ -22,7 +22,7 @@ const TERRITORIALES = [
   ['Guajira', '241', 'Valle del Cauca', '376'],
 ]
 
-function Encabezado({ razon, e, qr, pagina, logoSrc, isoSrc, minSrc, supSrc }) {
+function Encabezado({ razon, e, qr, pagina, logoSrc, isoSrc, minSrc, supSrc, marcaColor }) {
   return (
     <>
       <div className="hdbox">
@@ -30,7 +30,7 @@ function Encabezado({ razon, e, qr, pagina, logoSrc, isoSrc, minSrc, supSrc }) {
         <div className="hdcell c-iso"><img className="iso" src={isoSrc} alt="ISO 9001" /></div>
         <div className="hdcell c-emp">
           <img className="logo-emp" src={logoSrc} alt={razon} />
-          <div className="emp-name">{razon}</div>
+          <div className="emp-name" style={{ borderBottomColor: marcaColor }}>{razon}</div>
           <div className="emp-sub">Transporte Terrestre Automotor Especial</div>
         </div>
         <div className="hdcell c-qr">{qr && <img className="qrh" src={qr} alt="QR" />}</div>
@@ -60,6 +60,8 @@ export default function FuecDocumento({ f, empresa, qr }) {
   const isoSrc = sis.iso_url || defaultIso
   const minSrc = sis.mintransporte_url || mintransporte
   const supSrc = sis.vigilado_url || supertransporte
+  // Color de la marca de la empresa para la línea bajo el nombre (de la foto, o de la empresa actual).
+  const marcaColor = e.color_primario || live.color_primario || '#e8821e'
   const razon = e.razon_social || e.nombre || 'EMPRESA DE TRANSPORTE ESPECIAL'
   const estr = (f.estrategia_comercial || '').toUpperCase()
   const conValue = (f.estrategia_con && f.estrategia_con.toUpperCase() !== 'NO APLICA') ? f.estrategia_con : 'NO APLICA'
@@ -127,15 +129,15 @@ export default function FuecDocumento({ f, empresa, qr }) {
 
       {/* ===================== PÁGINA 1 ===================== */}
       <div className="fuec-page">
-        <Encabezado razon={razon} e={e} qr={qr} pagina={1} logoSrc={logoSrc} isoSrc={isoSrc} minSrc={minSrc} supSrc={supSrc} />
+        <Encabezado razon={razon} e={e} qr={qr} pagina={1} logoSrc={logoSrc} isoSrc={isoSrc} minSrc={minSrc} supSrc={supSrc} marcaColor={marcaColor} />
 
         {/* Datos del contrato */}
         <table><colgroup><col style={{ width: '38%' }} /><col /></colgroup><tbody>
           <tr><td className="lbl">RAZON SOCIAL DE LA EMPRESA DE TRANSPORTE ESPECIAL</td><td>{razon}</td></tr>
-          <tr><td className="lbl">NIT:</td><td className="center b">{e.nit || ''}</td></tr>
-          <tr><td className="lbl">CONTRATO No:</td><td className="center b">{f.no_maestro}-{f.contrato_hijo}</td></tr>
+          <tr><td className="lbl">NIT:</td><td className="b">{e.nit || ''}</td></tr>
+          <tr><td className="lbl">CONTRATO No:</td><td className="b">{f.no_maestro}-{f.contrato_hijo}</td></tr>
           <tr><td className="lbl">CONTRATANTE</td><td>{f.contratante_nombre || ''}</td></tr>
-          <tr><td className="lbl">NIT/CC:</td><td className="center b">{f.contratante_doc || ''}</td></tr>
+          <tr><td className="lbl">NIT/CC:</td><td className="b">{f.contratante_doc || ''}</td></tr>
           <tr><td className="lbl">OBJETO DE CONTRATO:</td><td>{f.objeto_contrato || ''}</td></tr>
           <tr className="xtall"><td className="lbl">ORIGEN-DESTINO:</td><td>{f.origen_destino || ''}</td></tr>
         </tbody></table>
@@ -214,7 +216,7 @@ export default function FuecDocumento({ f, empresa, qr }) {
 
       {/* ===================== PÁGINA 2 · INSTRUCTIVO ===================== */}
       <div className="fuec-page">
-        <Encabezado razon={razon} e={e} qr={qr} pagina={2} logoSrc={logoSrc} isoSrc={isoSrc} minSrc={minSrc} supSrc={supSrc} />
+        <Encabezado razon={razon} e={e} qr={qr} pagina={2} logoSrc={logoSrc} isoSrc={isoSrc} minSrc={minSrc} supSrc={supSrc} marcaColor={marcaColor} />
 
         <div className="ins-wrap">
           <div className="ins-title">INSTRUCTIVO PARA LA DETERMINACIÓN DEL NÚMERO CONSECUTIVO DEL FUEC</div>

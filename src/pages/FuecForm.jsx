@@ -198,6 +198,7 @@ export default function FuecForm({ duplicar = false }) {
         direccion: emp.direccion || '', ciudad: emp.ciudad || '', telefonos: emp.telefonos || '',
         email: emp.email || '', logo_url: emp.logo_url || '', resolucion: emp.resolucion || '',
         dir_territorial: emp.dir_territorial || '', anio_habilitacion: emp.anio_habilitacion || '',
+        color_primario: emp.color_primario || '', color_acento: emp.color_acento || '',
       }
       // Número oficial del FUEC (solo al crear uno nuevo; al editar se conserva el existente).
       const num_maestro = form.num_maestro || primary.no_maestro || ''
