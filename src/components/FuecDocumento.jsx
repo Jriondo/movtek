@@ -93,12 +93,12 @@ export default function FuecDocumento({ f, empresa, qr }) {
         .fuec .c-iso { flex:0 0 17%; }
         .fuec .c-emp { flex:1 1 auto; }
         .fuec .c-qr { flex:0 0 14%; }
-        .fuec .c-sup { flex:0 0 18%; align-items:flex-start; }
+        .fuec .c-sup { flex:0 0 19%; }
         .fuec .logo { height:62px; }
         .fuec .iso { height:76px; }
         .fuec .logo-emp { height:50px; }
         .fuec .qrh { height:72px; width:72px; }
-        .fuec .logo-sup { height:72px; width:auto; max-width:100%; object-fit:contain; display:block; margin:0; }
+        .fuec .logo-sup { max-width:92%; max-height:78px; width:auto; height:auto; object-fit:contain; display:block; margin:0 auto; }
         .fuec .emp-name { display:inline-block; white-space:nowrap; font-size:15px; font-weight:bold; color:#000; padding-bottom:2px; margin-top:4px; }
         .fuec .emp-sub { font-style:italic; font-size:10px; color:#333; margin-top:3px; }
         .fuec .title { position:relative; text-align:center; padding:7px 8px; line-height:1.35; }
