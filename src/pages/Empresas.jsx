@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { listEmpresas, saveEmpresa, deleteEmpresa, slugify, getLogosSistema, saveLogosSistema } from '../lib/db'
 import { useAuth } from '../context/AuthContext'
 import { useEmpresa } from '../context/EmpresaContext'
@@ -27,8 +28,12 @@ function archivoADataUri(file, maxKB = 400) {
 }
 
 export default function Empresas() {
+  const navigate = useNavigate()
   const { esAdmin } = useAuth()
-  const { recargarEmpresas } = useEmpresa()
+  const { recargarEmpresas, cambiarEmpresa, empresa: empresaActiva } = useEmpresa()
+
+  // Ingresar a la plataforma de una empresa (cambia la empresa activa y va al inicio).
+  function ingresar(e) { cambiarEmpresa?.(e.id); navigate('/') }
   const [rows, setRows] = useState([])
   const [form, setForm] = useState(VACIO)
   const [busy, setBusy] = useState(false)
@@ -200,9 +205,12 @@ export default function Empresas() {
                     {(e.direccion || e.telefonos) && <p className="truncate">{[e.direccion, e.telefonos].filter(Boolean).join(' · ')}</p>}
                     {!esMaestra && <a href={link} target="_blank" rel="noreferrer" className="mt-0.5 block truncate font-semibold text-brand-600 hover:underline">/e/{e.slug || slugify(e.nombre)}</a>}
                   </div>
-                  <div className="mt-auto flex gap-2 pt-1">
+                  <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
+                    <button className="btn-primary !px-3 !py-1.5 text-xs" onClick={() => ingresar(e)} style={{ backgroundColor: color }}>
+                      {empresaActiva?.id === e.id ? '✓ Estás aquí · Ingresar' : '➜ Ingresar'}
+                    </button>
                     <button className="btn-ghost !px-3 !py-1.5 text-xs" onClick={() => editar(e)}>✎ Editar</button>
-                    {!esMaestra && <button className="btn-ghost !px-3 !py-1.5 text-xs text-coral-500" onClick={() => eliminar(e)}>🗑️ Eliminar</button>}
+                    {!esMaestra && <button className="btn-ghost !px-2.5 !py-1.5 text-xs text-coral-500" onClick={() => eliminar(e)}>🗑️</button>}
                   </div>
                 </div>
               </div>
