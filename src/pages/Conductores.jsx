@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { listConductores, exportConductoresCsv, nombreConductor, deleteConductor } from '../lib/db'
+import { listConductores, exportConductoresCsv, nombreConductor, deleteConductor, registrarCambio } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
 import { useAuth } from '../context/AuthContext'
 
@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext'
 export default function Conductores() {
   const navigate = useNavigate()
   const { empresa } = useEmpresa()
-  const { esPropietario } = useAuth()
+  const { esPropietario, esAdmin } = useAuth()
   const [documento, setDocumento] = useState('')
   const [nombre, setNombre] = useState('')
   const [estado, setEstado] = useState('todos')
@@ -27,9 +27,9 @@ export default function Conductores() {
     }
   }
 
-  // ⚠️ SOLO PRUEBAS — quitar en producción (necesitamos historial)
   async function eliminar(c) {
     if (!window.confirm(`¿Eliminar al conductor ${nombreConductor(c)}? Esta acción no se puede deshacer.`)) return
+    registrarCambio({ accion: 'eliminar', entidad: 'Conductor', descripcion: nombreConductor(c), empresa_id: c.empresa_id })
     await deleteConductor(c.id); consultar()
   }
 
@@ -115,7 +115,7 @@ export default function Conductores() {
                         <div className="flex justify-end gap-1">
                           <button className="btn-ghost !px-3 !py-1.5 text-xs" onClick={() => navigate(`/conductores/${c.id}`)}>{esPropietario ? '👁 Ver' : '✎ Editar'}</button>
                           {/* ⚠️ SOLO PRUEBAS · el propietario no puede eliminar */}
-                          {!esPropietario && <button className="btn-ghost !px-2 !py-1.5 text-xs text-coral-500" title="Eliminar (pruebas)" onClick={() => eliminar(c)}>🗑️</button>}
+                          {esAdmin && <button className="btn-ghost !px-2 !py-1.5 text-xs text-coral-500" title="Eliminar" onClick={() => eliminar(c)}>🗑️</button>}
                         </div>
                       </td>
                     </tr>

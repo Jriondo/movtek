@@ -20,6 +20,7 @@ import FuecImprimir from './pages/FuecImprimir'
 import VerificarFuec from './pages/VerificarFuec'
 import Usuarios from './pages/Usuarios'
 import Empresas from './pages/Empresas'
+import Historial from './pages/Historial'
 import NuevaPassword from './pages/NuevaPassword'
 import AccesoEmpresa from './pages/AccesoEmpresa'
 
@@ -82,6 +83,7 @@ export default function App() {
         <Route path="fuec/:id/imprimir" element={<FuecImprimir />} />
         <Route path="usuarios" element={<Usuarios />} />
         <Route path="empresas" element={<Empresas />} />
+        <Route path="historial" element={<Historial />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -47,6 +47,47 @@ export function empresaMaestra(list = []) {
   return list.find((e) => e.es_maestra || e.id === 'movtek' || (e.nombre || '').toLowerCase() === 'movtek') || MOVTEK_MASTER
 }
 
+// ------- Historial de cambios (auditoría) -------
+// Quién está haciendo los cambios (lo fija la app al iniciar sesión / cambiar de empresa).
+let _actor = { usuario: '', empresaId: null }
+export function setActorHistorial(a) { _actor = { usuario: a?.usuario || '', empresaId: a?.empresaId ?? null } }
+
+const LS_KEY_H = 'movtek_historial'
+// Registra un cambio (crear / editar / eliminar). No bloquea el guardado si falla.
+export function registrarCambio({ accion, entidad, descripcion = '', empresa_id }) {
+  const row = {
+    accion, entidad, descripcion,
+    empresa_id: (empresa_id ?? _actor.empresaId) || null,
+    usuario: _actor.usuario || 'sistema',
+    created_at: new Date().toISOString(),
+  }
+  try {
+    if (isSupabaseConfigured) { supabase.from('historial').insert(row).then(() => {}, () => {}); return }
+    const all = JSON.parse(localStorage.getItem(LS_KEY_H) || '[]')
+    all.unshift({ id: newId(), ...row })
+    localStorage.setItem(LS_KEY_H, JSON.stringify(all.slice(0, 5000)))
+  } catch {}
+}
+
+// Lista el historial, opcionalmente por empresa y rango de fechas (ISO yyyy-mm-dd).
+export async function listHistorial({ empresaId = null, desde = '', hasta = '' } = {}) {
+  if (isSupabaseConfigured) {
+    let q = supabase.from('historial').select('*').order('created_at', { ascending: false }).limit(5000)
+    if (empresaId) q = q.eq('empresa_id', empresaId)
+    if (desde) q = q.gte('created_at', desde)
+    if (hasta) q = q.lte('created_at', hasta + 'T23:59:59')
+    const { data, error } = await q
+    if (error) throw error
+    return data || []
+  }
+  let rows = []
+  try { rows = JSON.parse(localStorage.getItem(LS_KEY_H) || '[]') } catch {}
+  if (empresaId) rows = rows.filter((r) => String(r.empresa_id) === String(empresaId))
+  if (desde) rows = rows.filter((r) => r.created_at >= desde)
+  if (hasta) rows = rows.filter((r) => r.created_at <= hasta + 'T23:59:59')
+  return rows
+}
+
 export async function getEmpresa(id) {
   if (!id) return null
   const list = await listEmpresas()
@@ -70,28 +111,30 @@ export async function saveEmpresa(data) {
   delete payload.iso_url // el sello ISO es automático; no se guarda por empresa
   if (!payload.slug && payload.nombre) payload.slug = slugify(payload.nombre)
   if (payload.slug) payload.slug = slugify(payload.slug)
+  const esNuevo = !(payload.id && payload.id !== 'movtek')
+  let res
   if (isSupabaseConfigured) {
     if (payload.id && payload.id !== 'movtek') {
       const { id, created_at, es_maestra, ...rest } = payload
       const { data: d, error } = await supabase.from('empresas').update(nulls(rest)).eq('id', id).select().single()
       if (error) throw error
-      return d
+      res = d
+    } else {
+      const { id, es_maestra, ...rest } = payload
+      const { data: d, error } = await supabase.from('empresas').insert(nulls(rest)).select().single()
+      if (error) throw error
+      res = d
     }
-    const { id, es_maestra, ...rest } = payload
-    const { data: d, error } = await supabase.from('empresas').insert(nulls(rest)).select().single()
-    if (error) throw error
-    return d
-  }
-  const rows = lsAllE()
-  if (payload.id && payload.id !== 'movtek') {
-    const i = rows.findIndex((r) => String(r.id) === String(payload.id))
-    if (i >= 0) rows[i] = { ...rows[i], ...payload }
   } else {
-    payload.id = newId()
-    rows.push(payload)
+    const rows = lsAllE()
+    if (payload.id && payload.id !== 'movtek') {
+      const i = rows.findIndex((r) => String(r.id) === String(payload.id))
+      if (i >= 0) { rows[i] = { ...rows[i], ...payload }; res = rows[i] }
+    } else { payload.id = newId(); rows.push(payload); res = payload }
+    lsSaveE(rows); res = res || payload
   }
-  lsSaveE(rows)
-  return payload
+  registrarCambio({ accion: esNuevo ? 'crear' : 'editar', entidad: 'Empresa', descripcion: res.nombre || '', empresa_id: res.id })
+  return res
 }
 
 // --- Logos del sistema (ISO, Ministerio de Transporte, Vigilado SuperTransporte) ---
@@ -204,29 +247,29 @@ export async function saveCliente(data) {
     // El contrato HIJO no se fija aquí: se cuenta según los FUEC generados para este cliente.
   }
 
+  let res
   if (isSupabaseConfigured) {
     if (payload.id) {
       const { id, created_at, ...rest } = payload
       const { data: d, error } = await supabase.from('clientes_maestros').update(nulls(rest)).eq('id', id).select().single()
       if (error) throw error
-      return d
+      res = d
+    } else {
+      delete payload.id
+      const { data: d, error } = await supabase.from('clientes_maestros').insert(nulls(payload)).select().single()
+      if (error) throw error
+      res = d
     }
-    delete payload.id
-    const { data: d, error } = await supabase.from('clientes_maestros').insert(nulls(payload)).select().single()
-    if (error) throw error
-    return d
-  }
-
-  const rows = lsAll()
-  if (payload.id) {
-    const i = rows.findIndex((r) => String(r.id) === String(payload.id))
-    if (i >= 0) rows[i] = { ...rows[i], ...payload }
   } else {
-    payload.id = newId()
-    rows.unshift(payload)
+    const rows = lsAll()
+    if (payload.id) {
+      const i = rows.findIndex((r) => String(r.id) === String(payload.id))
+      if (i >= 0) { rows[i] = { ...rows[i], ...payload }; res = rows[i] }
+    } else { payload.id = newId(); rows.unshift(payload); res = payload }
+    lsSave(rows); res = res || payload
   }
-  lsSave(rows)
-  return payload
+  registrarCambio({ accion: data.id ? 'editar' : 'crear', entidad: 'Cliente', descripcion: nombreMostrar(res), empresa_id: res.empresa_id })
+  return res
 }
 
 export async function deleteCliente(id) {
@@ -341,28 +384,29 @@ export async function getConductor(id) {
 
 export async function saveConductor(data) {
   const payload = { ...data }
+  let res
   if (isSupabaseConfigured) {
     if (payload.id) {
       const { id, created_at, ...rest } = payload
       const { data: d, error } = await supabase.from('conductores').update(nulls(rest)).eq('id', id).select().single()
       if (error) throw error
-      return d
+      res = d
+    } else {
+      delete payload.id
+      const { data: d, error } = await supabase.from('conductores').insert(nulls(payload)).select().single()
+      if (error) throw error
+      res = d
     }
-    delete payload.id
-    const { data: d, error } = await supabase.from('conductores').insert(nulls(payload)).select().single()
-    if (error) throw error
-    return d
-  }
-  const rows = lsAllC()
-  if (payload.id) {
-    const i = rows.findIndex((r) => String(r.id) === String(payload.id))
-    if (i >= 0) rows[i] = { ...rows[i], ...payload }
   } else {
-    payload.id = newId()
-    rows.unshift(payload)
+    const rows = lsAllC()
+    if (payload.id) {
+      const i = rows.findIndex((r) => String(r.id) === String(payload.id))
+      if (i >= 0) { rows[i] = { ...rows[i], ...payload }; res = rows[i] }
+    } else { payload.id = newId(); rows.unshift(payload); res = payload }
+    lsSaveC(rows); res = res || payload
   }
-  lsSaveC(rows)
-  return payload
+  registrarCambio({ accion: data.id ? 'editar' : 'crear', entidad: 'Conductor', descripcion: nombreConductor(res), empresa_id: res.empresa_id })
+  return res
 }
 
 export async function deleteConductor(id) {
@@ -447,28 +491,29 @@ export async function getPropietario(id) {
 
 export async function savePropietario(data) {
   const payload = { ...data }
+  let res
   if (isSupabaseConfigured) {
     if (payload.id) {
       const { id, created_at, ...rest } = payload
       const { data: d, error } = await supabase.from('propietarios').update(nulls(rest)).eq('id', id).select().single()
       if (error) throw error
-      return d
+      res = d
+    } else {
+      delete payload.id
+      const { data: d, error } = await supabase.from('propietarios').insert(nulls(payload)).select().single()
+      if (error) throw error
+      res = d
     }
-    delete payload.id
-    const { data: d, error } = await supabase.from('propietarios').insert(nulls(payload)).select().single()
-    if (error) throw error
-    return d
-  }
-  const rows = lsAllP()
-  if (payload.id) {
-    const i = rows.findIndex((r) => String(r.id) === String(payload.id))
-    if (i >= 0) rows[i] = { ...rows[i], ...payload }
   } else {
-    payload.id = newId()
-    rows.unshift(payload)
+    const rows = lsAllP()
+    if (payload.id) {
+      const i = rows.findIndex((r) => String(r.id) === String(payload.id))
+      if (i >= 0) { rows[i] = { ...rows[i], ...payload }; res = rows[i] }
+    } else { payload.id = newId(); rows.unshift(payload); res = payload }
+    lsSaveP(rows); res = res || payload
   }
-  lsSaveP(rows)
-  return payload
+  registrarCambio({ accion: data.id ? 'editar' : 'crear', entidad: 'Propietario', descripcion: nombrePropietario(res), empresa_id: res.empresa_id })
+  return res
 }
 
 export async function deletePropietario(id) {
@@ -599,28 +644,29 @@ export async function buscarTransportadoraPorDocumento({ empresaId, documento })
 
 export async function saveTransportadora(data) {
   const payload = { ...data }
+  let res
   if (isSupabaseConfigured) {
     if (payload.id) {
       const { id, created_at, ...rest } = payload
       const { data: d, error } = await supabase.from('empresas_transportadoras').update(nulls(rest)).eq('id', id).select().single()
       if (error) throw error
-      return d
+      res = d
+    } else {
+      delete payload.id
+      const { data: d, error } = await supabase.from('empresas_transportadoras').insert(nulls(payload)).select().single()
+      if (error) throw error
+      res = d
     }
-    delete payload.id
-    const { data: d, error } = await supabase.from('empresas_transportadoras').insert(nulls(payload)).select().single()
-    if (error) throw error
-    return d
-  }
-  const rows = lsAllT()
-  if (payload.id) {
-    const i = rows.findIndex((r) => String(r.id) === String(payload.id))
-    if (i >= 0) rows[i] = { ...rows[i], ...payload }
   } else {
-    payload.id = newId()
-    rows.unshift(payload)
+    const rows = lsAllT()
+    if (payload.id) {
+      const i = rows.findIndex((r) => String(r.id) === String(payload.id))
+      if (i >= 0) { rows[i] = { ...rows[i], ...payload }; res = rows[i] }
+    } else { payload.id = newId(); rows.unshift(payload); res = payload }
+    lsSaveT(rows); res = res || payload
   }
-  lsSaveT(rows)
-  return payload
+  registrarCambio({ accion: data.id ? 'editar' : 'crear', entidad: 'Empresa transp.', descripcion: nombreTransportadora(res), empresa_id: res.empresa_id })
+  return res
 }
 
 export async function deleteTransportadora(id) {
@@ -717,28 +763,29 @@ export async function buscarVehiculoPorPlaca({ empresaId, placa }) {
 
 export async function saveVehiculo(data) {
   const payload = { ...data }
+  let res
   if (isSupabaseConfigured) {
     if (payload.id) {
       const { id, created_at, ...rest } = payload
       const { data: d, error } = await supabase.from('vehiculos').update(nulls(rest)).eq('id', id).select().single()
       if (error) throw error
-      return d
+      res = d
+    } else {
+      delete payload.id
+      const { data: d, error } = await supabase.from('vehiculos').insert(nulls(payload)).select().single()
+      if (error) throw error
+      res = d
     }
-    delete payload.id
-    const { data: d, error } = await supabase.from('vehiculos').insert(nulls(payload)).select().single()
-    if (error) throw error
-    return d
-  }
-  const rows = lsAllV()
-  if (payload.id) {
-    const i = rows.findIndex((r) => String(r.id) === String(payload.id))
-    if (i >= 0) rows[i] = { ...rows[i], ...payload }
   } else {
-    payload.id = newId()
-    rows.unshift(payload)
+    const rows = lsAllV()
+    if (payload.id) {
+      const i = rows.findIndex((r) => String(r.id) === String(payload.id))
+      if (i >= 0) { rows[i] = { ...rows[i], ...payload }; res = rows[i] }
+    } else { payload.id = newId(); rows.unshift(payload); res = payload }
+    lsSaveV(rows); res = res || payload
   }
-  lsSaveV(rows)
-  return payload
+  registrarCambio({ accion: data.id ? 'editar' : 'crear', entidad: 'Vehículo', descripcion: res.placa || '', empresa_id: res.empresa_id })
+  return res
 }
 
 export async function deleteVehiculo(id) {
@@ -942,28 +989,34 @@ export async function saveFuec(data) {
       payload.numero_fuec = `${ymd}${maestro}${payload.contrato_hijo}`
     }
   }
+  const esNuevo = !data.id
+  let res
   if (isSupabaseConfigured) {
     if (payload.id) {
       const { id, created_at, ...rest } = payload
       const { data: d, error } = await supabase.from('fuec').update(nulls(rest)).eq('id', id).select().single()
       if (error) throw error
-      return d
+      res = d
+    } else {
+      const { data: d, error } = await supabase.from('fuec').insert(nulls(payload)).select().single()
+      if (error) throw error
+      res = d
     }
-    const { data: d, error } = await supabase.from('fuec').insert(nulls(payload)).select().single()
-    if (error) throw error
-    return d
-  }
-  const rows = lsAllF()
-  if (payload.id) {
-    const i = rows.findIndex((r) => String(r.id) === String(payload.id))
-    if (i >= 0) rows[i] = { ...rows[i], ...payload }
   } else {
-    payload.id = newId()
-    payload.created_at = new Date().toISOString()
-    rows.unshift(payload)
+    const rows = lsAllF()
+    if (payload.id) {
+      const i = rows.findIndex((r) => String(r.id) === String(payload.id))
+      if (i >= 0) { rows[i] = { ...rows[i], ...payload }; res = rows[i] }
+    } else {
+      payload.id = newId()
+      payload.created_at = new Date().toISOString()
+      rows.unshift(payload)
+      res = payload
+    }
+    lsSaveF(rows); res = res || payload
   }
-  lsSaveF(rows)
-  return payload
+  registrarCambio({ accion: esNuevo ? 'crear' : 'editar', entidad: 'FUEC', descripcion: `${res.no_maestro || ''}-${res.contrato_hijo || ''}`, empresa_id: res.empresa_id })
+  return res
 }
 
 export async function deleteFuec(id) {
@@ -1127,28 +1180,29 @@ export async function getUsuarioPorEmail(email) {
 
 export async function saveUsuario(data) {
   const payload = { ...data }
+  let res
   if (isSupabaseConfigured) {
     if (payload.id) {
       const { id, created_at, ...rest } = payload
       const { data: d, error } = await supabase.from('usuarios').update(nulls(rest)).eq('id', id).select().single()
       if (error) throw error
-      return d
+      res = d
+    } else {
+      delete payload.id
+      const { data: d, error } = await supabase.from('usuarios').insert(nulls(payload)).select().single()
+      if (error) throw error
+      res = d
     }
-    delete payload.id
-    const { data: d, error } = await supabase.from('usuarios').insert(nulls(payload)).select().single()
-    if (error) throw error
-    return d
-  }
-  const rows = lsAllU()
-  if (payload.id) {
-    const i = rows.findIndex((r) => String(r.id) === String(payload.id))
-    if (i >= 0) rows[i] = { ...rows[i], ...payload }
   } else {
-    payload.id = newId()
-    rows.unshift(payload)
+    const rows = lsAllU()
+    if (payload.id) {
+      const i = rows.findIndex((r) => String(r.id) === String(payload.id))
+      if (i >= 0) { rows[i] = { ...rows[i], ...payload }; res = rows[i] }
+    } else { payload.id = newId(); rows.unshift(payload); res = payload }
+    lsSaveU(rows); res = res || payload
   }
-  lsSaveU(rows)
-  return payload
+  registrarCambio({ accion: data.id ? 'editar' : 'crear', entidad: 'Usuario', descripcion: `${res.nombre || ''} (${res.email || ''})`, empresa_id: res.empresa_id })
+  return res
 }
 
 export async function deleteUsuario(id) {

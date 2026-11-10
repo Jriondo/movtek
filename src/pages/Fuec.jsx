@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { listFuec, exportFuecCsv, itinerarioTexto, ocasionalTexto, getFuec, verificarHabilitacionFuec, deleteFuec } from '../lib/db'
+import { listFuec, exportFuecCsv, itinerarioTexto, ocasionalTexto, getFuec, verificarHabilitacionFuec, deleteFuec, registrarCambio } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
+import { useAuth } from '../context/AuthContext'
 import FechaInput from '../components/FechaInput'
 
 // Rango de fechas según el periodo elegido.
@@ -17,6 +18,7 @@ function rango(periodo) {
 export default function Fuec() {
   const navigate = useNavigate()
   const { empresa } = useEmpresa()
+  const { esAdmin } = useAuth()
   const [f, setF] = useState({ placa: '', movil: '', contrato_hijo: '', contrato_maestro: '', periodo: 'todos', desde: '', hasta: '' })
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(false)
@@ -43,9 +45,9 @@ export default function Fuec() {
     navigate(`/fuec/duplicar/${id}`)
   }
 
-  // ⚠️ SOLO PRUEBAS — quitar en producción (necesitamos historial)
   async function eliminar(r) {
     if (!window.confirm(`¿Eliminar el FUEC ${r.no_maestro}-${r.contrato_hijo}? Esta acción no se puede deshacer.`)) return
+    registrarCambio({ accion: 'eliminar', entidad: 'FUEC', descripcion: `${r.no_maestro || ''}-${r.contrato_hijo || ''}`, empresa_id: r.empresa_id })
     await deleteFuec(r.id); cargar()
   }
 
@@ -146,7 +148,7 @@ export default function Fuec() {
                         <button title="Editar" onClick={() => navigate(`/fuec/${r.id}`)} className="flex items-center gap-1 rounded-lg border border-cloud-line px-2 py-1.5 text-xs font-semibold text-ink hover:bg-cloud"><span>✏️</span><span className="hidden lg:inline">Editar</span></button>
                         <button title="Duplicar" onClick={() => duplicar(r.id)} className="flex items-center gap-1 rounded-lg border border-cloud-line px-2 py-1.5 text-xs font-semibold text-ink hover:bg-cloud"><span>📑</span><span className="hidden lg:inline">Duplicar</span></button>{/* abre para editar antes de guardar */}
                         {/* ⚠️ SOLO PRUEBAS */}
-                        <button title="Eliminar (pruebas)" onClick={() => eliminar(r)} className="flex items-center gap-1 rounded-lg border border-coral-400/40 px-2 py-1.5 text-xs font-semibold text-coral-500 hover:bg-coral-400/10"><span>🗑️</span><span className="hidden lg:inline">Eliminar</span></button>
+                        {esAdmin && <button title="Eliminar" onClick={() => eliminar(r)} className="flex items-center gap-1 rounded-lg border border-coral-400/40 px-2 py-1.5 text-xs font-semibold text-coral-500 hover:bg-coral-400/10"><span>🗑️</span><span className="hidden lg:inline">Eliminar</span></button>}
                       </div>
                     </td>
                   </tr>

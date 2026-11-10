@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { listUsuarios, saveUsuario, deleteUsuario, listPropietarios, nombrePropietario, ROLES, rolLabel } from '../lib/db'
+import { listUsuarios, saveUsuario, deleteUsuario, listPropietarios, nombrePropietario, ROLES, rolLabel, registrarCambio } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
 import { useAuth } from '../context/AuthContext'
 
@@ -77,6 +77,7 @@ export default function Usuarios() {
     // Borra TODAS las filas con el mismo correo (por si quedaron duplicadas).
     const todos = await listUsuarios().catch(() => [])
     const mismos = todos.filter((x) => (x.email || '').toLowerCase() === (u.email || '').toLowerCase())
+    registrarCambio({ accion: 'eliminar', entidad: 'Usuario', descripcion: `${u.nombre || ''} (${u.email || ''})`, empresa_id: u.empresa_id })
     for (const x of (mismos.length ? mismos : [u])) { await deleteUsuario(x.id).catch(() => {}) }
     cargar()
   }

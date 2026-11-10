@@ -272,6 +272,22 @@ create policy "dev_ajustes_all" on ajustes for all to authenticated using (true)
 drop policy if exists "public_ajustes_select" on ajustes;
 create policy "public_ajustes_select" on ajustes for select to anon using (true);
 
+-- Historial de cambios (auditoría): quién, qué y cuándo.
+create table if not exists historial (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz default now(),
+  empresa_id uuid,
+  usuario text,
+  accion text,      -- crear | editar | eliminar
+  entidad text,     -- FUEC | Vehículo | Conductor | ...
+  descripcion text
+);
+create index if not exists idx_historial_empresa on historial (empresa_id);
+create index if not exists idx_historial_fecha on historial (created_at);
+alter table historial enable row level security;
+drop policy if exists "dev_historial_all" on historial;
+create policy "dev_historial_all" on historial for all to authenticated using (true) with check (true);
+
 -- Seguridad a nivel de fila
 alter table empresas enable row level security;
 alter table clientes_maestros enable row level security;

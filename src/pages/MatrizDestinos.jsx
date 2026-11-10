@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { listDestinos, saveDestino, deleteDestino, contarDestinos, importarCatalogoDestinos, asegurarAreasMetro } from '../lib/db'
 import { DEPARTAMENTOS_NOMBRES } from '../lib/colombia'
+import { useAuth } from '../context/AuthContext'
 
 // Módulo — Matriz de destinos (ciudades de Colombia por departamento).
 export default function MatrizDestinos() {
+  const { esAdmin } = useAuth()
   const [departamento, setDepartamento] = useState(DEPARTAMENTOS_NOMBRES[1]) // Antioquia por defecto
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
@@ -110,7 +112,7 @@ export default function MatrizDestinos() {
                       </div>
                     </td>
                     <td className="px-4 py-2.5 text-right">
-                      <button onClick={() => eliminar(r)} title="Eliminar" className="text-ink-faint hover:text-coral-500">✕</button>
+                      {esAdmin && <button onClick={() => eliminar(r)} title="Eliminar" className="text-ink-faint hover:text-coral-500">✕</button>}
                     </td>
                   </tr>
                 ))}

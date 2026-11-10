@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { listEmpresas, empresaMaestra } from '../lib/db'
+import { listEmpresas, empresaMaestra, setActorHistorial } from '../lib/db'
 import { applyTheme } from '../lib/theme'
 import { useAuth } from './AuthContext'
 
@@ -10,9 +10,12 @@ export const useEmpresa = () => useContext(EmpresaContext)
 const LS_KEY = 'movtek_empresa'
 
 export function EmpresaProvider({ children }) {
-  const { rolReal, empresaIdUsuario } = useAuth() || {}
+  const { rolReal, empresaIdUsuario, user } = useAuth() || {}
   const [empresas, setEmpresas] = useState([])
   const [empresa, setEmpresa] = useState(null)
+
+  // Deja registrado quién hace los cambios (para el historial).
+  useEffect(() => { setActorHistorial({ usuario: user?.email || '', empresaId: empresa?.id || null }) }, [user?.email, empresa?.id])
 
   // El operativo y el propietario quedan fijados a su empresa: no pueden cambiarla.
   // El administrador de Movtek sí puede moverse entre todas.

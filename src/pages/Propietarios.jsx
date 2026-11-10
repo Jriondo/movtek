@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { listPropietarios, exportPropietariosCsv, nombrePropietario, deletePropietario } from '../lib/db'
+import { listPropietarios, exportPropietariosCsv, nombrePropietario, deletePropietario, registrarCambio } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
+import { useAuth } from '../context/AuthContext'
 
 // Módulo 4.3 — Consulta de propietarios.
 export default function Propietarios() {
   const navigate = useNavigate()
   const { empresa } = useEmpresa()
+  const { esAdmin } = useAuth()
   const [documento, setDocumento] = useState('')
   const [nombre, setNombre] = useState('')
   const [estado, setEstado] = useState('todos')
@@ -25,9 +27,9 @@ export default function Propietarios() {
     }
   }
 
-  // ⚠️ SOLO PRUEBAS — quitar en producción (necesitamos historial)
   async function eliminar(p) {
     if (!window.confirm(`¿Eliminar al propietario ${nombrePropietario(p)}? Esta acción no se puede deshacer.`)) return
+    registrarCambio({ accion: 'eliminar', entidad: 'Propietario', descripcion: nombrePropietario(p), empresa_id: p.empresa_id })
     await deletePropietario(p.id); consultar()
   }
 
@@ -113,7 +115,7 @@ export default function Propietarios() {
                         <div className="flex justify-end gap-1">
                           <button className="btn-ghost !px-3 !py-1.5 text-xs" onClick={() => navigate(`/propietarios/${p.id}`)}>✎ Editar</button>
                           {/* ⚠️ SOLO PRUEBAS */}
-                          <button className="btn-ghost !px-2 !py-1.5 text-xs text-coral-500" title="Eliminar (pruebas)" onClick={() => eliminar(p)}>🗑️</button>
+                          {esAdmin && <button className="btn-ghost !px-2 !py-1.5 text-xs text-coral-500" title="Eliminar" onClick={() => eliminar(p)}>🗑️</button>}
                         </div>
                       </td>
                     </tr>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { listEmpresas, saveEmpresa, deleteEmpresa, slugify, getLogosSistema, saveLogosSistema } from '../lib/db'
+import { listEmpresas, saveEmpresa, deleteEmpresa, slugify, getLogosSistema, saveLogosSistema, registrarCambio } from '../lib/db'
 import { useAuth } from '../context/AuthContext'
 import { useEmpresa } from '../context/EmpresaContext'
 import { DIRECCIONES_TERRITORIALES } from '../lib/fuecNumero'
@@ -107,6 +107,7 @@ export default function Empresas() {
   async function eliminar(e) {
     if (e.id === 'movtek') { setMsg('No se puede eliminar la plataforma maestra Movtek.'); return }
     if (!window.confirm(`¿Eliminar la empresa ${e.nombre}? Se perderá su configuración.`)) return
+    registrarCambio({ accion: 'eliminar', entidad: 'Empresa', descripcion: e.nombre, empresa_id: e.id })
     await deleteEmpresa(e.id); await cargar(); recargarEmpresas?.()
   }
 
