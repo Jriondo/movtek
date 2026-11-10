@@ -114,17 +114,24 @@ export async function saveEmpresa(data) {
   const esNuevo = !(payload.id && payload.id !== 'movtek')
   let res
   if (isSupabaseConfigured) {
-    if (payload.id && payload.id !== 'movtek') {
-      const { id, created_at, es_maestra, ...rest } = payload
-      const { data: d, error } = await supabase.from('empresas').update(nulls(rest)).eq('id', id).select().single()
-      if (error) throw error
-      res = d
-    } else {
-      const { id, es_maestra, ...rest } = payload
-      const { data: d, error } = await supabase.from('empresas').insert(nulls(rest)).select().single()
-      if (error) throw error
-      res = d
+    // Si una columna opcional (p. ej. firma_url) aún no existe en la BD, se reintenta sin ella.
+    const guardar = async (p) => {
+      if (p.id && p.id !== 'movtek') {
+        const { id, created_at, es_maestra, ...rest } = p
+        return supabase.from('empresas').update(nulls(rest)).eq('id', id).select().single()
+      }
+      const { id, es_maestra, ...rest } = p
+      return supabase.from('empresas').insert(nulls(rest)).select().single()
     }
+    let { data: d, error } = await guardar(payload)
+    if (error && /column|schema cache/i.test(error.message || '')) {
+      const m = (error.message || '').match(/'([a-z_]+)' column/i)
+      const col = m ? m[1] : 'firma_url'
+      const { [col]: _omit, ...sinCol } = payload
+      ;({ data: d, error } = await guardar(sinCol))
+    }
+    if (error) throw error
+    res = d
   } else {
     const rows = lsAllE()
     if (payload.id && payload.id !== 'movtek') {

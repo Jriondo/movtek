@@ -30,7 +30,7 @@ function Encabezado({ razon, e, qr, pagina, logoSrc, isoSrc, minSrc, supSrc, mar
         <div className="hdcell c-iso"><img className="iso" src={isoSrc} alt="ISO 9001" /></div>
         <div className="hdcell c-emp">
           <img className="logo-emp" src={logoSrc} alt={razon} />
-          <div className="emp-name" style={{ borderBottomColor: marcaColor }}>{razon}</div>
+          <div className="emp-name">{razon}</div>
           <div className="emp-sub">Transporte Terrestre Automotor Especial</div>
         </div>
         <div className="hdcell c-qr">{qr && <img className="qrh" src={qr} alt="QR" />}</div>
@@ -93,13 +93,13 @@ export default function FuecDocumento({ f, empresa, qr }) {
         .fuec .c-iso { flex:0 0 17%; }
         .fuec .c-emp { flex:1 1 auto; }
         .fuec .c-qr { flex:0 0 14%; }
-        .fuec .c-sup { flex:0 0 18%; }
+        .fuec .c-sup { flex:0 0 18%; align-items:flex-start; }
         .fuec .logo { height:62px; }
         .fuec .iso { height:76px; }
         .fuec .logo-emp { height:50px; }
         .fuec .qrh { height:72px; width:72px; }
-        .fuec .logo-sup { height:72px; width:auto; max-width:100%; object-fit:contain; display:block; margin:0 auto; }
-        .fuec .emp-name { display:inline-block; white-space:nowrap; font-size:15px; font-weight:bold; color:#16306e; border-bottom:2.5px solid #e8821e; padding-bottom:2px; margin-top:4px; }
+        .fuec .logo-sup { height:72px; width:auto; max-width:100%; object-fit:contain; display:block; margin:0; }
+        .fuec .emp-name { display:inline-block; white-space:nowrap; font-size:15px; font-weight:bold; color:#000; padding-bottom:2px; margin-top:4px; }
         .fuec .emp-sub { font-style:italic; font-size:10px; color:#333; margin-top:3px; }
         .fuec .title { position:relative; text-align:center; padding:7px 8px; line-height:1.35; }
         .fuec .title .b { font-size:11px; }
