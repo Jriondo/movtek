@@ -40,7 +40,7 @@ export default function Layout() {
       </header>
 
       {/* Menú lateral */}
-      <aside className="hidden border-r border-cloud-line bg-white p-4 md:flex md:flex-col print:hidden">
+      <aside className="hidden border-r border-cloud-line bg-white p-4 md:flex md:flex-col md:sticky md:top-0 md:h-screen md:overflow-y-auto print:hidden">
         <div className="px-2 py-2"><Logo /></div>
 
         {/* Selector de empresa — solo el administrador de Movtek puede cambiar de empresa */}
