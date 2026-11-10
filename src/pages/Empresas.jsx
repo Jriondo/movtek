@@ -126,8 +126,8 @@ export default function Empresas() {
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Nombre de la empresa"><input className="input" value={form.nombre} onChange={(e) => set('nombre', e.target.value)} /></Field>
           <Field label="Link de acceso (editable)">
-            <input className="input" value={slugActual} onChange={(e) => set('slug', slugify(e.target.value))} placeholder="se-genera-del-nombre" />
-            <p className="mt-1 break-all text-xs text-ink-soft">{origin}/e/<b>{slugActual || '…'}</b></p>
+            <input className="input" value={`${origin}/e/${slugActual}`} onChange={(e) => set('slug', slugify(e.target.value.split('/e/').pop()))} placeholder={`${origin}/e/mi-empresa`} />
+            <p className="mt-1 text-xs text-ink-soft">Este es el link para que la empresa entre a su plataforma. Puedes editar la parte final.</p>
           </Field>
           <Field label="Razón social"><input className="input" value={form.razon_social} onChange={(e) => set('razon_social', e.target.value)} /></Field>
           <Field label="NIT"><input className="input" value={form.nit} onChange={(e) => set('nit', e.target.value)} /></Field>
