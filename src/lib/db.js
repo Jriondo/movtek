@@ -1169,17 +1169,25 @@ function mejorUsuario(rows) {
 
 export async function getUsuarioPorEmail(email) {
   if (!email) return null
+  const norm = String(email).trim().toLowerCase()
   if (isSupabaseConfigured) {
-    const { data, error } = await supabase.from('usuarios').select('*').ilike('email', email)
+    let { data, error } = await supabase.from('usuarios').select('*').ilike('email', norm)
     if (error) throw error // deja que el caller distinga error de "no existe"
-    return mejorUsuario(data || [])
+    let rows = data || []
+    if (!rows.length) {
+      // Respaldo: compara normalizando (por si el correo guardado trae espacios o mayúsculas distintas).
+      const { data: todos } = await supabase.from('usuarios').select('*')
+      rows = (todos || []).filter((u) => String(u.email || '').trim().toLowerCase() === norm)
+    }
+    return mejorUsuario(rows)
   }
   seedUsuarios()
-  return mejorUsuario(lsAllU().filter((r) => (r.email || '').toLowerCase() === email.toLowerCase()))
+  return mejorUsuario(lsAllU().filter((r) => String(r.email || '').trim().toLowerCase() === norm))
 }
 
 export async function saveUsuario(data) {
   const payload = { ...data }
+  if (payload.email) payload.email = String(payload.email).trim() // evita espacios que rompen el login
   let res
   if (isSupabaseConfigured) {
     if (payload.id) {

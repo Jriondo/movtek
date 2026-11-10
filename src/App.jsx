@@ -42,7 +42,8 @@ function Protected({ children }) {
       <div className="card max-w-md p-8 text-center">
         <div className="text-4xl">🔒</div>
         <h1 className="mt-3 font-display text-xl font-extrabold text-ink">Sin acceso</h1>
-        <p className="mt-2 text-sm text-ink-soft">Tu cuenta no está habilitada (no tiene un usuario activo en el sistema). Comunícate con el administrador de tu empresa.</p>
+        <p className="mt-2 text-sm text-ink-soft">Tu correo <b className="break-all text-ink">{user?.email}</b> no tiene un usuario activo en ninguna empresa.</p>
+        <p className="mt-2 text-sm text-ink-soft">Pídele al administrador de tu empresa (o al operativo) que cree tu usuario con <b>este mismo correo</b>. No necesitas estar en Movtek.</p>
         <button className="btn-primary mt-5" onClick={logout}>Cerrar sesión</button>
       </div>
     </div>
