@@ -9,11 +9,11 @@ import { EmpresaProvider } from './context/EmpresaContext.jsx'
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
-      <EmpresaProvider>
-        <AuthProvider>
+      <AuthProvider>
+        <EmpresaProvider>
           <App />
-        </AuthProvider>
-      </EmpresaProvider>
+        </EmpresaProvider>
+      </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>,
 )

@@ -43,8 +43,8 @@ export default function Layout() {
       <aside className="hidden border-r border-cloud-line bg-white p-4 md:flex md:flex-col print:hidden">
         <div className="px-2 py-2"><Logo /></div>
 
-        {/* Selector de empresa (demostración del multiempresa) */}
-        {empresas?.length > 1 && (
+        {/* Selector de empresa — solo el administrador de Movtek puede cambiar de empresa */}
+        {rolReal === 'admin' && empresas?.length > 1 && (
           <label className="mt-3 block">
             <span className="mb-1 block px-1 text-[11px] font-bold uppercase tracking-wide text-ink-faint">Empresa</span>
             <select

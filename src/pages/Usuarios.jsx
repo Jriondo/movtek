@@ -3,46 +3,55 @@ import { listUsuarios, saveUsuario, deleteUsuario, listPropietarios, nombrePropi
 import { useEmpresa } from '../context/EmpresaContext'
 import { useAuth } from '../context/AuthContext'
 
-const VACIO = { rol: 'operativo', nombre: '', email: '', propietario_id: '', estado: 'activo' }
+const VACIO = { rol: 'operativo', nombre: '', email: '', propietario_id: '', empresa_id: '', estado: 'activo' }
 
 export default function Usuarios() {
-  const { empresa } = useEmpresa()
+  const { empresa, empresas } = useEmpresa()
   const { esAdmin } = useAuth()
   const [usuarios, setUsuarios] = useState([])
   const [propietarios, setPropietarios] = useState([])
-  const [form, setForm] = useState(VACIO)
+  const [form, setForm] = useState({ ...VACIO, empresa_id: empresa?.id || '' })
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
+
+  // Empresas reales (sin la maestra Movtek) a las que se puede asignar un usuario.
+  const empresasAsignables = (empresas || []).filter((e) => e.id !== 'movtek' && !e.es_maestra)
+  const esProp = form.rol === 'propietario'
+  // La empresa efectiva: la elegida en el formulario, o la activa.
+  const empresaSel = form.empresa_id || empresa?.id || ''
 
   async function cargar() {
     // El admin ve TODOS los usuarios del sistema (sin filtrar por empresa),
     // para que no se "escondan" los creados bajo otra empresa.
     setUsuarios(await listUsuarios().catch(() => []))
-    setPropietarios(await listPropietarios({ empresaId: empresa?.id, estado: 'activo' }).catch(() => []))
+    // Los propietarios disponibles son los de la empresa seleccionada en el formulario.
+    setPropietarios(await listPropietarios({ empresaId: empresaSel, estado: 'activo' }).catch(() => []))
   }
-  useEffect(() => { cargar() }, [empresa?.id])
+  useEffect(() => { cargar() }, [empresaSel])
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
-  const esProp = form.rol === 'propietario'
 
   // Propietarios que ya tienen usuario (para marcarlos).
   const propConUsuario = useMemo(() => new Set(usuarios.filter((u) => u.propietario_id).map((u) => String(u.propietario_id))), [usuarios])
 
   function elegirPropietario(id) {
     const p = propietarios.find((x) => String(x.id) === String(id))
-    setForm((f) => ({ ...f, propietario_id: id, nombre: p ? nombrePropietario(p) : f.nombre, email: p?.correo || f.email }))
+    setForm((f) => ({ ...f, propietario_id: id, nombre: p ? nombrePropietario(p) : f.nombre, email: p?.correo || f.email, empresa_id: p?.empresa_id || f.empresa_id }))
   }
 
   async function crear() {
     setMsg('')
     if (!form.nombre.trim() || !form.email.trim()) { setMsg('Completa el nombre y el correo.'); return }
+    const esAdminRol = form.rol === 'admin'
+    if (!esAdminRol && !empresaSel) { setMsg('Selecciona la empresa a la que pertenece este usuario.'); return }
     if (esProp && !form.propietario_id) { setMsg('Selecciona el propietario al que pertenece este usuario.'); return }
     setBusy(true)
     try {
-      const payload = { ...form, empresa_id: empresa?.id }
+      // El admin (Movtek) no pertenece a una empresa; los demás quedan fijados a su empresa.
+      const payload = { ...form, empresa_id: esAdminRol ? null : empresaSel }
       if (!esProp) payload.propietario_id = null
       await saveUsuario(payload)
-      setForm(VACIO); await cargar()
+      setForm({ ...VACIO, empresa_id: empresaSel }); await cargar()
     } catch (e) { setMsg('No se pudo crear. ' + (e?.message || '')) } finally { setBusy(false) }
   }
 
@@ -77,6 +86,15 @@ export default function Usuarios() {
             </select>
             <p className="mt-1 text-xs text-ink-soft">{descripcionRol(form.rol)}</p>
           </Field>
+          {form.rol !== 'admin' && (
+            <Field label="Empresa">
+              <select className="input" value={empresaSel} onChange={(e) => set('empresa_id', e.target.value)}>
+                <option value="">Selecciona la empresa…</option>
+                {empresasAsignables.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+              </select>
+              <p className="mt-1 text-xs text-ink-soft">El usuario solo verá y trabajará dentro de esta empresa.</p>
+            </Field>
+          )}
           {esProp && (
             <Field label="Propietario">
               <select className="input" value={form.propietario_id} onChange={(e) => elegirPropietario(e.target.value)}>
@@ -103,7 +121,7 @@ export default function Usuarios() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead><tr className="border-b border-cloud-line text-left text-xs uppercase tracking-wide text-ink-faint">
-              <th className="px-4 py-3 font-bold">Nombre</th><th className="px-4 py-3 font-bold">Correo</th><th className="px-4 py-3 font-bold">Rol</th><th className="px-4 py-3 font-bold">Propietario</th><th className="px-4 py-3 font-bold"></th>
+              <th className="px-4 py-3 font-bold">Nombre</th><th className="px-4 py-3 font-bold">Correo</th><th className="px-4 py-3 font-bold">Rol</th><th className="px-4 py-3 font-bold">Empresa</th><th className="px-4 py-3 font-bold">Propietario</th><th className="px-4 py-3 font-bold"></th>
             </tr></thead>
             <tbody>
               {usuarios.map((u) => (
@@ -111,6 +129,7 @@ export default function Usuarios() {
                   <td className="px-4 py-3 font-semibold text-ink">{u.nombre || '—'}</td>
                   <td className="px-4 py-3 text-ink-soft">{u.email}</td>
                   <td className="px-4 py-3"><span className="pill bg-brand-50 text-brand-600">{rolLabel(u.rol)}</span></td>
+                  <td className="px-4 py-3 text-ink-soft">{u.rol === 'admin' ? 'Movtek (maestra)' : (empresas.find((e) => e.id === u.empresa_id)?.nombre || '—')}</td>
                   <td className="px-4 py-3 text-ink-soft">{u.propietario_id ? (propietarios.find((p) => String(p.id) === String(u.propietario_id)) ? nombrePropietario(propietarios.find((p) => String(p.id) === String(u.propietario_id))) : 'Propietario') : '—'}</td>
                   <td className="px-4 py-3 text-right"><button className="btn-ghost !px-2 !py-1.5 text-xs text-coral-500" onClick={() => eliminar(u)}>🗑️</button></td>
                 </tr>
