@@ -9,6 +9,8 @@ import { getLogosSistema } from '../lib/db'
 const IconPin = () => (<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z" /><circle cx="12" cy="10" r="2.4" /></svg>)
 const IconPhone = () => (<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.5-1.2a2 2 0 0 1 2.1-.4c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z" /></svg>)
 const IconMail = () => (<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>)
+// Casilla de selección (marca con X la opción elegida: convenio / consorcio / unión temporal).
+const Casilla = ({ on }) => (<span style={{ display: 'inline-block', width: '12px', height: '12px', border: '1.4px solid #000', textAlign: 'center', lineHeight: '11px', fontWeight: 'bold', fontSize: '11px', marginLeft: '5px', verticalAlign: 'middle' }}>{on ? 'X' : ''}</span>)
 
 // Documento FUEC — réplica del formato oficial (Resolución 0006652 de 2019).
 const fmt = (iso) => (iso ? iso.split('-').reverse().join('/') : '')
@@ -193,10 +195,10 @@ export default function FuecDocumento({ f, empresa, qr }) {
         {/* Convenio / consorcio / unión temporal */}
         <table><colgroup><col style={{ width: '26%' }} /><col style={{ width: '20%' }} /><col style={{ width: '20%' }} /><col style={{ width: '8%' }} /><col /></colgroup><tbody>
           <tr className="sm">
-            <td>CONVENIO COLABORACIÓN {marca === 'conv' ? ' X' : ''}</td>
-            <td className="center">CONSORCIO {marca === 'cons' ? ' X' : ''}</td>
-            <td className="center">UNION TEMPORAL {marca === 'ut' ? ' X' : ''}</td>
-            <td className="center">CON:</td>
+            <td className="center"><span style={{ fontWeight: marca === 'conv' ? 'bold' : 'normal' }}>CONVENIO COLABORACIÓN</span><Casilla on={marca === 'conv'} /></td>
+            <td className="center"><span style={{ fontWeight: marca === 'cons' ? 'bold' : 'normal' }}>CONSORCIO</span><Casilla on={marca === 'cons'} /></td>
+            <td className="center"><span style={{ fontWeight: marca === 'ut' ? 'bold' : 'normal' }}>UNIÓN TEMPORAL</span><Casilla on={marca === 'ut'} /></td>
+            <td className="center b">CON:</td>
             <td className="center">{conValue}</td>
           </tr>
         </tbody></table>
