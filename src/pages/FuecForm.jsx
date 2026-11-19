@@ -351,27 +351,6 @@ export default function FuecForm({ duplicar = false }) {
         </div>
       )}
 
-      {/* Numeración del FUEC */}
-      <div className="card p-5">
-        <h2 className="mb-4 flex items-center gap-2 font-display text-sm font-bold uppercase tracking-wide text-brand-600"><span className="h-4 w-1.5 rounded-full bg-brand-500" />🔢 Numeración del FUEC</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="label">N° de contrato (maestro)</label>
-            <input className="input" inputMode="numeric" value={form.num_maestro} onChange={(e) => set('num_maestro', e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="Ej: 0255" />
-          </div>
-        </div>
-        <div className="mt-4 rounded-xl bg-brand-50 px-4 py-3">
-          <p className="text-xs font-bold uppercase tracking-wide text-brand-600">Número oficial del FUEC</p>
-          <p className="mt-1 break-all font-mono text-lg font-extrabold tracking-wide text-ink">{numeroFuecPreview}</p>
-          <p className="mt-1 text-xs text-ink-soft">Territorial · resolución · año habilitación · <b>{new Date().getFullYear()}</b> (año actual) · contrato · <b>consecutivo (automático)</b>. El año y el consecutivo se ponen solos.</p>
-        </div>
-        {faltaNumeracionEmpresa && (
-          <p className="mt-3 rounded-xl bg-amber-100 px-4 py-2.5 text-sm font-medium text-amber-700">
-            ⚠️ Esta empresa aún no tiene completos los datos de habilitación (Dirección Territorial, resolución y año). Complétalos en <b>Empresas</b> para que el número salga correcto.
-          </p>
-        )}
-      </div>
-
       {/* Itinerario */}
       <div className="card p-5">
         <h2 className="mb-4 flex items-center gap-2 font-display text-sm font-bold uppercase tracking-wide text-brand-600"><span className="h-4 w-1.5 rounded-full bg-brand-500" />🗺️ Itinerario (origen – destino)</h2>
@@ -455,6 +434,11 @@ export default function FuecForm({ duplicar = false }) {
       {faltanDatos.length > 0 && (
         <p className="rounded-xl bg-amber-100 px-4 py-2.5 text-sm font-medium text-amber-700">
           ⚠️ Aún no puedes generar el FUEC. Faltan por llenar: <b>{faltanDatos.join(', ')}</b>.
+        </p>
+      )}
+      {faltaNumeracionEmpresa && (
+        <p className="rounded-xl bg-amber-100 px-4 py-2.5 text-sm font-medium text-amber-700">
+          ⚠️ Esta empresa aún no tiene completos sus datos de habilitación (Dirección Territorial, resolución y año). Complétalos en <b>Empresas</b> para que el número del FUEC salga correcto.
         </p>
       )}
       {msg && <p className="rounded-xl bg-coral-400/15 px-4 py-2.5 text-sm font-medium text-coral-500">{msg}</p>}
