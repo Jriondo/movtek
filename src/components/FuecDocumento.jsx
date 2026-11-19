@@ -132,13 +132,28 @@ export default function FuecDocumento({ f, empresa, qr }) {
         .fuec .ej { margin-top:8px; line-height:1.4; }
         .fuec .ej .num { font-weight:bold; letter-spacing:1px; }
         .fuec .qr-note { text-align:center; font-size:8.5px; color:#222; margin-top:12px; line-height:1.5; }
-        /* Modo compacto (para impresión y para la descarga en PDF). */
+        /* Modo compacto (para impresión). */
         .fuec.compact { font-size:8px; line-height:1.12; }
         .fuec.compact td, .fuec.compact th { padding:1px 4px; }
         .fuec.compact .title .b { font-size:9.5px; }
         .fuec.compact .emp-name { font-size:12px; }
         .fuec.compact .objeto { font-size:7.5px; line-height:1.1; }
         .fuec.compact .fuec-page { padding:0; }
+        /* Modo "llenar hoja" (para la descarga en PDF): filas más altas para ocupar toda la carta. */
+        .fuec.pdffill td, .fuec.pdffill th { padding:6px 6px; }
+        .fuec.pdffill .tall td { height:52px; }
+        .fuec.pdffill .xtall td { height:74px; }
+        .fuec.pdffill .objeto { min-height:78px; }
+        .fuec.pdffill .hdcell { min-height:88px; }
+        .fuec.pdffill .fuec-page { padding:0; }
+        /* Página 2 (instructivo): más aire para llenar la hoja. */
+        .fuec.pdffill .ins-wrap { padding:26px 30px; }
+        .fuec.pdffill .ins-title { font-size:12px; margin-bottom:18px; }
+        .fuec.pdffill .ins-list > li { margin:14px 0; line-height:1.6; }
+        .fuec.pdffill .terr { margin:18px auto; }
+        .fuec.pdffill .terr td { padding:5px 8px; font-size:10px; }
+        .fuec.pdffill .ej { margin-top:18px; line-height:1.7; }
+        .fuec.pdffill .qr-note { margin-top:26px; line-height:1.8; font-size:10px; }
         @media print {
           @page { size: Letter portrait; margin: 5mm; }
           .fuec { max-width:none; font-size:8px; line-height:1.12; }

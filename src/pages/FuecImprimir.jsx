@@ -45,7 +45,7 @@ export default function FuecImprimir() {
       const html2canvas = h2c.default
       // Captura a tamaño real (830px) y en modo compacto (igual que impreso).
       screen?.style.setProperty('--fuec-scale', '1')
-      fuec?.classList.add('compact')
+      fuec?.classList.add('pdffill')
       await new Promise((r) => setTimeout(r, 200))
       const pages = Array.from(fuec.querySelectorAll('.fuec-page'))
       const pdf = new jsPDF({ unit: 'mm', format: 'letter', orientation: 'portrait' })
