@@ -5,6 +5,11 @@ import defaultLogo from '../assets/demo-logo.webp'
 import defaultIso from '../assets/iso9001.png'
 import { getLogosSistema } from '../lib/db'
 
+// Iconos (línea, profesionales) para los datos de contacto del pie.
+const IconPin = () => (<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z" /><circle cx="12" cy="10" r="2.4" /></svg>)
+const IconPhone = () => (<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.5-1.2a2 2 0 0 1 2.1-.4c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z" /></svg>)
+const IconMail = () => (<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>)
+
 // Documento FUEC — réplica del formato oficial (Resolución 0006652 de 2019).
 const fmt = (iso) => (iso ? iso.split('-').reverse().join('/') : '')
 const dmy = (iso) => (iso ? iso.split('-') : ['', '', '']) // [a, m, d]
@@ -112,6 +117,7 @@ export default function FuecDocumento({ f, empresa, qr }) {
         .fuec .xtall td { height:32px; }
         .fuec .foot { font-size:8px; line-height:1.3; }
         .fuec .firma { border-top:1px solid #000; margin:2px 10px 0; padding-top:2px; }
+        .fuec .vence-pill { display:inline-block; margin-top:4px; background:#111 !important; color:#fff !important; border-radius:999px; padding:1px 9px; font-size:8px; font-weight:bold; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
         .fuec .notas td { font-size:7px; line-height:1.18; text-align:left; padding:2px 7px; }
         .fuec .notas p { margin:0 0 2px; } .fuec .notas p:last-child { margin-bottom:0; }
         /* Instructivo */
@@ -205,12 +211,16 @@ export default function FuecDocumento({ f, empresa, qr }) {
         {/* Pie con QR y firma */}
         <table><colgroup><col style={{ width: '48%' }} /><col style={{ width: '22%' }} /><col /></colgroup><tbody>
           <tr className="xtall">
-            <td className="center">
-              {logoSrc && <img src={logoSrc} alt="" style={{ maxHeight: '38px', maxWidth: '110px', objectFit: 'contain', display: 'block', margin: '0 auto 3px' }} />}
-              <div className="b">{e.direccion || ''}{e.ciudad ? `, ${e.ciudad}` : ''}</div>
-              <div>Tels: {e.telefonos || ''}</div>
-              <div style={{ textTransform: 'none' }}>{(e.email || '').toLowerCase()}</div>
-              <div className="sm" style={{ marginTop: '3px' }}>Extracto valido hasta: {f.vigencia_fin || ''}</div>
+            <td style={{ verticalAlign: 'middle' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+                {logoSrc && <img src={logoSrc} alt="" style={{ height: '50px', maxWidth: '108px', objectFit: 'contain', flex: 'none' }} />}
+                <div style={{ textAlign: 'left', lineHeight: 1.55 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 'bold' }}><IconPin />{e.direccion || ''}{e.ciudad ? `, ${e.ciudad}` : ''}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><IconPhone />{e.telefonos || ''}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', textTransform: 'none' }}><IconMail />{(e.email || '').toLowerCase()}</div>
+                  <div className="vence-pill">Válido hasta {f.vigencia_fin || ''}</div>
+                </div>
+              </div>
             </td>
             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{qr && <img src={qr} alt="QR verificación" style={{ width: '70px', height: '70px', display: 'block', margin: '0 auto' }} />}</td>
             <td className="center">
