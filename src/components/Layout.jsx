@@ -35,7 +35,7 @@ export default function Layout() {
   const navVisible = nav.filter((item) => !item.roles || item.roles.includes(rol))
 
   return (
-    <div className="grid min-h-full grid-rows-[auto_1fr] md:grid-cols-[250px_1fr] md:grid-rows-1">
+    <div className="grid min-h-full grid-rows-[auto_1fr] md:grid-cols-[250px_1fr] md:grid-rows-1 print:block">
       {/* Barra superior (móvil) */}
       <header className="col-span-full flex items-center gap-3 border-b border-cloud-line bg-white px-4 py-3 md:hidden print:hidden">
         <Logo />
