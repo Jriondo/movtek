@@ -133,15 +133,6 @@ export default function ClienteForm() {
                 <input className="input" value={form.apellidos} onChange={(e) => set('apellidos', e.target.value)} />
               </Field>
             </>}
-            <Field label="Teléfono casa">
-              <input className="input" value={form.telefono_casa} onChange={(e) => set('telefono_casa', e.target.value)} />
-            </Field>
-            <Field label="Teléfono oficina">
-              <input className="input" value={form.telefono_oficina} onChange={(e) => set('telefono_oficina', e.target.value)} />
-            </Field>
-            <Field label="Celular">
-              <input className="input" value={form.celular} onChange={(e) => set('celular', e.target.value)} />
-            </Field>
             <Field label="Estado">
               <div className="flex gap-5 pt-1.5">
                 <Radio label="Activo" checked={form.estado === 'activo'} onChange={() => set('estado', 'activo')} />
