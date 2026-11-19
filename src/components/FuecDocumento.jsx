@@ -153,12 +153,21 @@ export default function FuecDocumento({ f, empresa, qr }) {
         .fuec.pdffill .ej { margin-top:18px; line-height:1.7; }
         .fuec.pdffill .qr-note { margin-top:26px; line-height:1.8; font-size:10px; }
         @media print {
-          @page { size: Letter portrait; margin: 5mm; }
-          .fuec { max-width:none; font-size:8px; line-height:1.12; }
-          .fuec td, .fuec th { padding:1px 4px; }
-          .fuec .title .b { font-size:9.5px; }
-          .fuec .emp-name { font-size:12px; }
-          .fuec .objeto { font-size:7.5px; line-height:1.1; }
+          @page { size: Letter portrait; margin: 6mm; }
+          .fuec { max-width:none; font-size:9.5px; line-height:1.25; }
+          /* Mismas alturas que la descarga para que el FUEC llene toda la hoja carta. */
+          .fuec td, .fuec th { padding:5px 6px; }
+          .fuec .tall td { height:50px; }
+          .fuec .xtall td { height:70px; }
+          .fuec .objeto { min-height:74px; }
+          .fuec .hdcell { min-height:86px; }
+          .fuec .ins-wrap { padding:26px 30px; }
+          .fuec .ins-title { font-size:12px; margin-bottom:18px; }
+          .fuec .ins-list > li { margin:14px 0; line-height:1.6; }
+          .fuec .terr { margin:18px auto; }
+          .fuec .terr td { padding:5px 8px; font-size:10px; }
+          .fuec .ej { margin-top:18px; line-height:1.7; }
+          .fuec .qr-note { margin-top:26px; line-height:1.8; font-size:10px; }
           .fuec-page { padding:0 !important; }
           .fuec-page { page-break-inside: avoid; break-inside: avoid; }
           .fuec-page + .fuec-page { page-break-before: always; }
