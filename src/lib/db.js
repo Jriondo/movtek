@@ -256,17 +256,28 @@ export async function saveCliente(data) {
 
   let res
   if (isSupabaseConfigured) {
-    if (payload.id) {
-      const { id, created_at, ...rest } = payload
-      const { data: d, error } = await supabase.from('clientes_maestros').update(nulls(rest)).eq('id', id).select().single()
-      if (error) throw error
-      res = d
-    } else {
-      delete payload.id
-      const { data: d, error } = await supabase.from('clientes_maestros').insert(nulls(payload)).select().single()
-      if (error) throw error
-      res = d
+    // Guarda y, si una columna aún no existe en la BD, la omite y reintenta (varias veces).
+    const guardar = async (p) => {
+      if (p.id) {
+        const { id, created_at, ...rest } = p
+        return supabase.from('clientes_maestros').update(nulls(rest)).eq('id', id).select().single()
+      }
+      const { id, ...rest } = p
+      return supabase.from('clientes_maestros').insert(nulls(rest)).select().single()
     }
+    let p = { ...payload }
+    let d, error
+    for (let intento = 0; intento < 12; intento++) {
+      ;({ data: d, error } = await guardar(p))
+      if (!error) break
+      if (!/column|schema cache/i.test(error.message || '')) break
+      const m = (error.message || '').match(/'([a-z_0-9]+)' column/i)
+      if (!m || !(m[1] in p)) break
+      const { [m[1]]: _omit, ...sinCol } = p
+      p = sinCol
+    }
+    if (error) throw error
+    res = d
   } else {
     const rows = lsAll()
     if (payload.id) {

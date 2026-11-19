@@ -50,8 +50,7 @@ export default function ClienteForm() {
     setForm((f) => ({
       ...f,
       tipo_contrato: label,
-      objeto_contrato: t && t.objeto ? t.objeto : (label ? f.objeto_contrato : f.objeto_contrato),
-      asignar_objeto: label ? true : f.asignar_objeto,
+      objeto_contrato: t && t.objeto ? t.objeto : f.objeto_contrato,
     }))
   }
 
@@ -162,13 +161,9 @@ export default function ClienteForm() {
             </div>
 
             <div className="sm:col-span-2">
-              <label className="flex items-center gap-2 text-sm font-semibold text-ink">
-                <input type="checkbox" className="h-4 w-4 accent-brand-500" checked={form.asignar_objeto} onChange={(e) => set('asignar_objeto', e.target.checked)} />
-                Asignar objeto de contrato
-              </label>
-              {form.asignar_objeto && (
-                <textarea className="input mt-2 h-28" value={form.objeto_contrato} onChange={(e) => set('objeto_contrato', e.target.value)} placeholder="Describe el objeto del contrato…" />
-              )}
+              <label className="label">Objeto del contrato</label>
+              <textarea className="input mt-1 h-28" value={form.objeto_contrato} onChange={(e) => set('objeto_contrato', e.target.value)} placeholder="Se completa solo al elegir el tipo de contrato; puedes modificarlo." />
+              <p className="mt-1 text-xs text-ink-soft">Se completa automáticamente al elegir el tipo de contrato. Puedes editarlo libremente.</p>
             </div>
           </div>
         )}
