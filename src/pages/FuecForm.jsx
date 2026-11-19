@@ -44,9 +44,14 @@ export default function FuecForm({ duplicar = false }) {
   const [hijoActual, setHijoActual] = useState(null)
   const [avisosHab, setAvisosHab] = useState([])
 
-  useEffect(() => {
+  // Recarga vehículos y conductores (datos y vencimientos siempre frescos).
+  const recargarFlota = () => {
     listVehiculos({ empresaId: empresa?.id }).then(setVehiculos).catch(() => {})
     listConductores({ empresaId: empresa?.id }).then(setConductores).catch(() => {})
+  }
+
+  useEffect(() => {
+    recargarFlota()
     listDestinos({}).then((d) => setDestinos(d.filter((x) => x.estado !== 'inactivo'))).catch(() => {})
     listTransportadoras({ empresaId: empresa?.id }).then(setTransportadoras).catch(() => {})
     // Asegura el contrato automático "grupo específico" y carga los clientes.
@@ -54,6 +59,18 @@ export default function FuecForm({ duplicar = false }) {
       await asegurarContratoGrupo(empresa?.id)
       setClientes(await listClientes({ empresaId: empresa?.id }))
     })().catch(() => {})
+  }, [empresa?.id])
+
+  // Si actualizas el SOAT u otro documento en otra pantalla y vuelves aquí,
+  // se recargan los vencimientos frescos (no se queda con la fecha vieja).
+  useEffect(() => {
+    const refrescar = () => { if (document.visibilityState === 'visible') recargarFlota() }
+    window.addEventListener('focus', refrescar)
+    document.addEventListener('visibilitychange', refrescar)
+    return () => {
+      window.removeEventListener('focus', refrescar)
+      document.removeEventListener('visibilitychange', refrescar)
+    }
   }, [empresa?.id])
 
   useEffect(() => {
@@ -278,7 +295,10 @@ export default function FuecForm({ duplicar = false }) {
       {/* Estado de documentos (validación) */}
       {vehiculo && (
         <div className="card p-5">
-          <h2 className="mb-4 flex items-center gap-2 font-display text-sm font-bold uppercase tracking-wide text-brand-600"><span className="h-4 w-1.5 rounded-full bg-brand-500" />📋 Estado de documentos</h2>
+          <div className="mb-4 flex items-center justify-between gap-2">
+            <h2 className="flex items-center gap-2 font-display text-sm font-bold uppercase tracking-wide text-brand-600"><span className="h-4 w-1.5 rounded-full bg-brand-500" />📋 Estado de documentos</h2>
+            <button type="button" onClick={recargarFlota} className="text-xs font-semibold text-brand-500 hover:underline">🔄 Actualizar documentos</button>
+          </div>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {docs.map(([nombre, fecha]) => {
               const dias = Math.round((new Date(fecha) - new Date(hoy)) / 86400000)
