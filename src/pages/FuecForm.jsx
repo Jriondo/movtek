@@ -359,16 +359,11 @@ export default function FuecForm({ duplicar = false }) {
             <label className="label">N° de contrato (maestro)</label>
             <input className="input" inputMode="numeric" value={form.num_maestro} onChange={(e) => set('num_maestro', e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="Ej: 0255" />
           </div>
-          <div>
-            <label className="label">N° de extracto (consecutivo)</label>
-            <input className="input bg-cloud text-ink-soft" value={form.num_extracto || '—'} readOnly />
-            <p className="mt-1 text-xs text-ink-soft">🔒 Automático e interno. No se puede modificar.</p>
-          </div>
         </div>
         <div className="mt-4 rounded-xl bg-brand-50 px-4 py-3">
           <p className="text-xs font-bold uppercase tracking-wide text-brand-600">Número oficial del FUEC</p>
           <p className="mt-1 break-all font-mono text-lg font-extrabold tracking-wide text-ink">{numeroFuecPreview}</p>
-          <p className="mt-1 text-xs text-ink-soft">Territorial · resolución · año habilitación · <b>{new Date().getFullYear()}</b> (año actual) · contrato · extracto. El año se pone solo.</p>
+          <p className="mt-1 text-xs text-ink-soft">Territorial · resolución · año habilitación · <b>{new Date().getFullYear()}</b> (año actual) · contrato · <b>consecutivo (automático)</b>. El año y el consecutivo se ponen solos.</p>
         </div>
         {faltaNumeracionEmpresa && (
           <p className="mt-3 rounded-xl bg-amber-100 px-4 py-2.5 text-sm font-medium text-amber-700">
