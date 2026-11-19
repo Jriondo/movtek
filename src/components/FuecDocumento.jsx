@@ -82,39 +82,38 @@ export default function FuecDocumento({ f, empresa, qr }) {
         .fuec, .fuec * { color:#000 !important; }
         .fuec-page { background:#fff; padding:12px; }
         .fuec table { width:100%; border-collapse:collapse; table-layout:fixed; }
-        .fuec td, .fuec th { border:1px solid #000; padding:3px 6px; vertical-align:middle; word-wrap:break-word; }
+        .fuec td, .fuec th { border:1px solid #000; padding:1px 5px; vertical-align:middle; word-wrap:break-word; }
         .fuec .center { text-align:center; }
         .fuec .b { font-weight:bold; }
         .fuec .sm { font-size:8px; }
         /* Encabezado — pegado a la tabla, bordes negros */
         .fuec .hdbox { display:flex; align-items:stretch; border:1px solid #000; border-bottom:none; overflow:hidden; }
-        .fuec .hdcell { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:8px 6px; border-right:1px solid #000; min-height:94px; box-sizing:border-box; }
-        .fuec .hdcell:last-child { border-right:none; }
+        .fuec .hdcell { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4px 6px; min-height:66px; box-sizing:border-box; }
         .fuec .hdcell img { object-fit:contain; max-width:100%; }
         .fuec .c-min { flex:0 0 15%; }
         .fuec .c-iso { flex:0 0 16%; }
         .fuec .c-emp { flex:1 1 auto; }
         .fuec .c-qr { flex:0 0 15%; }
-        .fuec .logo { height:62px; }
-        .fuec .iso { height:76px; }
-        .fuec .emp-logos { display:flex; align-items:center; justify-content:center; gap:18px; margin-bottom:2px; }
-        .fuec .logo-emp { height:56px; width:auto; max-width:150px; object-fit:contain; }
-        .fuec .qrh { height:72px; width:72px; }
-        .fuec .logo-sup { height:42px; width:auto; max-width:170px; object-fit:contain; }
-        .fuec .emp-name { display:inline-block; white-space:nowrap; font-size:15px; font-weight:bold; color:#000; padding-bottom:2px; margin-top:4px; }
-        .fuec .emp-sub { font-style:italic; font-size:10px; color:#333; margin-top:3px; }
-        .fuec .title { position:relative; text-align:center; padding:7px 8px; line-height:1.35; }
+        .fuec .logo { height:44px; }
+        .fuec .iso { height:54px; }
+        .fuec .emp-logos { display:flex; align-items:center; justify-content:center; gap:14px; margin-bottom:1px; }
+        .fuec .logo-emp { height:40px; width:auto; max-width:120px; object-fit:contain; }
+        .fuec .qrh { height:58px; width:58px; }
+        .fuec .logo-sup { height:32px; width:auto; max-width:140px; object-fit:contain; }
+        .fuec .emp-name { display:inline-block; white-space:nowrap; font-size:14px; font-weight:bold; color:#000; padding-bottom:1px; margin-top:1px; }
+        .fuec .emp-sub { font-style:italic; font-size:9px; color:#333; margin-top:1px; }
+        .fuec .title { position:relative; text-align:center; padding:2px 8px; line-height:1.2; }
         .fuec .title .b { font-size:11px; }
         .fuec .title .num { font-size:10px; margin-top:2px; }
         .fuec .title .pg { position:absolute; right:8px; top:50%; transform:translateY(-50%); font-weight:normal; font-size:9px; }
         .fuec .lbl { font-weight:bold; }
         .fuec .sec { text-align:center; font-weight:bold; font-size:10px; }
-        .fuec .tall td { height:38px; }
-        .fuec .xtall td { height:56px; }
-        .fuec .foot { font-size:8px; line-height:1.4; }
+        .fuec .tall td { height:24px; }
+        .fuec .xtall td { height:32px; }
+        .fuec .foot { font-size:8px; line-height:1.3; }
         .fuec .firma { border-top:1px solid #000; margin:2px 10px 0; padding-top:2px; }
-        .fuec .notas td { font-size:8px; line-height:1.45; text-align:left; padding:6px 8px; }
-        .fuec .notas p { margin:0 0 5px; } .fuec .notas p:last-child { margin-bottom:0; }
+        .fuec .notas td { font-size:7px; line-height:1.18; text-align:left; padding:2px 7px; }
+        .fuec .notas p { margin:0 0 2px; } .fuec .notas p:last-child { margin-bottom:0; }
         /* Instructivo */
         .fuec .ins-wrap { border:1px solid #000; border-top:none; padding:16px 20px; }
         .fuec .ins-title { text-align:center; font-weight:bold; font-size:10px; margin-bottom:10px; }
@@ -128,10 +127,16 @@ export default function FuecDocumento({ f, empresa, qr }) {
         .fuec .ej .num { font-weight:bold; letter-spacing:1px; }
         .fuec .qr-note { text-align:center; font-size:8.5px; color:#222; margin-top:12px; line-height:1.5; }
         @media print {
-          @page { size: Letter portrait; margin: 7mm; }
-          .fuec { max-width:none; }
+          @page { size: Letter portrait; margin: 5mm; }
+          .fuec { max-width:none; font-size:8px; line-height:1.12; }
+          .fuec td, .fuec th { padding:1px 4px; }
+          .fuec .title .b { font-size:9.5px; }
+          .fuec .emp-name { font-size:12px; }
+          .fuec .objeto { font-size:7.5px; line-height:1.1; }
           .fuec-page { padding:0 !important; }
+          .fuec-page { page-break-inside: avoid; break-inside: avoid; }
           .fuec-page + .fuec-page { page-break-before: always; }
+          .fuec .notas, .fuec .firma, table { page-break-inside: avoid; break-inside: avoid; }
         }
       `}</style>
 
@@ -146,8 +151,8 @@ export default function FuecDocumento({ f, empresa, qr }) {
           <tr><td className="lbl">CONTRATO No:</td><td className="b">{f.no_maestro}-{f.contrato_hijo}</td></tr>
           <tr><td className="lbl">CONTRATANTE</td><td>{f.contratante_nombre || ''}</td></tr>
           <tr><td className="lbl">NIT/CC:</td><td className="b">{f.contratante_doc || ''}</td></tr>
-          <tr><td className="lbl">OBJETO DE CONTRATO:</td><td>{f.objeto_contrato || ''}</td></tr>
-          <tr className="xtall"><td className="lbl">ORIGEN-DESTINO:</td><td>{f.origen_destino || ''}</td></tr>
+          <tr><td className="lbl">OBJETO DE CONTRATO:</td><td className="objeto">{f.objeto_contrato || ''}</td></tr>
+          <tr className="xtall"><td className="lbl">ORIGEN-DESTINO:</td><td className="objeto">{f.origen_destino || ''}</td></tr>
         </tbody></table>
 
         {/* Convenio / consorcio / unión temporal */}
@@ -201,14 +206,15 @@ export default function FuecDocumento({ f, empresa, qr }) {
         <table><colgroup><col style={{ width: '48%' }} /><col style={{ width: '22%' }} /><col /></colgroup><tbody>
           <tr className="xtall">
             <td className="center">
+              {logoSrc && <img src={logoSrc} alt="" style={{ maxHeight: '38px', maxWidth: '110px', objectFit: 'contain', display: 'block', margin: '0 auto 3px' }} />}
               <div className="b">{e.direccion || ''}{e.ciudad ? `, ${e.ciudad}` : ''}</div>
               <div>Tels: {e.telefonos || ''}</div>
-              <div>{e.email || ''}</div>
+              <div style={{ textTransform: 'none' }}>{(e.email || '').toLowerCase()}</div>
               <div className="sm" style={{ marginTop: '3px' }}>Extracto valido hasta: {f.vigencia_fin || ''}</div>
             </td>
-            <td className="center">{qr && <img src={qr} alt="QR verificación" style={{ width: '82px', height: '82px' }} />}</td>
+            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{qr && <img src={qr} alt="QR verificación" style={{ width: '70px', height: '70px', display: 'block', margin: '0 auto' }} />}</td>
             <td className="center">
-              {firmaSrc && <img src={firmaSrc} alt="Firma del representante legal" style={{ maxHeight: '46px', maxWidth: '92%', display: 'block', margin: '30px auto -4px' }} />}
+              {firmaSrc && <img src={firmaSrc} alt="Firma del representante legal" style={{ maxHeight: '34px', maxWidth: '92%', display: 'block', margin: '6px auto -4px' }} />}
               <div className="firma b">{razon}</div>
               <div className="sm firma-legal">Firma electrónica Ley 527 de 1999, Decreto 2364 de 2012</div>
             </td>

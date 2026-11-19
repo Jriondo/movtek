@@ -360,9 +360,9 @@ export default function FuecForm({ duplicar = false }) {
             <input className="input" inputMode="numeric" value={form.num_maestro} onChange={(e) => set('num_maestro', e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="Ej: 0255" />
           </div>
           <div>
-            <label className="label">N° de extracto (contrato hijo)</label>
-            <input className="input" inputMode="numeric" value={form.num_extracto} onChange={(e) => set('num_extracto', e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="Ej: 0001" />
-            <p className="mt-1 text-xs text-ink-soft">Se sugiere el siguiente consecutivo; puedes cambiarlo.</p>
+            <label className="label">N° de extracto (consecutivo)</label>
+            <input className="input bg-cloud text-ink-soft" value={form.num_extracto || '—'} readOnly />
+            <p className="mt-1 text-xs text-ink-soft">🔒 Automático e interno. No se puede modificar.</p>
           </div>
         </div>
         <div className="mt-4 rounded-xl bg-brand-50 px-4 py-3">
