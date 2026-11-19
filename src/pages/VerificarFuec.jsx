@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import QRCode from 'qrcode'
 import { getFuec, getEmpresa } from '../lib/db'
@@ -11,6 +11,8 @@ export default function VerificarFuec() {
   const [f, setF] = useState(undefined)
   const [empresa, setEmpresa] = useState(null)
   const [qr, setQr] = useState('')
+  const wrapRef = useRef(null)
+  const [scale, setScale] = useState(1)
 
   useEffect(() => {
     const url = `${window.location.origin}/verificar/${id}`
@@ -28,6 +30,17 @@ export default function VerificarFuec() {
     }).catch(() => setF(null))
   }, [id])
 
+  // Ajusta el documento (830px) al ancho de la pantalla (para que se vea bien en el teléfono).
+  useEffect(() => {
+    function fit() {
+      const w = (wrapRef.current?.clientWidth || 830) - 34 // descuenta el padding del contenedor
+      setScale(Math.min(1, w / 830))
+    }
+    fit()
+    window.addEventListener('resize', fit)
+    return () => window.removeEventListener('resize', fit)
+  }, [f])
+
   if (f === undefined) return <div style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>Verificando documento…</div>
   if (f === null) return (
     <div style={{ padding: 40, textAlign: 'center' }}>
@@ -37,7 +50,8 @@ export default function VerificarFuec() {
   )
 
   return (
-    <div style={{ minHeight: '100%', background: '#f6f6fc', padding: '16px' }}>
+    <div ref={wrapRef} style={{ minHeight: '100%', background: '#f6f6fc', padding: '16px', overflowX: 'hidden' }}>
+      <style>{`.fuec-screen { width:830px; zoom: var(--fuec-scale, 1); }`}</style>
       <div style={{ maxWidth: 820, margin: '0 auto 12px', textAlign: 'center' }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#e3f4ea', color: '#1b7a4b', fontWeight: 700, padding: '8px 16px', borderRadius: 999, fontFamily: 'sans-serif', fontSize: 14 }}>
           ✅ Documento verificado · Movtek
@@ -46,7 +60,9 @@ export default function VerificarFuec() {
           FUEC N° {f.numero_fuec} · Vigente del {f.vigencia_inicio} al {f.vigencia_fin}
         </p>
       </div>
-      <FuecDocumento f={f} empresa={empresa} qr={qr} />
+      <div className="fuec-screen" style={{ '--fuec-scale': scale, margin: '0 auto' }}>
+        <FuecDocumento f={f} empresa={empresa} qr={qr} />
+      </div>
     </div>
   )
 }
