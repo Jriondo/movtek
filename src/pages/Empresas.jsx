@@ -258,8 +258,8 @@ function LogoSistema({ label, def, val, onFile, onQuitar }) {
   return (
     <div className="rounded-xl border border-cloud-line p-3">
       <p className="mb-2 text-xs font-bold text-ink">{label}</p>
-      <div className="mb-2 grid h-16 place-items-center rounded-lg bg-white">
-        <img src={val || def} alt={label} className="max-h-14 max-w-full object-contain" />
+      <div className="mb-2 flex min-h-[56px] items-center justify-center rounded-lg bg-white p-2">
+        <img src={val || def} alt={label} className="h-auto max-h-12 w-auto max-w-full object-contain" />
       </div>
       {val ? (
         <div className="flex items-center justify-between">
