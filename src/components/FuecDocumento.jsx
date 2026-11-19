@@ -33,15 +33,13 @@ function Encabezado({ razon, e, qr, pagina, logoSrc, isoSrc, minSrc, supSrc, mar
       <div className="hdbox">
         <div className="hdcell c-min"><img className="logo" src={minSrc} alt="Ministerio de Transporte" /></div>
         <div className="hdcell c-iso"><img className="iso" src={isoSrc} alt="ISO 9001" /></div>
+        <div className="hdcell c-qr">{qr && <img className="qrh" src={qr} alt="QR" />}</div>
         <div className="hdcell c-emp">
-          <div className="emp-logos">
-            <img className="logo-emp" src={logoSrc} alt={razon} />
-            <img className="logo-sup" src={supSrc} alt="Vigilado SuperTransporte" />
-          </div>
+          {logoSrc && <img className="logo-emp" src={logoSrc} alt={razon} />}
           <div className="emp-name">{razon}</div>
           <div className="emp-sub">Transporte Terrestre Automotor Especial</div>
         </div>
-        <div className="hdcell c-qr">{qr && <img className="qrh" src={qr} alt="QR" />}</div>
+        <div className="hdcell c-sup"><img className="logo-sup" src={supSrc} alt="Vigilado SuperTransporte" /></div>
       </div>
       <table><tbody>
         <tr><td className="title">
@@ -95,16 +93,16 @@ export default function FuecDocumento({ f, empresa, qr }) {
         .fuec .hdbox { display:flex; align-items:stretch; border:1px solid #000; border-bottom:none; overflow:hidden; }
         .fuec .hdcell { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4px 6px; min-height:66px; box-sizing:border-box; }
         .fuec .hdcell img { object-fit:contain; max-width:100%; }
-        .fuec .c-min { flex:0 0 15%; }
-        .fuec .c-iso { flex:0 0 16%; }
+        .fuec .c-min { flex:0 0 13%; }
+        .fuec .c-iso { flex:0 0 15%; }
+        .fuec .c-qr { flex:0 0 14%; }
         .fuec .c-emp { flex:1 1 auto; }
-        .fuec .c-qr { flex:0 0 15%; }
+        .fuec .c-sup { flex:0 0 16%; }
         .fuec .logo { height:44px; }
         .fuec .iso { height:54px; }
-        .fuec .emp-logos { display:flex; align-items:center; justify-content:center; gap:14px; margin-bottom:1px; }
-        .fuec .logo-emp { height:40px; width:auto; max-width:120px; object-fit:contain; }
+        .fuec .logo-emp { height:42px; width:auto; max-width:120px; object-fit:contain; margin-bottom:2px; }
         .fuec .qrh { height:58px; width:58px; }
-        .fuec .logo-sup { height:32px; width:auto; max-width:140px; object-fit:contain; }
+        .fuec .logo-sup { height:auto; width:94%; max-height:54px; object-fit:contain; }
         .fuec .emp-name { display:inline-block; white-space:nowrap; font-size:14px; font-weight:bold; color:#000; padding-bottom:1px; margin-top:1px; }
         .fuec .emp-sub { font-style:italic; font-size:9px; color:#333; margin-top:1px; }
         .fuec .title { position:relative; text-align:center; padding:2px 8px; line-height:1.2; }
