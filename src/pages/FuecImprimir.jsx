@@ -11,6 +11,7 @@ export default function FuecImprimir() {
   const { empresa } = useEmpresa()
   const [f, setF] = useState(null)
   const [qr, setQr] = useState('')
+  const [descargando, setDescargando] = useState(false)
   const wrapRef = useRef(null)
   const [scale, setScale] = useState(1)
 
@@ -32,12 +33,40 @@ export default function FuecImprimir() {
     return () => window.removeEventListener('resize', fit)
   }, [f])
 
-  // El archivo PDF se llamará "FUEC-<número>" en vez del título de la página.
-  function guardarPdf() {
-    const titulo = document.title
-    document.title = `FUEC-${f?.numero_fuec || f?.no_maestro || ''}`.replace(/-$/, '') || 'FUEC'
-    window.print()
-    setTimeout(() => { document.title = titulo }, 500)
+  // Descarga DIRECTA del PDF en tamaño carta (sin abrir el diálogo de impresión).
+  async function descargarPdf() {
+    if (descargando) return
+    setDescargando(true)
+    const screen = wrapRef.current?.querySelector('.fuec-screen')
+    const fuec = wrapRef.current?.querySelector('.fuec')
+    const prevScale = screen?.style.getPropertyValue('--fuec-scale')
+    try {
+      const [{ jsPDF }, h2c] = await Promise.all([import('jspdf'), import('html2canvas-pro')])
+      const html2canvas = h2c.default
+      // Captura a tamaño real (830px) y en modo compacto (igual que impreso).
+      screen?.style.setProperty('--fuec-scale', '1')
+      fuec?.classList.add('compact')
+      await new Promise((r) => setTimeout(r, 200))
+      const pages = Array.from(fuec.querySelectorAll('.fuec-page'))
+      const pdf = new jsPDF({ unit: 'mm', format: 'letter', orientation: 'portrait' })
+      const pw = pdf.internal.pageSize.getWidth()
+      const ph = pdf.internal.pageSize.getHeight()
+      for (let i = 0; i < pages.length; i++) {
+        const canvas = await html2canvas(pages[i], { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false })
+        const img = canvas.toDataURL('image/jpeg', 0.95)
+        let w = pw, h = (canvas.height * pw) / canvas.width
+        if (h > ph) { h = ph; w = (canvas.width * ph) / canvas.height }
+        if (i > 0) pdf.addPage()
+        pdf.addImage(img, 'JPEG', (pw - w) / 2, 0, w, h)
+      }
+      pdf.save(`FUEC-${f?.numero_fuec || f?.no_maestro || 'documento'}.pdf`)
+    } catch (e) {
+      alert('No se pudo generar el PDF. ' + (e?.message || e))
+    } finally {
+      fuec?.classList.remove('compact')
+      screen?.style.setProperty('--fuec-scale', prevScale || '1')
+      setDescargando(false)
+    }
   }
 
   if (!f) return <div className="grid min-h-full place-items-center text-ink-faint">Cargando…</div>
@@ -45,7 +74,6 @@ export default function FuecImprimir() {
   return (
     <div className="fuec-wrap" ref={wrapRef}>
       <style>{`
-        /* El escalado (zoom) SOLO en pantalla; en impresión no aplica y usa el formato carta. */
         @media screen { .fuec-screen { width:830px; zoom: var(--fuec-scale, 1); } }
         @media print {
           header, aside, .no-print { display:none !important; }
@@ -54,7 +82,7 @@ export default function FuecImprimir() {
         }
       `}</style>
       <div className="mb-4 flex flex-wrap gap-2 no-print">
-        <button onClick={guardarPdf} className="btn-primary">📥 Guardar / Descargar PDF</button>
+        <button onClick={descargarPdf} disabled={descargando} className="btn-primary">{descargando ? '⏳ Generando PDF…' : '📥 Descargar PDF'}</button>
         <button onClick={() => window.print()} className="btn-ghost">🖨️ Imprimir</button>
         <button onClick={() => navigate('/fuec')} className="btn-ghost">Retornar</button>
       </div>

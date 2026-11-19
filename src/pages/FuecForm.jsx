@@ -219,7 +219,11 @@ export default function FuecForm({ duplicar = false }) {
         contratante_nombre: c_nombre, contratante_doc: c_doc,
         resp_nombre: r_nombre, resp_cedula: r_cedula, resp_telefono: r_tel, resp_direccion: r_dir,
         ocasional: primary.es_grupo ? ocasional : null,
-        origen_destino: (form.origen_destino || form.itinerarios.map((i) => `${i.ciudad_origen}-${i.ciudad_destino}`).join(', ')).toUpperCase(),
+        origen_destino: (() => {
+          const itin = (form.itinerarios || []).map((i) => `${i.ciudad_origen} - ${i.ciudad_destino}`).join(', ')
+          const extra = (form.origen_destino || '').trim()
+          return [itin, extra].filter(Boolean).join(itin && extra ? '. ' : '').toUpperCase()
+        })(),
         usuario: (user?.email || '').split('@')[0] || 'usuario',
         estado: 'activo',
       }

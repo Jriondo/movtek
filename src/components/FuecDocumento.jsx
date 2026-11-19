@@ -132,6 +132,13 @@ export default function FuecDocumento({ f, empresa, qr }) {
         .fuec .ej { margin-top:8px; line-height:1.4; }
         .fuec .ej .num { font-weight:bold; letter-spacing:1px; }
         .fuec .qr-note { text-align:center; font-size:8.5px; color:#222; margin-top:12px; line-height:1.5; }
+        /* Modo compacto (para impresión y para la descarga en PDF). */
+        .fuec.compact { font-size:8px; line-height:1.12; }
+        .fuec.compact td, .fuec.compact th { padding:1px 4px; }
+        .fuec.compact .title .b { font-size:9.5px; }
+        .fuec.compact .emp-name { font-size:12px; }
+        .fuec.compact .objeto { font-size:7.5px; line-height:1.1; }
+        .fuec.compact .fuec-page { padding:0; }
         @media print {
           @page { size: Letter portrait; margin: 5mm; }
           .fuec { max-width:none; font-size:8px; line-height:1.12; }
