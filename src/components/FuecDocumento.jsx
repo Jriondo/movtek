@@ -118,7 +118,7 @@ export default function FuecDocumento({ f, empresa, qr }) {
         .fuec .iso { height:54px; }
         .fuec .logo-emp { height:42px; width:auto; max-width:120px; object-fit:contain; margin-bottom:2px; }
         .fuec .qrh { height:58px; width:58px; }
-        .fuec .logo-sup { height:auto; width:94%; max-height:54px; object-fit:contain; }
+        .fuec .logo-sup { height:auto; width:auto; max-width:100%; max-height:42px; object-fit:contain; display:block; }
         .fuec .emp-name { display:inline-block; white-space:nowrap; font-size:14px; font-weight:bold; color:#000; padding-bottom:1px; margin-top:1px; }
         .fuec .emp-sub { font-style:italic; font-size:9px; color:#333; margin-top:1px; }
         .fuec .title { position:relative; text-align:center; padding:2px 8px; line-height:1.2; }
