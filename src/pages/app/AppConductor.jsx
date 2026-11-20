@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { getEmpresaPorSlug, vehiculosDeConductor, conductorDeUsuario, preoperacionalHoy, savePreoperacional, fechaLocalISO } from '../../lib/db'
 import { TIPO } from '../../lib/preoperacional'
 import { applyTheme } from '../../lib/theme'
+import { activarPwaEmpresa, useInstalar } from '../../lib/pwa'
 import { useAuth } from '../../context/AuthContext'
 import { useEmpresa } from '../../context/EmpresaContext'
 import PasswordInput from '../../components/PasswordInput'
@@ -19,7 +20,7 @@ export default function AppConductor() {
     getEmpresaPorSlug(slug).then((e) => {
       setEmpresa(e || null)
       if (e?.color_primario) applyTheme({ primary: e.color_primario, accent: e.color_acento })
-      if (e) entrarAEmpresa?.(e)
+      if (e) { entrarAEmpresa?.(e); activarPwaEmpresa(e, slug) }
     }).catch(() => setEmpresa(null))
   }, [slug])
 
@@ -88,6 +89,7 @@ function Home({ empresa, user, conductorId, onLogout }) {
   const [cargando, setCargando] = useState(true)
   const [modal, setModal] = useState('')           // 'taller' | 'descanso' | ''
   const vehiculo = useMemo(() => vehiculos.find((v) => String(v.id) === String(selId)), [vehiculos, selId])
+  const { puedeInstalar, instalar } = useInstalar()
 
   async function cargar() {
     setCargando(true)
@@ -134,6 +136,12 @@ function Home({ empresa, user, conductorId, onLogout }) {
       <div className="mx-auto max-w-xl px-4 py-5">
         <p className="text-sm text-ink-soft">Hola,</p>
         <h1 className="font-display text-2xl font-extrabold text-ink">{nombreCond || 'Conductor'}</h1>
+
+        {puedeInstalar && (
+          <button onClick={instalar} className="mt-3 w-full rounded-xl border-2 border-dashed border-brand-300 bg-brand-50 px-4 py-2.5 text-sm font-bold text-brand-600">
+            📲 Instalar esta app en tu celular
+          </button>
+        )}
 
         {!conductor && (
           <p className="mt-2 rounded-xl bg-amber-100 px-4 py-2.5 text-sm text-amber-700">

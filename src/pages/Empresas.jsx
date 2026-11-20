@@ -235,6 +235,17 @@ export default function Empresas() {
                     </div>
                   </div>
 
+                  {/* Link de la app de conductores (preoperacional) */}
+                  <div className="rounded-lg bg-brand-50 px-2.5 py-2">
+                    <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-brand-600">📲 App conductores (preoperacional)</p>
+                    <div className="flex items-center gap-2">
+                      <input readOnly value={`${link}/app`} onFocus={(ev) => ev.target.select()} className="min-w-0 flex-1 bg-transparent text-xs text-ink outline-none" />
+                      <button className="flex-none rounded-md bg-white px-2 py-1 text-[11px] font-bold text-brand-600 shadow-sm hover:bg-brand-50" onClick={() => copiarLink(`${link}/app`, e.id + '-app')}>
+                        {copiado === e.id + '-app' ? '✓ Copiado' : '📋 Copiar'}
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
                     <button className="btn-primary !px-3 !py-1.5 text-xs" onClick={() => ingresar(e)} style={{ backgroundColor: color }}>
                       {empresaActiva?.id === e.id ? '✓ Estás aquí' : '➜ Ingresar'}
