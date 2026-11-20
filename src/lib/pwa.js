@@ -41,6 +41,13 @@ export function activarPwaEmpresa(empresa, slug) {
   }
 }
 
+// ¿La app ya está abierta como app instalada (pantalla completa)?
+export const esStandalone = () => typeof window !== 'undefined' &&
+  (window.matchMedia?.('(display-mode: standalone)')?.matches || window.navigator.standalone === true)
+
+// ¿Es un iPhone/iPad? (allí se instala con "Agregar a inicio", no con botón).
+export const esIOS = () => typeof navigator !== 'undefined' && /iphone|ipad|ipod/i.test(navigator.userAgent || '')
+
 // Hook sencillo para el botón "Instalar app": captura el evento del navegador.
 import { useEffect, useState } from 'react'
 export function useInstalar() {

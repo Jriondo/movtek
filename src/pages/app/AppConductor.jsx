@@ -3,8 +3,9 @@ import { useParams } from 'react-router-dom'
 import { getEmpresaPorSlug, vehiculosDeConductor, conductorDeUsuario, preoperacionalHoy, savePreoperacional, fechaLocalISO } from '../../lib/db'
 import { TIPO } from '../../lib/preoperacional'
 import { applyTheme } from '../../lib/theme'
-import { activarPwaEmpresa, useInstalar } from '../../lib/pwa'
+import { activarPwaEmpresa } from '../../lib/pwa'
 import { activarPushConductor } from '../../lib/push'
+import InstalarApp from '../../components/InstalarApp'
 import { useAuth } from '../../context/AuthContext'
 import { useEmpresa } from '../../context/EmpresaContext'
 import PasswordInput from '../../components/PasswordInput'
@@ -67,8 +68,9 @@ function LoginConductor({ empresa, onLogin }) {
             : <div className="grid h-16 w-16 place-items-center rounded-2xl text-2xl font-extrabold text-white" style={{ background: empresa?.color_primario || '#16a34a' }}>{(empresa?.nombre || 'E')[0]}</div>}
         </div>
         <h1 className="mt-4 text-center font-display text-lg font-extrabold text-ink">{empresa?.nombre}</h1>
-        <p className="text-center text-sm text-ink-soft">App de preoperacional · Conductores</p>
-        <form onSubmit={entrar} className="mt-5 flex flex-col gap-3">
+        <p className="mb-4 text-center text-sm text-ink-soft">App de preoperacional · Conductores</p>
+        <InstalarApp empresa={empresa} />
+        <form onSubmit={entrar} className="flex flex-col gap-3">
           <input type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Correo" autoComplete="username" required />
           <PasswordInput value={pass} onChange={(e) => setPass(e.target.value)} autoComplete="current-password" required />
           {err && <p className="text-sm font-semibold text-coral-500">{err}</p>}
@@ -90,7 +92,6 @@ function Home({ empresa, user, conductorId, onLogout }) {
   const [cargando, setCargando] = useState(true)
   const [modal, setModal] = useState('')           // 'taller' | 'descanso' | ''
   const vehiculo = useMemo(() => vehiculos.find((v) => String(v.id) === String(selId)), [vehiculos, selId])
-  const { puedeInstalar, instalar } = useInstalar()
   const [avisos, setAvisos] = useState(typeof Notification !== 'undefined' && Notification.permission === 'granted')
 
   async function activarAvisos() {
@@ -152,11 +153,9 @@ function Home({ empresa, user, conductorId, onLogout }) {
         <p className="text-sm text-ink-soft">Hola,</p>
         <h1 className="font-display text-2xl font-extrabold text-ink">{nombreCond || 'Conductor'}</h1>
 
-        {puedeInstalar && (
-          <button onClick={instalar} className="mt-3 w-full rounded-xl border-2 border-dashed border-brand-300 bg-brand-50 px-4 py-2.5 text-sm font-bold text-brand-600">
-            📲 Instalar esta app en tu celular
-          </button>
-        )}
+        <div className="mt-3">
+          <InstalarApp empresa={empresa} />
+        </div>
         {!avisos && (
           <button onClick={activarAvisos} className="mt-2 w-full rounded-xl border-2 border-dashed border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-bold text-amber-700">
             🔔 Activar recordatorios de preoperacional
