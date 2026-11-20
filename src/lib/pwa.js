@@ -1,43 +1,21 @@
 // Utilidades para que la app de conductores sea "instalable" (PWA) con la marca de cada empresa.
 
-// Inserta un manifest dinámico (nombre, color e ícono de la empresa) y registra el service worker.
+// Apunta el manifest real (servido por el servidor) y registra el service worker.
 export function activarPwaEmpresa(empresa, slug) {
   if (typeof document === 'undefined') return
-  const icono = empresa?.logo_url || ''
-  const manifest = {
-    name: `${empresa?.nombre || 'Movtek'} · Preoperacional`,
-    short_name: empresa?.nombre || 'Preop',
-    start_url: `/e/${slug}/app`,
-    scope: `/e/${slug}/`,
-    display: 'standalone',
-    background_color: '#ffffff',
-    theme_color: empresa?.color_primario || '#16a34a',
-    icons: [
-      ...(icono ? [
-        { src: icono, sizes: '192x192', type: 'image/png', purpose: 'any' },
-        { src: icono, sizes: '512x512', type: 'image/png', purpose: 'any' },
-      ] : []),
-      // Ícono de respaldo (asegura que el navegador permita instalar).
-      { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-      { src: '/icon-192.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-    ],
-  }
   try {
-    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' })
-    const url = URL.createObjectURL(blob)
+    // Manifest real por empresa (mucho más confiable para "Instalar aplicación").
     let link = document.querySelector('link[rel="manifest"]')
     if (!link) { link = document.createElement('link'); link.rel = 'manifest'; document.head.appendChild(link) }
-    link.href = url
+    link.href = `/api/manifest?slug=${encodeURIComponent(slug || '')}`
     // Color de la barra del navegador en el móvil.
     let theme = document.querySelector('meta[name="theme-color"]')
     if (!theme) { theme = document.createElement('meta'); theme.name = 'theme-color'; document.head.appendChild(theme) }
     theme.content = empresa?.color_primario || '#16a34a'
-    // Ícono para "Agregar a pantalla de inicio" en iOS.
-    if (icono) {
-      let apple = document.querySelector('link[rel="apple-touch-icon"]')
-      if (!apple) { apple = document.createElement('link'); apple.rel = 'apple-touch-icon'; document.head.appendChild(apple) }
-      apple.href = icono
-    }
+    // Ícono para "Agregar a inicio" en iOS (usa el logo de la empresa servido como imagen).
+    let apple = document.querySelector('link[rel="apple-touch-icon"]')
+    if (!apple) { apple = document.createElement('link'); apple.rel = 'apple-touch-icon'; document.head.appendChild(apple) }
+    apple.href = slug ? `/api/logo?slug=${encodeURIComponent(slug)}` : '/icon-192.png'
   } catch {}
 
   if ('serviceWorker' in navigator) {
