@@ -5,7 +5,7 @@ import { normalizarPreguntas, TIPO } from '../lib/preoperacional'
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 const LETRA = { B: 'B', R: 'R', M: 'M', NA: 'N/A' }
 
-export default function PreoperacionalReporte({ empresa, mes, registros = [], vehiculo = null }) {
+export default function PreoperacionalReporte({ empresa, mes, registros = [], vehiculo = null, propietarioNombre = '' }) {
   const [anio, mesNum] = (mes || '').split('-').map(Number)
   const diasMes = new Date(anio, mesNum, 0).getDate() || 31
   const dias = Array.from({ length: diasMes }, (_, i) => i + 1)
@@ -31,7 +31,7 @@ export default function PreoperacionalReporte({ empresa, mes, registros = [], ve
     clase: info.clase || v.clase || '',
     numero_interno: info.numero_interno || v.numero_interno || '',
     tarjeta_operacion: info.tarjeta_operacion || v.tarjeta_operacion || '',
-    propietario: info.propietario || v.propietario_nombre || v.propietario || '',
+    propietario: propietarioNombre || info.propietario || v.propietario_nombre || v.propietario || '',
     kilometraje: info.kilometraje || '',
   }
 
@@ -69,7 +69,7 @@ export default function PreoperacionalReporte({ empresa, mes, registros = [], ve
         .pr-sub { font-size:10px; font-weight:bold; }
         .pr-band { background:#e2e8f0; font-weight:bold; text-align:center; }
         .pr-sec { background:#cbd5e1; font-weight:bold; text-align:center; }
-        .preop-rep table.grid { table-layout: fixed; }
+        .preop-rep table.pr-grid { table-layout: fixed; width: 1056px; }
         .pr-itm { text-align:left; white-space:normal; word-break:break-word; vertical-align:top; line-height:1.12; }
         .pr-itm .pr-desc { font-weight:normal; color:#475569; font-size:7px; }
         .pr-c { text-align:center; }
@@ -115,10 +115,10 @@ export default function PreoperacionalReporte({ empresa, mes, registros = [], ve
       </table>
 
       {/* Grilla por días */}
-      <table className="grid">
+      <table className="pr-grid">
         <colgroup>
-          <col style={{ width: '240px' }} />
-          {dias.map((d) => <col key={d} />)}
+          <col style={{ width: `${1056 - diasMes * 26}px` }} />
+          {dias.map((d) => <col key={d} style={{ width: '26px' }} />)}
         </colgroup>
         <thead>
           <tr>
@@ -146,10 +146,10 @@ export default function PreoperacionalReporte({ empresa, mes, registros = [], ve
             </td>
             <td style={{ verticalAlign: 'top', textAlign: 'center' }}>
               <span className="pr-k">Nombre del responsable de la revisión:</span>
-              <div style={{ marginTop: '4px' }}>
-                {ultimo.firma_url && <img src={ultimo.firma_url} alt="firma" style={{ maxHeight: '44px', objectFit: 'contain' }} />}
+              <div style={{ marginTop: '4px', minHeight: '46px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {ultimo.firma_url && <img src={ultimo.firma_url} alt="firma" style={{ maxHeight: '46px', maxWidth: '70%', objectFit: 'contain', display: 'block', margin: '0 auto' }} />}
               </div>
-              <div style={{ borderTop: '1px solid #111827', marginTop: '2px', paddingTop: '2px' }}>{ultimo.conductor_nombre || ''}</div>
+              <div style={{ borderTop: '1px solid #111827', marginTop: '2px', paddingTop: '2px', textAlign: 'center' }}>{ultimo.conductor_nombre || ''}</div>
             </td>
           </tr>
         </tbody>

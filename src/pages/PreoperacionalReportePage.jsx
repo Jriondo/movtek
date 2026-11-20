@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { listPreoperacionales, listVehiculos, fechaLocalISO } from '../lib/db'
+import { listPreoperacionales, listVehiculos, fechaLocalISO, getPropietario, nombrePropietario } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
 import { useAuth } from '../context/AuthContext'
 import PreoperacionalReporte from '../components/PreoperacionalReporte'
@@ -44,6 +44,14 @@ export default function PreoperacionalReportePage() {
   const registros = useMemo(() => rows.filter((r) => (r.placa || '').toUpperCase() === placaSel), [rows, placaSel])
   const vehiculoSel = useMemo(() => vehiculos.find((v) => (v.placa || '').toUpperCase() === placaSel), [vehiculos, placaSel])
 
+  // Nombre del propietario del vehículo (para el reporte).
+  const [propNombre, setPropNombre] = useState('')
+  useEffect(() => {
+    const pid = vehiculoSel?.propietario_id
+    if (!pid) { setPropNombre(vehiculoSel?.propietario_nombre || ''); return }
+    getPropietario(pid).then((p) => setPropNombre(p ? nombrePropietario(p) : '')).catch(() => setPropNombre(''))
+  }, [vehiculoSel?.propietario_id])
+
   async function descargarPdf() {
     if (descargando || !ref.current) return
     setDescargando(true)
@@ -85,7 +93,7 @@ export default function PreoperacionalReportePage() {
       ) : (
         <div className="overflow-x-auto">
           <div ref={ref} className="mx-auto w-fit shadow-card">
-            <PreoperacionalReporte empresa={empresa} mes={mes} registros={registros} vehiculo={vehiculoSel} />
+            <PreoperacionalReporte empresa={empresa} mes={mes} registros={registros} vehiculo={vehiculoSel} propietarioNombre={propNombre} />
           </div>
         </div>
       )}
