@@ -8,3 +8,6 @@ Transportes-Santiago.apk
 *.apk
 !public/apk/
 !public/apk/*.apk
+
+android/app/build/
+android/.gradle/
