@@ -105,27 +105,32 @@ export default function PreoperacionalCaptura({ empresa, vehiculo, conductor, on
   // ---------- PASO 1: elegir estado del día ----------
   if (!estado) {
     return (
-      <div className="mx-auto max-w-xl px-4 pb-10 pt-4">
-        <button onClick={onCancel} className="text-sm font-semibold text-brand-500">← Volver</button>
-        <h1 className="mt-1 font-display text-xl font-extrabold text-ink">¿Cómo está el vehículo hoy?</h1>
-        <p className="text-sm text-ink-soft">{vehiculo?.placa} · {vehiculo?.marca} {vehiculo?.modelo} · Móvil {vehiculo?.numero_interno || '—'}</p>
+      <div className="min-h-screen" style={{ background: '#0e1512', color: '#e6f2ec' }}>
+        <div className="mx-auto max-w-xl px-4 pb-10 pt-4">
+          <button onClick={onCancel} className="text-sm font-semibold" style={{ color: '#4ade80' }}>← Volver</button>
+          <h1 className="mt-1 font-display text-xl font-extrabold" style={{ color: '#eafff3' }}>¿Cómo está el vehículo hoy?</h1>
+          <p className="text-sm" style={{ color: '#8fb6a3' }}>{vehiculo?.placa} · {vehiculo?.marca} {vehiculo?.modelo} · Móvil {vehiculo?.numero_interno || '—'}</p>
 
-        <div className="mt-5 flex flex-col gap-3">
-          <button onClick={() => setEstado('operaciones')}
-            className="rounded-2xl bg-brand-500 px-5 py-4 text-left text-white shadow-glow">
-            <span className="block font-display text-lg font-extrabold">🚍 En operaciones</span>
-            <span className="block text-sm text-white/80">Hacer la revisión preoperacional y firmar</span>
-          </button>
-          <button onClick={() => setEstado('taller')}
-            className="rounded-2xl border-2 border-amber-300 bg-amber-50 px-5 py-4 text-left text-amber-800">
-            <span className="block font-display text-lg font-extrabold">🔧 En taller</span>
-            <span className="block text-sm text-amber-700/80">Hoy no opera por mantenimiento. Solo enviar.</span>
-          </button>
-          <button onClick={() => setEstado('descanso')}
-            className="rounded-2xl border-2 border-cloud-line bg-white px-5 py-4 text-left text-ink">
-            <span className="block font-display text-lg font-extrabold">🛌 En descanso</span>
-            <span className="block text-sm text-ink-soft">Hoy no opera (descanso del vehículo). Solo enviar.</span>
-          </button>
+          <div className="mt-5 flex flex-col gap-3">
+            <button onClick={() => setEstado('operaciones')}
+              className="rounded-2xl px-5 py-4 text-left"
+              style={{ background: 'linear-gradient(135deg,#17d36f,#0fb98f)', color: '#042012', boxShadow: '0 12px 26px -10px #17d36f' }}>
+              <span className="block font-display text-lg font-extrabold">🚍 En operaciones</span>
+              <span className="block text-sm" style={{ color: '#063' }}>Hacer la revisión preoperacional y firmar</span>
+            </button>
+            <button onClick={() => setEstado('taller')}
+              className="rounded-2xl px-5 py-4 text-left text-white"
+              style={{ background: 'linear-gradient(135deg,#f59e0b,#ef7a11)', boxShadow: '0 12px 26px -12px #f59e0b' }}>
+              <span className="block font-display text-lg font-extrabold">🔧 En taller</span>
+              <span className="block text-sm text-white/85">Hoy no opera por mantenimiento. Solo enviar.</span>
+            </button>
+            <button onClick={() => setEstado('descanso')}
+              className="rounded-2xl px-5 py-4 text-left text-white"
+              style={{ background: 'linear-gradient(135deg,#6366f1,#7c5cf0)', boxShadow: '0 12px 26px -12px #6366f1' }}>
+              <span className="block font-display text-lg font-extrabold">🛌 En descanso</span>
+              <span className="block text-sm text-white/85">Hoy no opera (descanso del vehículo). Solo enviar.</span>
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -135,33 +140,37 @@ export default function PreoperacionalCaptura({ empresa, vehiculo, conductor, on
   if (estado === 'taller' || estado === 'descanso') {
     const esTaller = estado === 'taller'
     return (
-      <div className="mx-auto max-w-xl px-4 pb-10 pt-4">
-        <button onClick={() => { setEstado(''); setError('') }} className="text-sm font-semibold text-brand-500">← Cambiar estado</button>
-        <h1 className="mt-1 font-display text-xl font-extrabold text-ink">{esTaller ? '🔧 Vehículo en taller' : '🛌 Vehículo en descanso'}</h1>
-        <p className="text-sm text-ink-soft">{vehiculo?.placa} · {vehiculo?.marca} {vehiculo?.modelo} · Móvil {vehiculo?.numero_interno || '—'}</p>
+      <div className="min-h-screen" style={{ background: '#0e1512', color: '#e6f2ec' }}>
+        <div className="mx-auto max-w-xl px-4 pb-10 pt-4">
+          <button onClick={() => { setEstado(''); setError('') }} className="text-sm font-semibold" style={{ color: '#4ade80' }}>← Cambiar estado</button>
+          <h1 className="mt-1 font-display text-xl font-extrabold" style={{ color: '#eafff3' }}>{esTaller ? '🔧 Vehículo en taller' : '🛌 Vehículo en descanso'}</h1>
+          <p className="text-sm" style={{ color: '#8fb6a3' }}>{vehiculo?.placa} · {vehiculo?.marca} {vehiculo?.modelo} · Móvil {vehiculo?.numero_interno || '—'}</p>
 
-        {error && <p className="mt-3 rounded-xl bg-coral-400/15 px-4 py-2.5 text-sm font-semibold text-coral-500">{error}</p>}
+          {error && <p className="mt-3 rounded-xl bg-coral-400/15 px-4 py-2.5 text-sm font-semibold text-coral-500">{error}</p>}
 
-        <div className="card mt-4 p-4">
-          <label className="label">Nota (opcional)</label>
-          <textarea className="input mt-1 h-24" value={nota} onChange={(e) => setNota(e.target.value)}
-            placeholder={esTaller ? 'Motivo o taller donde está…' : 'Observación del descanso…'} />
+          <div className="card mt-4 p-4">
+            <label className="label">Nota (opcional)</label>
+            <textarea className="input mt-1 h-24" value={nota} onChange={(e) => setNota(e.target.value)}
+              placeholder={esTaller ? 'Motivo o taller donde está…' : 'Observación del descanso…'} />
+          </div>
+
+          <button onClick={() => enviarEstado(esTaller ? TIPO.TALLER : TIPO.DESCANSO)} disabled={guardando}
+            className="mt-4 w-full rounded-2xl py-3.5 text-base font-extrabold disabled:opacity-50"
+            style={{ background: esTaller ? 'linear-gradient(135deg,#f59e0b,#ef7a11)' : 'linear-gradient(135deg,#6366f1,#7c5cf0)', color: '#fff' }}>
+            {guardando ? 'Enviando…' : '✅ Enviar'}
+          </button>
         </div>
-
-        <button onClick={() => enviarEstado(esTaller ? TIPO.TALLER : TIPO.DESCANSO)} disabled={guardando}
-          className="btn-primary mt-4 w-full py-3.5 text-base">
-          {guardando ? 'Enviando…' : '✅ Enviar'}
-        </button>
       </div>
     )
   }
 
   // ---------- PASO 2b: OPERACIONES (preoperacional completa) ----------
   return (
+    <div className="min-h-screen" style={{ background: '#0e1512' }}>
     <div className="mx-auto max-w-xl px-4 pb-28 pt-4">
-      <button onClick={() => { setEstado(''); setError('') }} className="text-sm font-semibold text-brand-500">← Cambiar estado</button>
-      <h1 className="mt-1 font-display text-xl font-extrabold text-ink">Revisión preoperacional</h1>
-      <p className="text-sm text-ink-soft">{vehiculo?.placa} · {vehiculo?.marca} {vehiculo?.modelo} · Móvil {vehiculo?.numero_interno || '—'}</p>
+      <button onClick={() => { setEstado(''); setError('') }} className="text-sm font-semibold" style={{ color: '#4ade80' }}>← Cambiar estado</button>
+      <h1 className="mt-1 font-display text-xl font-extrabold" style={{ color: '#eafff3' }}>Revisión preoperacional</h1>
+      <p className="text-sm" style={{ color: '#8fb6a3' }}>{vehiculo?.placa} · {vehiculo?.marca} {vehiculo?.modelo} · Móvil {vehiculo?.numero_interno || '—'}</p>
 
       {error && <p className="mt-3 rounded-xl bg-coral-400/15 px-4 py-2.5 text-sm font-semibold text-coral-500">{error}</p>}
 
@@ -246,6 +255,7 @@ export default function PreoperacionalCaptura({ empresa, vehiculo, conductor, on
           </button>
         </div>
       </div>
+    </div>
     </div>
   )
 }

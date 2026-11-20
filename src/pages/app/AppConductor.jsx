@@ -99,7 +99,7 @@ function LoginConductor({ empresa, onLogin }) {
   }
 
   return (
-    <div className="grid min-h-screen place-items-center bg-gradient-to-b from-brand-500/10 to-cloud p-6">
+    <div className="grid min-h-screen place-items-center p-6" style={{ background: 'linear-gradient(180deg,#0e1512,#13201a)' }}>
       <div className="card w-full max-w-sm p-7">
         <div className="flex justify-center">
           {empresa?.logo_url
@@ -214,51 +214,57 @@ function Home({ empresa, user, conductorId, onLogout }) {
   const primerApellido = titulo((conductor?.apellidos || '').trim().split(/\s+/)[0])
   const nombreCond = (primerNombre || primerApellido) ? `${primerNombre} ${primerApellido}`.trim() : (user?.email || 'Conductor')
 
+  const primary = empresa?.color_primario || '#16a34a'
   return (
-    <div className="min-h-screen bg-cloud">
-      {/* Encabezado con la marca */}
-      <header className="flex items-center gap-3 px-4 py-3 text-white shadow" style={{ background: empresa?.color_primario || '#16a34a' }}>
+    <div className="min-h-screen" style={{ background: '#0e1512', color: '#e6f2ec' }}>
+      {/* Encabezado con degradado de la marca */}
+      <header className="flex items-center gap-3 px-4 pb-6 pt-3 text-white"
+        style={{ background: `linear-gradient(135deg, ${primary} 0%, ${primary} 45%, #0e9488 100%)`, borderRadius: '0 0 24px 24px', boxShadow: '0 10px 30px -14px #0e9488' }}>
         {empresa?.logo_url
-          ? <img src={empresa.logo_url} alt="" className="h-9 w-auto max-w-[120px] object-contain drop-shadow" />
+          ? <img src={empresa.logo_url} alt="" className="h-9 w-auto max-w-[120px] rounded-lg bg-white/90 object-contain p-0.5 drop-shadow" />
           : <span className="font-display text-lg font-extrabold">{empresa?.nombre}</span>}
-        <button onClick={() => setModal('pass')} className="ml-auto rounded-lg bg-white/20 px-3 py-1.5 text-sm font-semibold" title="Cambiar contraseña">🔑</button>
-        <button onClick={onLogout} className="rounded-lg bg-white/20 px-3 py-1.5 text-sm font-semibold">Salir</button>
+        <button onClick={() => setModal('pass')} className="ml-auto rounded-lg bg-white/25 px-3 py-1.5 text-sm font-semibold backdrop-blur" title="Cambiar contraseña">🔑</button>
+        <button onClick={onLogout} className="rounded-lg bg-white/25 px-3 py-1.5 text-sm font-semibold backdrop-blur">Salir</button>
       </header>
 
-      <div className="mx-auto max-w-xl px-4 py-5">
-        <p className="text-sm text-ink-soft">Hola,</p>
-        <h1 className="font-display text-2xl font-extrabold text-ink">{nombreCond || 'Conductor'}</h1>
+      <div className="mx-auto -mt-2 max-w-xl px-4 py-5">
+        <p className="text-sm" style={{ color: '#8fb6a3' }}>Hola,</p>
+        <h1 className="font-display text-2xl font-extrabold" style={{ color: '#eafff3' }}>{nombreCond || 'Conductor'}</h1>
 
         <div className="mt-3">
           <InstalarApp empresa={empresa} />
         </div>
         {!avisos && (
-          <button onClick={activarAvisos} className="mt-2 w-full rounded-xl border-2 border-dashed border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-bold text-amber-700">
+          <button onClick={activarAvisos} className="mt-2 w-full rounded-xl border px-4 py-2.5 text-sm font-bold"
+            style={{ borderColor: '#2f5a1c', background: '#172a12', color: '#b6f08a' }}>
             🔔 Activar recordatorios de preoperacional
           </button>
         )}
 
         {!conductor && (
-          <p className="mt-2 rounded-xl bg-amber-100 px-4 py-2.5 text-sm text-amber-700">
+          <p className="mt-2 rounded-xl px-4 py-2.5 text-sm" style={{ background: '#2a2410', color: '#f5d98a' }}>
             Tu usuario no está vinculado a una ficha de conductor. Pídele a tu empresa que la asocie para registrar tus datos.
           </p>
         )}
 
         {vehiculos.length === 0 ? (
-          <p className="mt-4 rounded-xl bg-coral-400/15 px-4 py-3 text-sm text-coral-500">No tienes vehículos activos asignados. Avisa a tu empresa.</p>
+          <p className="mt-4 rounded-xl px-4 py-3 text-sm" style={{ background: '#2a1414', color: '#f5a3a3' }}>No tienes vehículos activos asignados. Avisa a tu empresa.</p>
         ) : (
           <>
             {/* Selector de vehículo (puede tener varios y cambiarse) */}
             <div className="mt-4">
-              <p className="label mb-1.5">Tu vehículo</p>
+              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide" style={{ color: '#5f8a74' }}>Tu vehículo</p>
               <div className="flex flex-wrap gap-2">
                 {vehiculos.map((v) => {
                   const sel = String(v.id) === String(selId)
                   return (
                     <button key={v.id} onClick={() => setSelId(v.id)}
-                      className={`rounded-xl border-2 px-3 py-2 text-left transition ${sel ? 'border-brand-500 bg-brand-50' : 'border-cloud-line bg-white'}`}>
-                      <span className="block font-display text-base font-extrabold text-ink">{v.placa}</span>
-                      <span className="block text-xs text-ink-soft">{v.marca} {v.modelo} · Móvil {v.numero_interno || '—'}</span>
+                      className="rounded-xl border px-3 py-2 text-left transition"
+                      style={sel
+                        ? { borderColor: '#22e07a', background: '#132a1e', boxShadow: '0 0 0 1px #22e07a, 0 0 18px -6px #22e07a' }
+                        : { borderColor: '#203a2d', background: '#13201a' }}>
+                      <span className="block font-display text-base font-extrabold" style={{ color: '#eafff3' }}>{v.placa}</span>
+                      <span className="block text-xs" style={{ color: '#8fb6a3' }}>{v.marca} {v.modelo} · Móvil {v.numero_interno || '—'}</span>
                     </button>
                   )
                 })}
@@ -267,23 +273,25 @@ function Home({ empresa, user, conductorId, onLogout }) {
 
             {/* Estado de hoy */}
             {hoy ? (
-              <div className={`mt-4 rounded-xl px-4 py-3 text-sm font-semibold ${hoy.tipo === TIPO.PREOP ? 'bg-mint-500/15 text-mint-600' : 'bg-slate-200 text-slate-700'}`}>
+              <div className="mt-4 rounded-xl px-4 py-3 text-sm font-semibold"
+                style={hoy.tipo === TIPO.PREOP ? { background: '#132a1e', color: '#8ff0bd' } : { background: '#17221d', color: '#9fc3b2' }}>
                 {hoy.tipo === TIPO.PREOP && `✅ Ya hiciste la preoperacional hoy (${hoy.hora || ''}).`}
                 {hoy.tipo === TIPO.TALLER && '🔧 Reportaste este vehículo EN TALLER hoy.'}
                 {hoy.tipo === TIPO.DESCANSO && '🛌 Reportaste este vehículo EN DESCANSO hoy.'}
               </div>
             ) : (
-              <div className="mt-4 rounded-xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-700">
-                ⏰ Aún no has hecho la preoperacional de hoy.
+              <div className="mt-4 rounded-xl px-4 py-3 text-sm font-semibold" style={{ background: '#2a2410', color: '#f5d98a' }}>
+                ⏰ Aún no has registrado el día.
               </div>
             )}
 
             {/* Acción principal: dentro se elige Operaciones / Taller / Descanso */}
             <div className="mt-4 flex flex-col gap-3">
               <button onClick={() => setPantalla('captura')} disabled={!conductor}
-                className="rounded-2xl bg-brand-500 px-5 py-4 text-left text-white shadow-glow disabled:opacity-50">
+                className="rounded-2xl px-5 py-4 text-left disabled:opacity-50"
+                style={{ background: `linear-gradient(135deg, ${primary}, #0fb98f)`, color: '#042012', boxShadow: '0 12px 26px -10px #17d36f' }}>
                 <span className="block font-display text-lg font-extrabold">📋 Registrar el día</span>
-                <span className="block text-sm text-white/80">Operaciones (preoperacional), taller o descanso</span>
+                <span className="block text-sm" style={{ color: '#063' }}>Operaciones (preoperacional), taller o descanso</span>
               </button>
             </div>
           </>
