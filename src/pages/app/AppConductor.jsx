@@ -45,11 +45,15 @@ function Pantalla({ children }) {
   return <div className="grid min-h-screen place-items-center bg-cloud p-6">{children}</div>
 }
 
-// ---------- LOGIN del conductor (marca de la empresa) ----------
+// ---------- LOGIN / REGISTRO del conductor (marca de la empresa) ----------
 function LoginConductor({ empresa, onLogin }) {
+  const { registrarConductor } = useAuth()
+  const [modo, setModo] = useState('login')   // 'login' | 'registro'
   const [email, setEmail] = useState('')
   const [pass, setPass] = useState('')
+  const [doc, setDoc] = useState('')
   const [err, setErr] = useState('')
+  const [info, setInfo] = useState('')
   const [busy, setBusy] = useState(false)
   // En el navegador se muestra solo el aviso de descargar; el login está dentro de la app ya instalada.
   const [verLogin, setVerLogin] = useState(esStandalone())
@@ -59,6 +63,24 @@ function LoginConductor({ empresa, onLogin }) {
     setErr(''); setBusy(true)
     try { await onLogin(email.trim(), pass) }
     catch (e) { setErr('Correo o contraseña incorrectos.'); setBusy(false) }
+  }
+
+  async function crearAcceso(e) {
+    e.preventDefault()
+    setErr(''); setInfo(''); setBusy(true)
+    const r = await registrarConductor({ empresaId: empresa.id, documento: doc.trim(), email: email.trim(), password: pass })
+    setBusy(false)
+    if (r.ok) {
+      if (r.needsConfirmation) setInfo('✅ ¡Acceso creado! Te enviamos un correo para confirmar tu cuenta. Ábrelo y luego ingresa aquí con tu correo y contraseña.')
+      // si no requiere confirmación, la sesión ya entra sola.
+      return
+    }
+    if (r.motivo === 'no-ficha') setErr(`No encontramos tu documento en ${empresa?.nombre}. Debes estar registrado por tu empresa. Habla con ellos para tu creación.`)
+    else if (r.motivo === 'sin-vehiculo') setErr('Estás registrado pero aún no tienes un vehículo asignado. Habla con tu empresa para que te asignen uno.')
+    else if (r.motivo === 'sin-documento') setErr('Escribe tu número de documento.')
+    else if (r.motivo === 'sin-correo') setErr('Escribe un correo para tu acceso.')
+    else if (r.motivo === 'auth') setErr('No se pudo crear el acceso: ' + (r.error || '') + '. Si ya tienes cuenta, usa "Ingresar".')
+    else setErr('No se pudo crear el acceso. Intenta de nuevo o habla con tu empresa.')
   }
 
   return (
@@ -74,7 +96,11 @@ function LoginConductor({ empresa, onLogin }) {
 
         <InstalarApp empresa={empresa} />
 
-        {verLogin ? (
+        {!verLogin ? (
+          <button onClick={() => setVerLogin(true)} className="mt-1 w-full text-center text-xs font-semibold text-ink-faint hover:text-brand-500">
+            Ya instalé la app · Ingresar
+          </button>
+        ) : modo === 'login' ? (
           <>
             <form onSubmit={entrar} className="flex flex-col gap-3">
               <input type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Correo" autoComplete="username" required />
@@ -82,12 +108,25 @@ function LoginConductor({ empresa, onLogin }) {
               {err && <p className="text-sm font-semibold text-coral-500">{err}</p>}
               <button className="btn-primary" disabled={busy}>{busy ? 'Ingresando…' : 'Ingresar'}</button>
             </form>
-            <p className="mt-4 text-center text-xs text-ink-faint">¿No tienes acceso? Pídele a tu empresa que te cree el usuario de conductor.</p>
+            <button onClick={() => { setModo('registro'); setErr(''); setInfo('') }} className="mt-4 w-full text-center text-sm font-bold text-brand-600">
+              ¿Primera vez? Crear mi acceso
+            </button>
           </>
         ) : (
-          <button onClick={() => setVerLogin(true)} className="mt-1 w-full text-center text-xs font-semibold text-ink-faint hover:text-brand-500">
-            Ya instalé la app · Ingresar
-          </button>
+          <>
+            <form onSubmit={crearAcceso} className="flex flex-col gap-3">
+              <p className="text-xs text-ink-soft">Crea tu acceso con tu <b>documento</b> (debes estar registrado por tu empresa y tener un vehículo asignado).</p>
+              <input className="input" inputMode="numeric" value={doc} onChange={(e) => setDoc(e.target.value)} placeholder="Número de documento" required />
+              <input type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Tu correo" autoComplete="email" required />
+              <PasswordInput value={pass} onChange={(e) => setPass(e.target.value)} placeholder="Crea una contraseña" autoComplete="new-password" required />
+              {err && <p className="rounded-lg bg-coral-400/15 px-3 py-2 text-sm font-semibold text-coral-500">{err}</p>}
+              {info && <p className="rounded-lg bg-mint-500/15 px-3 py-2 text-sm font-semibold text-mint-600">{info}</p>}
+              <button className="btn-primary" disabled={busy}>{busy ? 'Creando…' : 'Crear mi acceso'}</button>
+            </form>
+            <button onClick={() => { setModo('login'); setErr(''); setInfo('') }} className="mt-4 w-full text-center text-sm font-bold text-ink-soft">
+              ← Ya tengo acceso · Ingresar
+            </button>
+          </>
         )}
       </div>
     </div>

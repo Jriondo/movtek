@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase, supabaseAux, isSupabaseConfigured } from '../lib/supabase'
-import { getUsuarioPorEmail } from '../lib/db'
+import { getUsuarioPorEmail, conductorRegistrable, saveUsuario, nombreConductor } from '../lib/db'
 
 const AuthContext = createContext(null)
 export const useAuth = () => useContext(AuthContext)
@@ -112,6 +112,36 @@ export function AuthProvider({ children }) {
     return { ok: true, needsConfirmation: !data.session }
   }
 
+  // Autoregistro del conductor desde la app: solo si ya existe su ficha Y tiene vehículo activo asignado.
+  async function registrarConductor({ empresaId, documento, email, password }) {
+    const chk = await conductorRegistrable({ empresaId, documento })
+    if (!chk.ok) return chk
+    const c = chk.conductor
+    const correo = String(email || c.correo || '').trim()
+    if (!correo) return { ok: false, motivo: 'sin-correo' }
+    // Primero crea la ficha de usuario (rol conductor) ligada a su ficha de conductor.
+    try {
+      await saveUsuario({ empresa_id: empresaId, nombre: nombreConductor(c), email: correo, rol: 'conductor', conductor_id: c.id, estado: 'activo' })
+    } catch (e) { return { ok: false, motivo: 'guardar', error: e?.message } }
+
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase.auth.signUp({
+        email: correo, password,
+        options: { emailRedirectTo: `${window.location.origin}/login` },
+      })
+      if (error && !(error.message || '').toLowerCase().includes('already')) {
+        return { ok: false, motivo: 'auth', error: error.message }
+      }
+      if (data?.session && data?.user) { setUser(data.user); await cargarRol(data.user) }
+      return { ok: true, needsConfirmation: !data?.session, email: correo }
+    }
+    // Modo demo
+    const demo = { email: correo, demo: true }
+    try { localStorage.setItem(DEMO_KEY, JSON.stringify(demo)) } catch {}
+    setUser(demo); await cargarRol(demo)
+    return { ok: true, email: correo }
+  }
+
   // Envía el enlace para restablecer la contraseña (olvido de contraseña).
   async function recuperarPassword(email) {
     if (!isSupabaseConfigured) throw new Error('demo: La recuperación de contraseña funciona cuando Supabase está conectado.')
@@ -147,7 +177,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{
-      user, loading, login, logout, registrar, recuperarPassword, actualizarPassword, crearAccesoUsuario, demo: !isSupabaseConfigured,
+      user, loading, login, logout, registrar, registrarConductor, recuperarPassword, actualizarPassword, crearAccesoUsuario, demo: !isSupabaseConfigured,
       rol, rolReal, esAdmin, esOperativo, esPropietario, esConductor, propietarioId, conductorId, empresaIdUsuario, sinAcceso,
       verComo, setVerComo,
     }}>

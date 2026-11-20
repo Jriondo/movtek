@@ -1392,3 +1392,17 @@ export async function savePreoperacional(data) {
   registrarCambio({ accion: data.id ? 'editar' : 'crear', entidad: 'Preoperacional', descripcion: `${res.placa || ''} · ${res.conductor_nombre || ''}`, empresa_id: res.empresa_id })
   return res
 }
+
+// ¿Este documento corresponde a un conductor registrado y CON vehículo activo asignado?
+// Se usa para el autoregistro del conductor desde la app.
+export async function conductorRegistrable({ empresaId, documento }) {
+  const doc = String(documento || '').trim()
+  if (!doc) return { ok: false, motivo: 'sin-documento' }
+  const conductores = await listConductores({ empresaId })
+  const c = conductores.find((x) => String(x.documento || '').trim() === doc)
+  if (!c) return { ok: false, motivo: 'no-ficha' }
+  const vehiculos = await listVehiculos({ empresaId, estado: 'activo' })
+  const tieneVehiculo = vehiculos.some((v) => (v.conductores_asignados || []).some((a) => String(a.id) === String(c.id)))
+  if (!tieneVehiculo) return { ok: false, motivo: 'sin-vehiculo' }
+  return { ok: true, conductor: c }
+}
