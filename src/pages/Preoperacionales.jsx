@@ -71,18 +71,56 @@ export default function Preoperacionales() {
   useEffect(() => { setRows([]); setBuscado(false) }, [empresa?.id])
 
   async function exportarExcel() {
+    let datos = rows
+    try { datos = await obtenerDatos() } catch {}       // siempre trae lo más reciente
+    if (!datos.length) { alert('No hay registros en este periodo para exportar.'); return }
+
+    // Preguntas (unión de todas las usadas en el periodo) → una columna por pregunta.
+    const preMap = new Map()
+    for (const r of datos) {
+      for (const p of normalizarPreguntas(r.preguntas)) {
+        if (!preMap.has(p.key)) preMap.set(p.key, p.titulo)
+      }
+    }
+    const preguntaCols = [...preMap.entries()].map(([key, titulo]) => ({
+      label: titulo,
+      get: (r) => (!r.tipo || r.tipo === TIPO.PREOP) ? (LEYENDA[r.respuestas?.[key]] || '') : '',
+    }))
+
+    // Detalle de novedades (ítems Regular/Malo con su observación).
+    const novedadesDetalle = (r) => {
+      if (r.tipo && r.tipo !== TIPO.PREOP) return ''
+      const items = []
+      for (const p of normalizarPreguntas(r.preguntas)) {
+        const v = r.respuestas?.[p.key]
+        if (v === 'R' || v === 'M') {
+          const obs = r.observaciones?.[p.key]
+          items.push(`${p.titulo}: ${LEYENDA[v]}${obs ? ` (${obs})` : ''}`)
+        }
+      }
+      return items.length ? items.join(' | ') : 'Sin novedades'
+    }
+
+    // Alertas de la encuesta de salud (respuestas en riesgo).
+    const saludAlertas = (r) => {
+      if (!r.salud || !Object.keys(r.salud).length) return ''
+      const al = SALUD.filter((p) => r.salud[p.key] && saludEnRiesgo(p, r.salud[p.key]))
+        .map((p) => `${p.label} → ${r.salud[p.key] === 'si' ? 'Sí' : 'No'}${r.salud['obs_' + p.key] ? ` (${r.salud['obs_' + p.key]})` : ''}`)
+      return al.length ? al.join(' | ') : 'Sin alertas'
+    }
+
     const cols = [
       { label: 'Fecha', get: (r) => r.fecha }, { label: 'Hora', get: (r) => r.hora || '' },
       { label: 'Placa', get: (r) => r.placa || '' }, { label: 'Móvil', get: (r) => r.numero_interno || '' },
       { label: 'Conductor', get: (r) => r.conductor_nombre || '' }, { label: 'Documento', get: (r) => r.conductor_doc || '' },
       { label: 'Kilometraje', get: (r) => r.kilometraje || '' }, { label: 'Tipo', get: (r) => nombreTipo(r.tipo) },
       { label: 'Estado', get: (r) => nombreEstado(r) },
-      { label: 'Novedades', get: (r) => Object.values(r.respuestas || {}).filter((v) => v === 'R' || v === 'M').length },
+      { label: 'N° novedades', get: (r) => (!r.tipo || r.tipo === TIPO.PREOP) ? Object.values(r.respuestas || {}).filter((v) => v === 'R' || v === 'M').length : '' },
+      ...preguntaCols,
+      { label: 'Novedades (detalle)', get: novedadesDetalle },
+      { label: 'Encuesta de salud (alertas)', get: saludAlertas },
       { label: 'Nota', get: (r) => r.nota || '' },
     ]
-    let datos = rows
-    try { datos = await obtenerDatos() } catch {}       // siempre trae lo más reciente
-    if (!datos.length) { alert('No hay registros en este periodo para exportar.'); return }
     descargarExcel(`Preoperacionales_${desde}_a_${hasta}`, cols, datos, `Preoperacionales ${empresa?.nombre || ''} (${desde} a ${hasta})`)
   }
 
