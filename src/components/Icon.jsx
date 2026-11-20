@@ -11,6 +11,10 @@ const ICONS = {
   empresa: <><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z" /><path d="M6 18h.01M10 18h.01M14 18h.01M18 18h.01" /></>,
   usuarios: <><circle cx="7.5" cy="15.5" r="5.5" /><path d="M11.4 11.4 22 2" /><path d="m15.5 7.5 3 3L22 7l-3-3" /></>,
   reportes: <><line x1="12" y1="20" x2="12" y2="10" /><line x1="18" y1="20" x2="18" y2="4" /><line x1="6" y1="20" x2="6" y2="16" /></>,
+  // Libro/acta con un chulo adentro (preoperacionales).
+  checklist: <><path d="M6 3h11a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" /><polyline points="8.5 12.5 11 15 15.5 9.5" /></>,
+  // Libro abierto (historial).
+  libro: <><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></>,
 }
 
 export default function Icon({ name, className = 'h-5 w-5' }) {
