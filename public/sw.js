@@ -1,5 +1,5 @@
 // Service worker mínimo: habilita la instalación de la app (PWA) y un caché básico.
-const CACHE = 'movtek-app-v3'
+const CACHE = 'movtek-app-v4'
 
 self.addEventListener('install', (e) => { self.skipWaiting() })
 self.addEventListener('activate', (e) => {

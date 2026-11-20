@@ -21,7 +21,19 @@ export function activarPwaEmpresa(empresa, slug) {
   if ('serviceWorker' in navigator) {
     // Registro estándar (scope raíz): no depende de headers especiales y es el más confiable
     // para que el navegador permita instalar la app.
-    navigator.serviceWorker.register('/sw.js').catch(() => {})
+    navigator.serviceWorker.register('/sw.js').then((reg) => {
+      // Busca actualizaciones al abrir.
+      try { reg.update() } catch {}
+    }).catch(() => {})
+
+    // Cuando entra en control una versión nueva del service worker, recarga UNA vez
+    // para que el usuario quede en la última versión sin tener que reinstalar.
+    let recargado = false
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (recargado) return
+      recargado = true
+      window.location.reload()
+    })
   }
 }
 
