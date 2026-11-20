@@ -63,8 +63,8 @@ export default function PreoperacionalReporte({ empresa, mes, registros = [], ve
         .preop-rep table { border-collapse: collapse; width:100%; }
         .preop-rep td, .preop-rep th { border:0.6px solid #475569; padding:1px 2px; }
         .pr-head { display:flex; align-items:center; border:1px solid #475569; border-bottom:0; }
-        .pr-head .lg { width:150px; padding:4px; text-align:center; border-right:1px solid #475569; }
-        .pr-head .lg img { max-height:48px; max-width:140px; object-fit:contain; }
+        .pr-head .lg { width:150px; padding:4px; border-right:1px solid #475569; display:flex; align-items:center; justify-content:center; }
+        .pr-head .lg img { max-height:48px; max-width:140px; object-fit:contain; display:block; margin:0 auto; }
         .pr-head .ti { flex:1; text-align:center; padding:4px; }
         .pr-head .sl { width:170px; text-align:center; padding:4px; border-left:1px solid #475569; font-style:italic; color:#166534; font-weight:bold; }
         .pr-title { font-size:12px; font-weight:bold; }
