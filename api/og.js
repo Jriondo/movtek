@@ -53,7 +53,12 @@ export default async function handler(req, res) {
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:image" content="${origin}/api/logo?slug=${esc(slug)}" />
     <meta name="twitter:title" content="${esc(titulo)}" />
-    <meta name="twitter:description" content="${esc(desc)}" />`
+    <meta name="twitter:description" content="${esc(desc)}" />
+    <link rel="manifest" href="/api/manifest?slug=${esc(slug)}" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="${esc(nombre || 'App')}" />
+    <link rel="apple-touch-icon" href="${origin}/api/logo?slug=${esc(slug)}" />`
 
   // 3) Quita los meta por defecto (para no duplicar) y pone los de la empresa.
   html = html
