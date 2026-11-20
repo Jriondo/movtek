@@ -58,11 +58,14 @@ export default function FuecDocumento({ f, empresa, qr }) {
   // La "foto" guardada manda; pero el logo y el sello ISO se toman de la empresa actual
   // si la foto no los tiene (para FUEC creados antes de agregar esos campos).
   const live = empresa || {}
-  const e = { ...live, ...(f?.empresa_snapshot || {}), _num: f.numero_fuec || '' }
-  // Logos del sistema (ISO, Ministerio, Vigilado): personalizados por el admin, o los de la app.
-  const [sis, setSis] = useState({})
-  useEffect(() => { getLogosSistema().then(setSis).catch(() => {}) }, [])
-  // Logo: el de la empresa; si no tiene, el de demostración. El sello ISO es automático para todas.
+  const snap = f?.empresa_snapshot || null
+  const e = { ...live, ...(snap || {}), _num: f.numero_fuec || '' }
+  // Logos del sistema (ISO, Ministerio, Vigilado): si el FUEC los tiene congelados en su "foto",
+  // se usan ESOS (así no cambia aunque luego se modifiquen); si no, se leen en vivo.
+  const [sisLive, setSisLive] = useState({})
+  useEffect(() => { if (!snap?.sistema) getLogosSistema().then(setSisLive).catch(() => {}) }, [snap])
+  const sis = snap?.sistema || sisLive
+  // Logo: el de la empresa (de la foto); si no tiene, el de demostración.
   const logoSrc = e.logo_url || live.logo_url || defaultLogo
   const isoSrc = sis.iso_url || defaultIso
   const minSrc = sis.mintransporte_url || mintransporte

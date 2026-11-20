@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   listVehiculos, listConductores, nombreConductor, listClientes, nombreMostrar,
-  listDestinos, saveFuec, getFuec, asegurarContratoGrupo,
+  listDestinos, saveFuec, getFuec, asegurarContratoGrupo, getLogosSistema,
   listTransportadoras, nombreTransportadora, contarFuecCliente, verificarHabilitacionFuec,
 } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
@@ -209,14 +209,22 @@ export default function FuecForm({ duplicar = false }) {
         r_nombre = oc.nombre; r_cedula = oc.documento; r_tel = oc.telefono; r_dir = oc.direccion
       }
       // "Foto" de los datos de la empresa al momento de generar el FUEC (encabezado inmutable).
+      // Incluye los logos del sistema (ISO, Ministerio, Vigilado) para que, si luego se cambian,
+      // los FUEC ya creados NO cambien: quedan como se crearon.
       const emp = empresa || {}
+      const sistema = await getLogosSistema().catch(() => ({}))
       const empresa_snapshot = {
         razon_social: emp.razon_social || '', nombre: emp.nombre || '', nit: emp.nit || '',
         direccion: emp.direccion || '', ciudad: emp.ciudad || '', telefonos: emp.telefonos || '',
-        email: emp.email || '', logo_url: emp.logo_url || '', resolucion: emp.resolucion || '',
+        email: emp.email || '', logo_url: emp.logo_url || '', eslogan: emp.eslogan || '',
+        resolucion: emp.resolucion || '',
         dir_territorial: emp.dir_territorial || '', anio_habilitacion: emp.anio_habilitacion || '',
         color_primario: emp.color_primario || '', color_acento: emp.color_acento || '',
         firma_url: emp.firma_url || '',
+        sistema: {
+          iso_url: sistema?.iso_url || '', mintransporte_url: sistema?.mintransporte_url || '',
+          vigilado_url: sistema?.vigilado_url || '',
+        },
       }
       // Número oficial del FUEC (solo al crear uno nuevo; al editar se conserva el existente).
       const num_maestro = form.num_maestro || primary.no_maestro || ''
