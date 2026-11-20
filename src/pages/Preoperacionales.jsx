@@ -4,7 +4,7 @@ import { listPreoperacionales, listVehiculos, fechaLocalISO, slugify } from '../
 import { descargarExcel } from '../lib/excel'
 import { useEmpresa } from '../context/EmpresaContext'
 import { useAuth } from '../context/AuthContext'
-import { SECCIONES, LEYENDA, TIPO } from '../lib/preoperacional'
+import { normalizarPreguntas, LEYENDA, TIPO } from '../lib/preoperacional'
 
 const PERIODOS = [
   { v: 'dia', label: 'Día' },
@@ -94,6 +94,7 @@ export default function Preoperacionales() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="font-display text-2xl font-extrabold text-ink">📋 Preoperacionales</h1>
         <div className="flex flex-wrap gap-2">
+          {!esPropietario && <button onClick={() => navigate('/preoperacionales/preguntas')} className="btn-ghost">⚙️ Preguntas</button>}
           <button onClick={exportarExcel} className="btn-ghost">⬇️ Excel</button>
           <button onClick={() => navigate(`/preoperacionales/reporte?placa=${encodeURIComponent(placa)}&mes=${mesActual}`)} className="btn-primary">🖨️ Reporte mensual (PDF)</button>
         </div>
@@ -202,26 +203,22 @@ function DetalleModal({ r, onClose }) {
           </div>
         )}
 
-        {SECCIONES.map((sec) => (
-          <div key={sec.titulo} className="mt-3">
-            <p className="mb-1 font-bold text-brand-600">{sec.titulo}</p>
-            <div className="flex flex-col gap-1">
-              {sec.items.map((it) => {
-                const v = r.respuestas?.[it.key]
-                const mal = v === 'R' || v === 'M'
-                return (
-                  <div key={it.key} className={`flex items-start justify-between gap-2 rounded-lg px-2 py-1 text-xs ${mal ? 'bg-coral-400/10' : ''}`}>
-                    <span className="text-ink">{it.label}</span>
-                    <span className={`whitespace-nowrap font-bold ${mal ? 'text-coral-500' : 'text-ink-soft'}`}>{LEYENDA[v] || '—'}</span>
-                  </div>
-                )
-              })}
-              {sec.items.map((it) => r.observaciones?.[it.key] ? (
-                <p key={'o' + it.key} className="px-2 text-xs italic text-coral-500">• {it.label}: {r.observaciones[it.key]}</p>
-              ) : null)}
-            </div>
-          </div>
-        ))}
+        <div className="mt-3 flex flex-col gap-1">
+          <p className="mb-1 font-bold text-brand-600">Revisión del vehículo</p>
+          {normalizarPreguntas(r.preguntas).map((p, i) => {
+            const v = r.respuestas?.[p.key]
+            const mal = v === 'R' || v === 'M'
+            return (
+              <div key={p.key}>
+                <div className={`flex items-start justify-between gap-2 rounded-lg px-2 py-1 text-xs ${mal ? 'bg-coral-400/10' : ''}`}>
+                  <span className="text-ink">{i + 1}. {p.titulo}</span>
+                  <span className={`whitespace-nowrap font-bold ${mal ? 'text-coral-500' : 'text-ink-soft'}`}>{LEYENDA[v] || '—'}</span>
+                </div>
+                {r.observaciones?.[p.key] && <p className="px-2 text-xs italic text-coral-500">• {r.observaciones[p.key]}</p>}
+              </div>
+            )
+          })}
+        </div>
 
         {r.firma_url && (
           <div className="mt-3">

@@ -1,11 +1,12 @@
-import { useMemo, useState } from 'react'
-import { SECCIONES, SALUD, OPCIONES, requiereObservacion, saludEnRiesgo, estadoGeneral, resumenRespuestas, TIPO } from '../../lib/preoperacional'
-import { savePreoperacional, fechaLocalISO } from '../../lib/db'
+import { useEffect, useMemo, useState } from 'react'
+import { SALUD, OPCIONES, requiereObservacion, saludEnRiesgo, estadoGeneral, resumenRespuestas, TIPO } from '../../lib/preoperacional'
+import { savePreoperacional, fechaLocalISO, getPreguntasPreop } from '../../lib/db'
 import SignaturePad from '../../components/SignaturePad'
 
-// Formulario que llena el conductor. NO pide placa/nombre/datos del vehículo
-// (se toman de la base). Sí pide kilometraje, salud, checklist y firma.
+// Formulario que llena el conductor. NO pide placa/nombre/datos del vehículo (se toman de la base).
+// Orden: kilometraje → checklist (preguntas editables por empresa) → encuesta de salud → firma.
 export default function PreoperacionalCaptura({ empresa, vehiculo, conductor, onDone, onCancel }) {
+  const [preguntas, setPreguntas] = useState([])
   const [km, setKm] = useState('')
   const [salud, setSalud] = useState({})
   const [resp, setResp] = useState({})
@@ -13,6 +14,8 @@ export default function PreoperacionalCaptura({ empresa, vehiculo, conductor, on
   const [firma, setFirma] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => { getPreguntasPreop(empresa?.id).then(setPreguntas).catch(() => setPreguntas([])) }, [empresa?.id])
 
   const setSalud1 = (k, v) => setSalud((s) => ({ ...s, [k]: v }))
   const setResp1 = (k, v) => setResp((r) => ({ ...r, [k]: v }))
@@ -23,19 +26,17 @@ export default function PreoperacionalCaptura({ empresa, vehiculo, conductor, on
 
   function validar() {
     if (!km.trim()) return 'Escribe el kilometraje actual del vehículo.'
+    // Checklist: todos respondidos + observación si R o M
+    for (const p of preguntas) {
+      if (!resp[p.key]) return `Falta calificar: "${p.titulo}"`
+      if (requiereObservacion(resp[p.key]) && !(obs[p.key] || '').trim())
+        return `Como marcaste ${resp[p.key] === 'R' ? 'Regular' : 'Malo'}, explica por qué: "${p.titulo}"`
+    }
     // Salud
     for (const p of SALUD) {
       if (!salud[p.key]) return 'Responde todas las preguntas de la encuesta de salud.'
       if (saludEnRiesgo(p, salud[p.key]) && !(salud['obs_' + p.key] || '').trim())
         return `Explica: "${p.label}"`
-    }
-    // Checklist: todos respondidos + observación si R o M
-    for (const sec of SECCIONES) {
-      for (const it of sec.items) {
-        if (!resp[it.key]) return `Falta calificar: "${it.label}"`
-        if (requiereObservacion(resp[it.key]) && !(obs[it.key] || '').trim())
-          return `Como marcaste ${resp[it.key] === 'R' ? 'Regular' : 'Malo'}, explica por qué: "${it.label}"`
-      }
     }
     if (!firma) return 'Firma al final para terminar la preoperacional.'
     return ''
@@ -64,6 +65,7 @@ export default function PreoperacionalCaptura({ empresa, vehiculo, conductor, on
         tarjeta_operacion: vehiculo?.tarjeta_operacion || '',
         conductor_nombre: nombreCond,
         conductor_doc: conductor?.documento || '',
+        preguntas,                 // "foto" de las preguntas usadas (para el reporte)
         respuestas: resp,
         observaciones: obs,
         salud,
@@ -91,7 +93,37 @@ export default function PreoperacionalCaptura({ empresa, vehiculo, conductor, on
         <input className="input mt-1" inputMode="numeric" value={km} onChange={(e) => setKm(e.target.value)} placeholder="Ej. 98256" />
       </div>
 
-      {/* Encuesta de salud */}
+      {/* Checklist (preguntas de la empresa) */}
+      <div className="card mt-4 p-4">
+        <h2 className="mb-3 font-display text-sm font-bold uppercase tracking-wide text-brand-600">📋 Revisión del vehículo</h2>
+        <div className="flex flex-col gap-4">
+          {preguntas.map((p, i) => (
+            <div key={p.key} className="border-b border-cloud-line pb-3 last:border-0 last:pb-0">
+              <p className="text-sm font-bold text-ink">{i + 1}. {p.titulo}</p>
+              {p.descripcion && <p className="mt-0.5 text-xs text-ink-soft">{p.descripcion}</p>}
+              <div className="mt-2 grid grid-cols-4 gap-1.5">
+                {OPCIONES.map((o) => {
+                  const sel = resp[p.key] === o.v
+                  return (
+                    <button key={o.v} type="button" onClick={() => setResp1(p.key, o.v)}
+                      className="rounded-lg border px-1 py-2 text-xs font-bold transition"
+                      style={sel ? { borderColor: o.color, background: o.color + '22', color: o.color } : { borderColor: '#e2e8f0', color: '#64748b' }}>
+                      {o.label}
+                    </button>
+                  )
+                })}
+              </div>
+              {requiereObservacion(resp[p.key]) && (
+                <textarea className="input mt-2 h-16 text-sm" value={obs[p.key] || ''} onChange={(e) => setObs1(p.key, e.target.value)}
+                  placeholder={`¿Por qué está ${resp[p.key] === 'R' ? 'regular' : 'malo'}? (obligatorio)`} />
+              )}
+            </div>
+          ))}
+          {preguntas.length === 0 && <p className="text-sm text-ink-soft">Cargando preguntas…</p>}
+        </div>
+      </div>
+
+      {/* Encuesta de salud (AL FINAL) */}
       <div className="card mt-4 p-4">
         <h2 className="mb-3 font-display text-sm font-bold uppercase tracking-wide text-brand-600">🩺 Encuesta de salud</h2>
         <div className="flex flex-col gap-3">
@@ -115,36 +147,6 @@ export default function PreoperacionalCaptura({ empresa, vehiculo, conductor, on
           ))}
         </div>
       </div>
-
-      {/* Checklist por secciones */}
-      {SECCIONES.map((sec) => (
-        <div key={sec.titulo} className="card mt-4 p-4">
-          <h2 className="mb-3 font-display text-sm font-bold uppercase tracking-wide text-brand-600">{sec.titulo}</h2>
-          <div className="flex flex-col gap-4">
-            {sec.items.map((it) => (
-              <div key={it.key}>
-                <p className="text-sm font-medium text-ink">{it.label}</p>
-                <div className="mt-1.5 grid grid-cols-4 gap-1.5">
-                  {OPCIONES.map((o) => {
-                    const sel = resp[it.key] === o.v
-                    return (
-                      <button key={o.v} type="button" onClick={() => setResp1(it.key, o.v)}
-                        className="rounded-lg border px-1 py-2 text-xs font-bold transition"
-                        style={sel ? { borderColor: o.color, background: o.color + '22', color: o.color } : { borderColor: '#e2e8f0', color: '#64748b' }}>
-                        {o.label}
-                      </button>
-                    )
-                  })}
-                </div>
-                {requiereObservacion(resp[it.key]) && (
-                  <textarea className="input mt-2 h-16 text-sm" value={obs[it.key] || ''} onChange={(e) => setObs1(it.key, e.target.value)}
-                    placeholder={`¿Por qué está ${resp[it.key] === 'R' ? 'regular' : 'malo'}? (obligatorio)`} />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
 
       {/* Firma */}
       <div className="card mt-4 p-4">

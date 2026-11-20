@@ -28,6 +28,7 @@ import AccesoEmpresa from './pages/AccesoEmpresa'
 import AppConductor from './pages/app/AppConductor'
 import Preoperacionales from './pages/Preoperacionales'
 import PreoperacionalReportePage from './pages/PreoperacionalReportePage'
+import PreguntasPreop from './pages/PreguntasPreop'
 
 // Protege las rutas internas: si no hay sesión, manda al login.
 function Protected({ children }) {
@@ -100,6 +101,7 @@ export default function App() {
         <Route path="fuec/:id/imprimir" element={<FuecImprimir />} />
         <Route path="preoperacionales" element={<Preoperacionales />} />
         <Route path="preoperacionales/reporte" element={<PreoperacionalReportePage />} />
+        <Route path="preoperacionales/preguntas" element={<PreguntasPreop />} />
         <Route path="usuarios" element={<Usuarios />} />
         <Route path="empresas" element={<Empresas />} />
         <Route path="historial" element={<Historial />} />

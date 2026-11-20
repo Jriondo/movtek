@@ -1,5 +1,7 @@
-// Definición del formato de revisión preoperacional (según formato oficial de la empresa).
-// Cada ítem se califica: B (Bueno), R (Regular), M (Malo) o NA (No aplica).
+// Definición del formato de revisión preoperacional.
+// Las preguntas son EDITABLES por empresa (crear/modificar/eliminar). Aquí está la lista
+// por defecto; la empresa puede personalizarla desde el módulo de Preoperacionales.
+// Cada pregunta se califica: B (Bueno), R (Regular), M (Malo) o NA (No aplica).
 // Si se marca R o M, la observación es OBLIGATORIA.
 
 export const OPCIONES = [
@@ -14,65 +16,39 @@ export const LEYENDA = { B: 'Bueno', R: 'Regular', M: 'Malo', NA: 'No aplica', '
 // Marcar R o M obliga a explicar por qué.
 export const requiereObservacion = (v) => v === 'R' || v === 'M'
 
-// Secciones y preguntas, con la redacción exacta del formato.
-export const SECCIONES = [
-  {
-    titulo: 'Documentos del Conductor',
-    items: [
-      { key: 'lic_conduccion', label: 'Porta la Licencia de Conducción' },
-      { key: 'doc_identidad', label: 'Porta Documento de Identidad' },
-      { key: 'carnet_empresa', label: 'Porta el carnet institucional de la empresa' },
-    ],
-  },
-  {
-    titulo: 'Documentos del Vehículo',
-    items: [
-      { key: 'soat_vigente', label: 'El SOAT está Vigente' },
-      { key: 'rtm_vigente', label: 'La Revisión Técnico mecánica está Vigente' },
-      { key: 'tarjeta_operacion', label: 'La Tarjeta de Operación está Vigente' },
-      { key: 'licencia_transito', label: 'Porta la Licencia de Tránsito Vigente' },
-      { key: 'revision_bimensual', label: 'La Revisión Bimensual está Vigente' },
-      { key: 'control_plagas', label: 'Cuenta el Vehículo con certificación vigente de control de Plagas (Máximo 2 Meses)' },
-    ],
-  },
-  {
-    titulo: 'Verificación Resolución 315',
-    items: [
-      { key: 'fugas_aceite', label: 'Se observan fugas de aceite motor, Transmisión, Dirección y Aditivo' },
-      { key: 'humedad_lubricante', label: 'Se observa Humedad o Remanencia de Algún Aceite Lubricante' },
-      { key: 'correas_motor', label: 'Están en buen estado las correas del motor' },
-      { key: 'tapas_motor', label: 'Están en buen estado las tapas del motor' },
-      { key: 'mangueras_frenos', label: 'Están en buen estado las mangueras de frenos' },
-      { key: 'refrigerante_radiador', label: 'Se encuentra a nivel el aditivo refrigerante del radiador' },
-      { key: 'agua_limpiabrisas', label: 'Se encuentra a nivel el agua del limpiabrisas' },
-      { key: 'fugas_filtros_humedos', label: 'Se observan fugas en filtros húmedos' },
-      { key: 'filtros_secos', label: 'Están en buen estado los filtros secos' },
-      { key: 'baterias', label: 'Están en buen estado las baterías y su conjunto' },
-      { key: 'llantas_rines', label: 'Están en buen estado las llantas y rines, incluida la de repuesto, en la presión de aire adecuado y profundidad de labrado' },
-      { key: 'equipo_carretera', label: 'Está completo el equipo de carretera incluyendo chaleco reflectivo' },
-      { key: 'extintor', label: 'Está en buen estado y vigente el extintor' },
-      { key: 'suspension', label: 'Están en buen estado la suspensión/muelles/amortiguadores' },
-      { key: 'sistema_escape', label: 'Está en buen estado el sistema de escape, múltiple, mofle, flexible, tubería' },
-      { key: 'cinturones', label: 'Están en buen estado los cinturones de seguridad' },
-    ],
-  },
-  {
-    titulo: 'Exterior del Vehículo',
-    items: [
-      { key: 'luces_externas', label: 'Funcionan las luces externas' },
-      { key: 'vidrios_espejos', label: 'Están en buen estado los vidrios y espejos' },
-      { key: 'plumillas', label: 'Funcionan las plumillas del parabrisas y éste no presenta fisuras' },
-      { key: 'cintas_reflectivas', label: 'El vehículo cuenta con cintas reflectivas, señalización requerida y avisos corporativos' },
-      { key: 'alarma_reversa', label: 'Funciona alarma o pito de reversa' },
-    ],
-  },
+// Preguntas por defecto (título + descripción). La empresa puede editarlas.
+export const PREGUNTAS_DEFAULT = [
+  { key: 'documentos', titulo: 'DOCUMENTOS', descripcion: 'Licencia de conducción, SOAT, Seguro de daños, Tarjeta de Propiedad, Revisión Tecnomecánica' },
+  { key: 'niveles', titulo: 'NIVELES', descripcion: 'Limpiabrisas, Frenos, Aceite, Refrigerante, Hidráulico' },
+  { key: 'indicadores', titulo: 'INDICADORES', descripcion: 'Hidráulico, Velocímetro, Temperatura' },
+  { key: 'sistema_direccion', titulo: 'SISTEMA', descripcion: 'Barra de dirección, Sistema Hidráulico, Estado de correas, Tensión de las correas' },
+  { key: 'sistema_electrico', titulo: 'SISTEMA', descripcion: 'Sistema eléctrico, Sistema de refrigeración, Fugas del motor' },
+  { key: 'cabina', titulo: 'CABINA', descripcion: 'Puertas, Asientos, Ventanería, Pito, Piso, Alarma de retroceso' },
+  { key: 'luces', titulo: 'LUCES', descripcion: 'Altas, Bajas, Stops, Reversa, Parqueo, Direccionales delanteros, Direccionales traseros' },
+  { key: 'frenos', titulo: 'FRENOS', descripcion: 'Principal (servicio), Emergencia (parqueo)' },
+  { key: 'llantas', titulo: 'LLANTAS', descripcion: 'Cortes, espárragos, llanta de repuesto, abultamientos, Rotor' },
+  { key: 'espejos', titulo: 'ESPEJOS', descripcion: 'Laterales Der/Izq., Retrovisor, Ubicación acorde a necesidad, sin opacidad ni roturas' },
+  { key: 'equipo_carretera', titulo: 'EQUIPO DE CARRETERA', descripcion: 'Herramientas (Alicates, destornilladores, llaves de expansión y fijas, linterna)' },
+  { key: 'equipo_carretera2', titulo: 'EQUIPO DE CARRETERA', descripcion: 'Cruceta, Gato, Tacos de bloqueo x2, Señales de carretera, Conos x2' },
+  { key: 'extintor', titulo: 'EXTINTOR', descripcion: 'Capacidad, Fecha de vencimiento' },
+  { key: 'botiquin', titulo: 'BOTIQUÍN', descripcion: 'Antisépticos, Elementos de corte, Algodón, gasa estéril, Esparadrapo, venda elástica, jabón' },
+  { key: 'muelles', titulo: 'ESTADO DE LOS MUELLES', descripcion: 'Inspección y evaluación del estado de los muelles' },
 ]
 
-// Lista plana de todos los ítems (para recorrer/validar).
-export const ITEMS = SECCIONES.flatMap((s) => s.items.map((i) => ({ ...i, seccion: s.titulo })))
-export const TOTAL_ITEMS = ITEMS.length
+// Normaliza una lista de preguntas (asegura key/título). Si viene vacía, usa las de defecto.
+export function normalizarPreguntas(lista) {
+  const arr = Array.isArray(lista) ? lista.filter((p) => p && (p.titulo || p.key)) : []
+  const usar = arr.length ? arr : PREGUNTAS_DEFAULT
+  return usar.map((p, i) => ({
+    key: p.key || `q_${i}_${(p.titulo || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 20)}`,
+    titulo: p.titulo || '',
+    descripcion: p.descripcion || '',
+  }))
+}
 
-// Encuesta de salud del conductor (antes de operar).
+export const nuevaPreguntaKey = () => 'q_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
+
+// Encuesta de salud del conductor (va al FINAL de la preoperacional).
 // Cada pregunta indica qué respuesta representa un RIESGO (obliga a explicar).
 export const SALUD = [
   { key: 'durmio_bien', label: '¿Durmió al menos 7 horas la noche anterior?', riesgo: 'no' },
@@ -84,18 +60,17 @@ export const SALUD = [
 
 export const saludEnRiesgo = (preg, valor) => valor && valor === preg.riesgo
 
-// Calcula el estado general: 'ok' si todo B/NA; 'novedad' si hay algún R o M.
+// Estado general: 'ok' si todo B/NA; 'novedad' si hay algún R o M.
 export function estadoGeneral(respuestas = {}) {
   const hay = Object.values(respuestas).some((v) => v === 'R' || v === 'M')
   return hay ? 'novedad' : 'ok'
 }
 
-// Cuenta respuestas por tipo (para resumen).
 export function resumenRespuestas(respuestas = {}) {
   const r = { B: 0, R: 0, M: 0, NA: 0 }
   Object.values(respuestas).forEach((v) => { if (r[v] != null) r[v]++ })
   return r
 }
 
-// Tipos de registro: la preoperacional normal, o reportar el vehículo en taller/descanso.
+// Tipos de registro.
 export const TIPO = { PREOP: 'preoperacional', TALLER: 'taller', DESCANSO: 'descanso' }

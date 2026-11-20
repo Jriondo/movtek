@@ -1,5 +1,4 @@
-import { Fragment } from 'react'
-import { SECCIONES, TIPO } from '../lib/preoperacional'
+import { normalizarPreguntas, TIPO } from '../lib/preoperacional'
 
 // Reporte MENSUAL de revisión preoperacional, con el formato oficial (grilla por días).
 // Recibe la empresa, el mes (YYYY-MM) y los registros de ese mes para UNA placa.
@@ -21,6 +20,8 @@ export default function PreoperacionalReporte({ empresa, mes, registros = [] }) 
   }
   const ultimo = preops.slice().sort((a, b) => (b.fecha + (b.hora || '')).localeCompare(a.fecha + (a.hora || '')))[0] || registros[0] || {}
   const info = ultimo // datos "foto" del vehículo
+  // Preguntas usadas (de la foto del registro, o las de defecto).
+  const preguntas = normalizarPreguntas((registros.find((r) => Array.isArray(r.preguntas) && r.preguntas.length) || {}).preguntas)
 
   const cel = (itemKey, d) => {
     const r = porDia[d]
@@ -35,9 +36,9 @@ export default function PreoperacionalReporte({ empresa, mes, registros = [] }) 
   // Novedades del mes (ítems R/M con su observación).
   const novedades = []
   for (const r of preops) {
-    for (const sec of SECCIONES) for (const it of sec.items) {
+    for (const it of preguntas) {
       const v = r.respuestas?.[it.key]
-      if (v === 'R' || v === 'M') novedades.push(`${(r.fecha || '').slice(8, 10)}: ${it.label} (${v === 'R' ? 'Regular' : 'Malo'})${r.observaciones?.[it.key] ? ' - ' + r.observaciones[it.key] : ''}`)
+      if (v === 'R' || v === 'M') novedades.push(`${(r.fecha || '').slice(8, 10)}: ${it.titulo} (${v === 'R' ? 'Regular' : 'Malo'})${r.observaciones?.[it.key] ? ' - ' + r.observaciones[it.key] : ''}`)
     }
   }
 
@@ -108,16 +109,11 @@ export default function PreoperacionalReporte({ empresa, mes, registros = [] }) 
           </tr>
         </thead>
         <tbody>
-          {SECCIONES.map((sec) => (
-            <Fragment key={sec.titulo}>
-              <tr><td className="pr-sec" colSpan={diasMes + 1}>{sec.titulo}</td></tr>
-              {sec.items.map((it) => (
-                <tr key={it.key}>
-                  <td className="pr-itm">{it.label}</td>
-                  {dias.map((d) => <td key={d} className="pr-c" style={{ color: colorCel(it.key, d), fontWeight: cel(it.key, d) && cel(it.key, d) !== 'B' ? 'bold' : 'normal' }}>{cel(it.key, d)}</td>)}
-                </tr>
-              ))}
-            </Fragment>
+          {preguntas.map((it) => (
+            <tr key={it.key}>
+              <td className="pr-itm">{it.titulo}</td>
+              {dias.map((d) => <td key={d} className="pr-c" style={{ color: colorCel(it.key, d), fontWeight: cel(it.key, d) && cel(it.key, d) !== 'B' ? 'bold' : 'normal' }}>{cel(it.key, d)}</td>)}
+            </tr>
           ))}
         </tbody>
       </table>

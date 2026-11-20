@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from './supabase'
 import { catalogoDestinos, AREAS_METROPOLITANAS } from './colombia'
+import { normalizarPreguntas } from './preoperacional'
 
 // Capa de datos de Movtek (multiempresa).
 // Con Supabase usa la base real; sin conectar, modo demo en el navegador.
@@ -1414,4 +1415,37 @@ export async function conductorRegistrable({ empresaId, documento }) {
   const tieneVehiculo = vehiculos.some((v) => (v.conductores_asignados || []).some((a) => String(a.id) === String(c.id)))
   if (!tieneVehiculo) return { ok: false, motivo: 'sin-vehiculo' }
   return { ok: true, conductor: c }
+}
+
+// ============ PREGUNTAS de la preoperacional (editables por empresa) ============
+const LS_KEY_PREG = 'movtek_preop_preguntas'
+
+export async function getPreguntasPreop(empresaId) {
+  if (isSupabaseConfigured && empresaId) {
+    try {
+      const { data, error } = await supabase.from('empresas').select('preop_preguntas').eq('id', empresaId).single()
+      if (!error) return normalizarPreguntas(data?.preop_preguntas)
+    } catch {}
+    return normalizarPreguntas()
+  }
+  try {
+    const all = JSON.parse(localStorage.getItem(LS_KEY_PREG) || '{}')
+    return normalizarPreguntas(all[empresaId])
+  } catch { return normalizarPreguntas() }
+}
+
+export async function savePreguntasPreop(empresaId, preguntas) {
+  const limpias = normalizarPreguntas(preguntas)
+  if (isSupabaseConfigured && empresaId) {
+    const { error } = await supabase.from('empresas').update({ preop_preguntas: limpias }).eq('id', empresaId)
+    if (error) throw error
+  } else {
+    try {
+      const all = JSON.parse(localStorage.getItem(LS_KEY_PREG) || '{}')
+      all[empresaId] = limpias
+      localStorage.setItem(LS_KEY_PREG, JSON.stringify(all))
+    } catch {}
+  }
+  registrarCambio({ accion: 'editar', entidad: 'Preguntas preoperacional', descripcion: `${limpias.length} preguntas`, empresa_id: empresaId })
+  return limpias
 }

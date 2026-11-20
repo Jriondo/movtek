@@ -427,3 +427,7 @@ drop policy if exists dev_preop_all on preoperacionales;
 create policy dev_preop_all on preoperacionales for all using (true) with check (true);
 
 alter table empresas add column if not exists eslogan text;
+
+alter table empresas add column if not exists preop_preguntas jsonb;
+
+alter table preoperacionales add column if not exists preguntas jsonb;
