@@ -36,7 +36,8 @@ export function activarPwaEmpresa(empresa, slug) {
   } catch {}
 
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(() => {})
+    // El service worker SOLO controla la app de conductores (/e/...), nunca el panel administrativo.
+    navigator.serviceWorker.register('/sw.js', { scope: '/e/' }).catch(() => {})
   }
 }
 
