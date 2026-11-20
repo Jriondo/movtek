@@ -30,12 +30,13 @@ export default async function handler(req, res) {
     background_color: '#ffffff',
     theme_color: color,
     icons: [
-      { src: logo, sizes: '192x192', type: 'image/png', purpose: 'any' },
-      { src: logo, sizes: '512x512', type: 'image/png', purpose: 'any' },
-      // Íconos cuadrados de respaldo (garantizan la instalación).
-      { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+      // Logo de la EMPRESA (lo que se ve como ícono en el celular). Sin "type" para que
+      // el navegador use el tipo real (png/webp/jpg) y no lo rechace por desajuste.
+      // Sin "maskable" para que Android NO recorte el logo (lo muestra completo).
+      { src: logo, sizes: '192x192', purpose: 'any' },
+      { src: logo, sizes: '512x512', purpose: 'any' },
+      // Respaldo PNG al final (solo si falla el logo; garantiza que se pueda instalar).
       { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-      { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
   }
 
