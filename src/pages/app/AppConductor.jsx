@@ -80,6 +80,7 @@ function LoginConductor({ empresa, onLogin }) {
     else if (r.motivo === 'sin-documento') setErr('Escribe tu número de documento.')
     else if (r.motivo === 'sin-correo') setErr('Escribe un correo para tu acceso.')
     else if (r.motivo === 'auth') setErr('No se pudo crear el acceso: ' + (r.error || '') + '. Si ya tienes cuenta, usa "Ingresar".')
+    else if (r.motivo === 'falta-rpc') setErr('El autoregistro aún no está habilitado en el sistema. Avísale a tu empresa (falta activar la función en la base de datos).')
     else setErr('No se pudo crear el acceso. Intenta de nuevo o habla con tu empresa.')
   }
 

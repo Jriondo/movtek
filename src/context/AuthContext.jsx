@@ -114,28 +114,42 @@ export function AuthProvider({ children }) {
 
   // Autoregistro del conductor desde la app: solo si ya existe su ficha Y tiene vehículo activo asignado.
   async function registrarConductor({ empresaId, documento, email, password }) {
+    const correoIn = String(email || '').trim()
+    if (isSupabaseConfigured) {
+      // La validación la hace una función SEGURA en la base (anon no puede leer conductores).
+      const { data, error } = await supabase.rpc('registrar_conductor_auto', {
+        p_empresa_id: empresaId, p_documento: String(documento || '').trim(), p_email: correoIn,
+      })
+      if (error) {
+        // Si la función aún no existe en la base, avisa claro.
+        if (/function .*registrar_conductor_auto.* does not exist|not find/i.test(error.message || '')) {
+          return { ok: false, motivo: 'falta-rpc', error: error.message }
+        }
+        return { ok: false, motivo: 'error', error: error.message }
+      }
+      if (!data || data.ok === false) return { ok: false, motivo: data?.motivo || 'no-ficha' }
+      const correo = data.correo || correoIn
+      // Crea la cuenta de acceso (contraseña del conductor).
+      const { data: s, error: e2 } = await supabase.auth.signUp({
+        email: correo, password,
+        options: { emailRedirectTo: `${window.location.origin}/login` },
+      })
+      if (e2 && !(e2.message || '').toLowerCase().includes('already')) {
+        return { ok: false, motivo: 'auth', error: e2.message }
+      }
+      if (s?.session && s?.user) { setUser(s.user); await cargarRol(s.user) }
+      return { ok: true, needsConfirmation: !s?.session, email: correo }
+    }
+
+    // Modo demo (sin Supabase): validación local.
     const chk = await conductorRegistrable({ empresaId, documento })
     if (!chk.ok) return chk
     const c = chk.conductor
     const correo = String(email || c.correo || '').trim()
     if (!correo) return { ok: false, motivo: 'sin-correo' }
-    // Primero crea la ficha de usuario (rol conductor) ligada a su ficha de conductor.
     try {
       await saveUsuario({ empresa_id: empresaId, nombre: nombreConductor(c), email: correo, rol: 'conductor', conductor_id: c.id, estado: 'activo' })
     } catch (e) { return { ok: false, motivo: 'guardar', error: e?.message } }
-
-    if (isSupabaseConfigured) {
-      const { data, error } = await supabase.auth.signUp({
-        email: correo, password,
-        options: { emailRedirectTo: `${window.location.origin}/login` },
-      })
-      if (error && !(error.message || '').toLowerCase().includes('already')) {
-        return { ok: false, motivo: 'auth', error: error.message }
-      }
-      if (data?.session && data?.user) { setUser(data.user); await cargarRol(data.user) }
-      return { ok: true, needsConfirmation: !data?.session, email: correo }
-    }
-    // Modo demo
     const demo = { email: correo, demo: true }
     try { localStorage.setItem(DEMO_KEY, JSON.stringify(demo)) } catch {}
     setUser(demo); await cargarRol(demo)
