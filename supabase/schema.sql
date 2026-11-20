@@ -385,3 +385,43 @@ begin
 end;
 $$;
 grant execute on function public.registrar_usuario_propietario(text, text, text, text, text) to anon, authenticated;
+
+-- ============ PREOPERACIONALES (app de conductores) ============
+-- El usuario conductor se identifica con rol 'conductor' y su conductor_id.
+alter table usuarios add column if not exists conductor_id uuid;
+
+create table if not exists preoperacionales (
+  id uuid primary key default gen_random_uuid(),
+  empresa_id uuid references empresas(id) on delete cascade,
+  vehiculo_id uuid,
+  conductor_id uuid,
+  tipo text default 'preoperacional',        -- 'preoperacional' | 'taller' | 'descanso'
+  fecha date default current_date,
+  hora text,
+  kilometraje text,
+  -- Datos "foto" para reportes (se copian al momento de guardar):
+  placa text,
+  numero_interno text,
+  marca text,
+  modelo text,
+  clase text,
+  propietario text,
+  tarjeta_operacion text,
+  conductor_nombre text,
+  conductor_doc text,
+  respuestas jsonb default '{}'::jsonb,       -- { item_key: 'B'|'R'|'M'|'NA' }
+  observaciones jsonb default '{}'::jsonb,    -- { item_key: 'texto' }
+  salud jsonb default '{}'::jsonb,            -- encuesta de salud
+  estado_general text default 'ok',           -- 'ok' | 'novedad'
+  nota text,                                   -- para taller/descanso u observación general
+  firma_url text,                              -- firma del conductor (data URL)
+  created_at timestamptz default now()
+);
+create index if not exists idx_preop_empresa on preoperacionales (empresa_id);
+create index if not exists idx_preop_fecha on preoperacionales (fecha);
+create index if not exists idx_preop_placa on preoperacionales (placa);
+create index if not exists idx_preop_conductor on preoperacionales (conductor_id);
+
+alter table preoperacionales enable row level security;
+drop policy if exists dev_preop_all on preoperacionales;
+create policy dev_preop_all on preoperacionales for all using (true) with check (true);

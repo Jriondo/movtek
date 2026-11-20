@@ -25,12 +25,17 @@ import Empresas from './pages/Empresas'
 import Historial from './pages/Historial'
 import NuevaPassword from './pages/NuevaPassword'
 import AccesoEmpresa from './pages/AccesoEmpresa'
+import AppConductor from './pages/app/AppConductor'
 
 // Protege las rutas internas: si no hay sesión, manda al login.
 function Protected({ children }) {
-  const { user, loading, sinAcceso, logout } = useAuth()
+  const { user, loading, sinAcceso, logout, esConductor } = useAuth()
   const { empresa } = useEmpresa() || {}
   if (loading) return <div className="grid h-full place-items-center text-ink-faint">Cargando…</div>
+  // El conductor solo usa la app de preoperacional (no la plataforma administrativa).
+  if (user && esConductor && empresa) {
+    return <Navigate to={`/e/${empresa.slug || slugify(empresa.nombre)}/app`} replace />
+  }
   if (!user) {
     // Si estabas dentro de una empresa, el login es el de esa empresa (/e/slug); si no, el de Movtek.
     const esEmpresa = empresa && !(empresa.es_maestra || empresa.id === 'movtek' || (empresa.nombre || '').toLowerCase() === 'movtek')
@@ -58,6 +63,7 @@ export default function App() {
       {/* Verificación pública del FUEC (QR) — sin login */}
       <Route path="/verificar/:id" element={<VerificarFuec />} />
       <Route path="/nueva-password" element={<NuevaPassword />} />
+      <Route path="/e/:slug/app" element={<AppConductor />} />
       <Route path="/e/:slug" element={<AccesoEmpresa />} />
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
       <Route

@@ -1244,6 +1244,7 @@ export const ROLES = [
   { value: 'admin', label: 'Administrador' },
   { value: 'operativo', label: 'Operativo' },
   { value: 'propietario', label: 'Propietario' },
+  { value: 'conductor', label: 'Conductor (app preoperacional)' },
 ]
 export const rolLabel = (v) => (ROLES.find((r) => r.value === v)?.label || v || '—')
 
@@ -1282,4 +1283,112 @@ export async function registrarUsuarioPropietario({ documento, nombre, telefono,
   const base = { empresa_id: prop.empresa_id, nombre: nombre || nombrePropietario(prop), email, rol: 'propietario', propietario_id: prop.id, estado: 'activo' }
   const usuario = await saveUsuario(yaUsuario ? { ...yaUsuario, ...base } : base)
   return { ok: true, usuario, propietario: prop }
+}
+
+// ================= PREOPERACIONALES (app de conductores) =================
+const LS_KEY_PRE = 'movtek_preop'
+function lsAllPre() { try { return JSON.parse(localStorage.getItem(LS_KEY_PRE) || '[]') } catch { return [] } }
+function lsSavePre(rows) { try { localStorage.setItem(LS_KEY_PRE, JSON.stringify(rows)) } catch {} }
+
+// Fecha local (YYYY-MM-DD) respetando la zona horaria del equipo.
+export const fechaLocalISO = (d = new Date()) => {
+  const off = d.getTimezoneOffset() * 60000
+  return new Date(d - off).toISOString().slice(0, 10)
+}
+
+// Vehículos ACTIVOS asignados al conductor (si no tiene asignados, muestra los activos de la empresa).
+export async function vehiculosDeConductor({ empresaId, conductorId }) {
+  const todos = await listVehiculos({ empresaId, estado: 'activo' })
+  if (!conductorId) return todos
+  const asignados = todos.filter((v) => (v.conductores_asignados || []).some((c) => String(c.id) === String(conductorId)))
+  return asignados.length ? asignados : todos
+}
+
+// Busca la ficha de conductor que corresponde al usuario que inició sesión.
+export async function conductorDeUsuario({ empresaId, conductorId, email }) {
+  if (conductorId) {
+    const c = await getConductor(conductorId).catch(() => null)
+    if (c) return c
+  }
+  if (email) {
+    const lista = await listConductores({ empresaId })
+    const norm = String(email).trim().toLowerCase()
+    return lista.find((c) => String(c.correo || '').trim().toLowerCase() === norm) || null
+  }
+  return null
+}
+
+export async function listPreoperacionales({ empresaId = null, placa = '', conductor = '', desde = '', hasta = '', tipo = '' } = {}) {
+  let rows
+  if (isSupabaseConfigured) {
+    let q = supabase.from('preoperacionales').select('*').order('fecha', { ascending: false })
+    if (empresaId) q = q.eq('empresa_id', empresaId)
+    if (tipo) q = q.eq('tipo', tipo)
+    if (desde) q = q.gte('fecha', desde)
+    if (hasta) q = q.lte('fecha', hasta)
+    const { data, error } = await q
+    if (error) throw error
+    rows = data || []
+  } else {
+    rows = lsAllPre()
+    if (empresaId) rows = rows.filter((r) => r.empresa_id === empresaId)
+    if (tipo) rows = rows.filter((r) => r.tipo === tipo)
+    if (desde) rows = rows.filter((r) => (r.fecha || '') >= desde)
+    if (hasta) rows = rows.filter((r) => (r.fecha || '') <= hasta)
+    rows.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '') || (b.hora || '').localeCompare(a.hora || ''))
+  }
+  if (placa) rows = rows.filter((r) => (r.placa || '').toLowerCase().includes(placa.toLowerCase()))
+  if (conductor) rows = rows.filter((r) => (r.conductor_nombre || '').toLowerCase().includes(conductor.toLowerCase()) || (r.conductor_doc || '').includes(conductor))
+  return rows
+}
+
+export async function getPreoperacional(id) {
+  if (isSupabaseConfigured) {
+    const { data, error } = await supabase.from('preoperacionales').select('*').eq('id', id).single()
+    if (error) throw error
+    return data
+  }
+  return lsAllPre().find((r) => String(r.id) === String(id)) || null
+}
+
+// ¿Ya hizo el conductor su preoperacional (o reportó taller/descanso) hoy para este vehículo?
+export async function preoperacionalHoy({ empresaId, vehiculoId, conductorId, fecha = fechaLocalISO() }) {
+  const rows = await listPreoperacionales({ empresaId, desde: fecha, hasta: fecha })
+  return rows.find((r) => String(r.vehiculo_id) === String(vehiculoId) && (!conductorId || String(r.conductor_id) === String(conductorId))) || null
+}
+
+export async function savePreoperacional(data) {
+  const payload = { ...data }
+  if (!payload.fecha) payload.fecha = fechaLocalISO()
+  let res
+  if (isSupabaseConfigured) {
+    const guardar = async (p) => {
+      if (p.id) {
+        const { id, created_at, ...rest } = p
+        return supabase.from('preoperacionales').update(nulls(rest)).eq('id', id).select().single()
+      }
+      const { id, ...rest } = p
+      return supabase.from('preoperacionales').insert(nulls(rest)).select().single()
+    }
+    let p = { ...payload }, d, error
+    for (let i = 0; i < 12; i++) {
+      ;({ data: d, error } = await guardar(p))
+      if (!error) break
+      if (!/column|schema cache/i.test(error.message || '')) break
+      const m = (error.message || '').match(/'([a-z_0-9]+)' column/i)
+      if (!m || !(m[1] in p)) break
+      const { [m[1]]: _o, ...sin } = p; p = sin
+    }
+    if (error) throw error
+    res = d
+  } else {
+    const rows = lsAllPre()
+    if (payload.id) {
+      const i = rows.findIndex((r) => String(r.id) === String(payload.id))
+      if (i >= 0) { rows[i] = { ...rows[i], ...payload }; res = rows[i] }
+    } else { payload.id = newId(); payload.created_at = new Date().toISOString(); rows.unshift(payload); res = payload }
+    lsSavePre(rows); res = res || payload
+  }
+  registrarCambio({ accion: data.id ? 'editar' : 'crear', entidad: 'Preoperacional', descripcion: `${res.placa || ''} · ${res.conductor_nombre || ''}`, empresa_id: res.empresa_id })
+  return res
 }
