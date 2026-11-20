@@ -45,6 +45,22 @@ export default function PropietarioForm() {
     getPropietario(id).then((p) => { if (p) setForm({ ...VACIO, ...p, vehiculos_vinculados: p.vehiculos_vinculados || [] }) })
   }, [id])
 
+  // Vinculación AUTOMÁTICA: trae los vehículos que tengan a este propietario asignado.
+  useEffect(() => {
+    if (!form.id || !vehiculos.length) return
+    const auto = vehiculos.filter((v) => String(v.propietario_id) === String(form.id))
+    if (!auto.length) return
+    setForm((f) => {
+      const ya = new Set((f.vehiculos_vinculados || []).map((x) => String(x.id)))
+      const nuevos = auto.filter((v) => !ya.has(String(v.id)))
+        .map((v) => ({ id: v.id, placa: v.placa, marca: v.marca, linea: v.linea }))
+      return nuevos.length ? { ...f, vehiculos_vinculados: [...(f.vehiculos_vinculados || []), ...nuevos] } : f
+    })
+  }, [vehiculos, form.id])
+
+  // ¿El vehículo pertenece a este propietario por su ficha? (vinculación automática)
+  const esAuto = (vehId) => vehiculos.some((v) => String(v.id) === String(vehId) && String(v.propietario_id) === String(form.id))
+
   const set = (campo, valor) => setForm((f) => ({ ...f, [campo]: valor }))
   const esJuridica = form.tipo_persona === 'juridica'
 
@@ -182,15 +198,23 @@ export default function PropietarioForm() {
         />
         {form.vehiculos_vinculados.length > 0 ? (
           <ul className="mt-3 flex flex-col gap-1">
-            {form.vehiculos_vinculados.map((v, i) => (
-              <li key={i} className="flex items-center justify-between rounded-lg bg-cloud px-3 py-2 text-sm">
-                <span className="font-semibold text-ink">{v.placa} · {v.marca} {v.linea}</span>
-                <button onClick={() => quitarVehiculo(i)} className="text-ink-faint hover:text-coral-500">✕</button>
-              </li>
-            ))}
+            {form.vehiculos_vinculados.map((v, i) => {
+              const auto = esAuto(v.id)
+              return (
+                <li key={i} className="flex items-center justify-between rounded-lg bg-cloud px-3 py-2 text-sm">
+                  <span className="font-semibold text-ink">
+                    {v.placa} · {v.marca} {v.linea}
+                    {auto && <span className="ml-2 rounded-full bg-brand-500/15 px-2 py-0.5 text-[10px] font-bold uppercase text-brand-600">Automático</span>}
+                  </span>
+                  {auto
+                    ? <span className="text-[10px] text-ink-faint">asignado en el vehículo</span>
+                    : <button onClick={() => quitarVehiculo(i)} className="text-ink-faint hover:text-coral-500">✕</button>}
+                </li>
+              )
+            })}
           </ul>
         ) : (
-          <p className="mt-2 text-xs text-ink-soft">Agrega uno o varios vehículos de los que tengas registrados.</p>
+          <p className="mt-2 text-xs text-ink-soft">Los vehículos que asignes a este propietario aparecerán aquí automáticamente. También puedes agregar otros manualmente.</p>
         )}
       </div>
 
