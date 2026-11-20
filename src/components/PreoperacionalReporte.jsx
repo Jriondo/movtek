@@ -69,8 +69,10 @@ export default function PreoperacionalReporte({ empresa, mes, registros = [], ve
         .pr-sub { font-size:10px; font-weight:bold; }
         .pr-band { background:#e2e8f0; font-weight:bold; text-align:center; }
         .pr-sec { background:#cbd5e1; font-weight:bold; text-align:center; }
-        .pr-itm { text-align:left; width:230px; }
-        .pr-c { text-align:center; width:20px; }
+        .preop-rep table.grid { table-layout: fixed; }
+        .pr-itm { text-align:left; white-space:normal; word-break:break-word; vertical-align:top; line-height:1.12; }
+        .pr-itm .pr-desc { font-weight:normal; color:#475569; font-size:7px; }
+        .pr-c { text-align:center; }
         .pr-k { font-weight:bold; }
       `}</style>
 
@@ -113,17 +115,21 @@ export default function PreoperacionalReporte({ empresa, mes, registros = [], ve
       </table>
 
       {/* Grilla por días */}
-      <table>
+      <table className="grid">
+        <colgroup>
+          <col style={{ width: '240px' }} />
+          {dias.map((d) => <col key={d} />)}
+        </colgroup>
         <thead>
           <tr>
-            <th className="pr-itm">Día Mes</th>
+            <th className="pr-itm">Pregunta</th>
             {dias.map((d) => <th key={d} className="pr-c">{d}</th>)}
           </tr>
         </thead>
         <tbody>
           {preguntas.map((it) => (
             <tr key={it.key}>
-              <td className="pr-itm"><b>{it.titulo}</b>{it.descripcion ? <span style={{ fontWeight: 'normal', color: '#475569' }}>: {it.descripcion}</span> : ''}</td>
+              <td className="pr-itm"><b>{it.titulo}</b>{it.descripcion ? <span className="pr-desc"> · {it.descripcion}</span> : ''}</td>
               {dias.map((d) => <td key={d} className="pr-c" style={{ color: colorCel(it.key, d), fontWeight: cel(it.key, d) && cel(it.key, d) !== 'B' ? 'bold' : 'normal' }}>{cel(it.key, d)}</td>)}
             </tr>
           ))}
