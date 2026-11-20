@@ -1,5 +1,7 @@
 {
   "rewrites": [
+    { "source": "/e/:slug", "destination": "/api/og?slug=:slug" },
+    { "source": "/e/:slug/app", "destination": "/api/og?slug=:slug" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
