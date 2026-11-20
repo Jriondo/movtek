@@ -1,42 +1,38 @@
+import { useState } from 'react'
 import { useInstalar, esStandalone, esIOS } from '../lib/pwa'
 
-// Tarjeta "Instalar aplicación" que aparece al abrir el link.
-// - Android: botón que instala con un toque.
-// - iPhone: instrucciones para "Agregar a inicio".
-// - Ya instalada: no muestra nada.
+// Botón directo para instalar/descargar la app en el celular.
+// - Android: un toque y se instala.
+// - iPhone: muestra los 2 pasos para agregarla a inicio.
 export default function InstalarApp({ empresa }) {
-  const { puedeInstalar, instalar } = useInstalar()
+  const { instalar } = useInstalar()
+  const [ayuda, setAyuda] = useState(false)
 
-  if (esStandalone()) return null // ya está instalada y abierta como app
+  if (esStandalone()) return null // ya está instalada
 
   const color = empresa?.color_primario || '#16a34a'
   const ios = esIOS()
 
-  return (
-    <div className="mb-4 rounded-2xl border-2 p-4 text-center" style={{ borderColor: color, background: color + '12' }}>
-      <div className="flex items-center justify-center gap-2">
-        {empresa?.logo_url
-          ? <img src={empresa.logo_url} alt="" className="h-9 w-auto max-w-[90px] object-contain" />
-          : <span className="text-2xl">📲</span>}
-        <p className="font-display text-base font-extrabold text-ink">Instala la app</p>
-      </div>
+  const onClick = async () => {
+    if (ios) { setAyuda((a) => !a); return }
+    const ok = await instalar()      // intenta instalar con un toque
+    if (!ok) setAyuda(true)          // si el navegador no lo permitió, muestra los pasos
+  }
 
-      {ios ? (
-        <div className="mt-2 text-sm text-ink-soft">
-          <p>Para instalarla en tu iPhone:</p>
-          <p className="mt-1">1. Toca <b>Compartir</b> <span className="align-middle">⎙</span> abajo.</p>
-          <p>2. Elige <b>“Agregar a pantalla de inicio”</b>.</p>
-        </div>
-      ) : puedeInstalar ? (
-        <button onClick={instalar} className="mt-3 w-full rounded-xl px-4 py-3 text-base font-extrabold text-white shadow-glow" style={{ background: color }}>
-          📲 Instalar la aplicación
-        </button>
-      ) : (
-        <p className="mt-2 text-sm text-ink-soft">
-          Para instalarla, abre el menú <b>⋮</b> del navegador y elige <b>“Instalar aplicación”</b> o <b>“Agregar a pantalla de inicio”</b>.
+  return (
+    <div className="mb-4">
+      <button onClick={onClick}
+        className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-base font-extrabold text-white shadow-glow"
+        style={{ background: color }}>
+        📲 Descargar app
+      </button>
+      {(ayuda || ios) && (
+        <p className="mt-2 text-center text-xs text-ink-soft">
+          {ios
+            ? <>En iPhone: toca <b>Compartir</b> <span className="align-middle">⬆️</span> y luego <b>“Agregar a pantalla de inicio”</b>.</>
+            : <>Si no se abrió el instalador, abre el menú <b>⋮</b> del navegador y elige <b>“Instalar aplicación”</b>.</>}
         </p>
       )}
-      <p className="mt-2 text-xs text-ink-faint">Queda el ícono en tu celular y se abre como una app.</p>
     </div>
   )
 }

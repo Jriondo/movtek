@@ -12,10 +12,15 @@ export function activarPwaEmpresa(empresa, slug) {
     display: 'standalone',
     background_color: '#ffffff',
     theme_color: empresa?.color_primario || '#16a34a',
-    icons: icono ? [
-      { src: icono, sizes: '192x192', type: 'image/png', purpose: 'any' },
-      { src: icono, sizes: '512x512', type: 'image/png', purpose: 'any' },
-    ] : [],
+    icons: [
+      ...(icono ? [
+        { src: icono, sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: icono, sizes: '512x512', type: 'image/png', purpose: 'any' },
+      ] : []),
+      // Ícono de respaldo (asegura que el navegador permita instalar).
+      { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: '/icon-192.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+    ],
   }
   try {
     const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' })
@@ -51,20 +56,32 @@ export const esIOS = () => typeof navigator !== 'undefined' && /iphone|ipad|ipod
 // Hook sencillo para el botón "Instalar app": captura el evento del navegador.
 import { useEffect, useState } from 'react'
 export function useInstalar() {
-  const [prompt, setPrompt] = useState(null)
+  // Arranca con el evento que ya pudo capturar el script temprano de index.html.
+  const [prompt, setPrompt] = useState(() => (typeof window !== 'undefined' ? window.__installPrompt || null : null))
   const [instalada, setInstalada] = useState(false)
   useEffect(() => {
-    const onPrompt = (e) => { e.preventDefault(); setPrompt(e) }
-    const onInstalled = () => { setInstalada(true); setPrompt(null) }
+    const onPrompt = (e) => { e.preventDefault(); window.__installPrompt = e; setPrompt(e) }
+    const onDispo = () => setPrompt(window.__installPrompt || null)
+    const onInstalled = () => { setInstalada(true); setPrompt(null); window.__installPrompt = null }
     window.addEventListener('beforeinstallprompt', onPrompt)
+    window.addEventListener('mv-installable', onDispo)   // avisa el script temprano
     window.addEventListener('appinstalled', onInstalled)
-    // Si ya se abre como app instalada, no mostrar el botón.
+    window.addEventListener('mv-installed', onInstalled)
     if (window.matchMedia?.('(display-mode: standalone)')?.matches) setInstalada(true)
     return () => {
       window.removeEventListener('beforeinstallprompt', onPrompt)
+      window.removeEventListener('mv-installable', onDispo)
       window.removeEventListener('appinstalled', onInstalled)
+      window.removeEventListener('mv-installed', onInstalled)
     }
   }, [])
-  const instalar = async () => { if (!prompt) return; prompt.prompt(); try { await prompt.userChoice } catch {} setPrompt(null) }
+  const instalar = async () => {
+    const p = prompt || window.__installPrompt
+    if (!p) return false
+    p.prompt()
+    try { await p.userChoice } catch {}
+    setPrompt(null); window.__installPrompt = null
+    return true
+  }
   return { puedeInstalar: !!prompt && !instalada, instalar, instalada }
 }

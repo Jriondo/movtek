@@ -8,6 +8,18 @@
     <meta property="og:title" content="Movtek · Transporte Conectado" />
     <meta property="og:description" content="Plataforma de transporte especial: FUEC, preoperacionales y gestión de flota." />
     <meta property="og:type" content="website" />
+    <script>
+      // Captura el evento de instalación lo antes posible (Chrome lo lanza muy temprano).
+      window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        window.__installPrompt = e;
+        window.dispatchEvent(new Event('mv-installable'));
+      });
+      window.addEventListener('appinstalled', function () {
+        window.__installPrompt = null;
+        window.dispatchEvent(new Event('mv-installed'));
+      });
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
