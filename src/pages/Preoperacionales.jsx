@@ -4,7 +4,7 @@ import { listPreoperacionales, listVehiculos, fechaLocalISO, slugify } from '../
 import { descargarExcel } from '../lib/excel'
 import { useEmpresa } from '../context/EmpresaContext'
 import { useAuth } from '../context/AuthContext'
-import { normalizarPreguntas, LEYENDA, TIPO } from '../lib/preoperacional'
+import { normalizarPreguntas, LEYENDA, TIPO, SALUD, saludEnRiesgo } from '../lib/preoperacional'
 
 const PERIODOS = [
   { v: 'dia', label: 'Día' },
@@ -200,11 +200,21 @@ function DetalleModal({ r, onClose }) {
         </div>
 
         {r.salud && Object.keys(r.salud).length > 0 && (
-          <div className="mt-3 rounded-xl bg-cloud p-3 text-sm">
-            <p className="mb-1 font-bold text-ink">Salud</p>
-            <p className="text-ink-soft">
-              {['durmio_bien', 'condiciones', 'alcohol', 'medicamentos', 'sintomas'].filter((k) => r.salud[k]).map((k) => `${k}: ${r.salud[k]}`).join(' · ')}
-            </p>
+          <div className="mt-3 flex flex-col gap-1">
+            <p className="mb-1 font-bold text-brand-600">Encuesta de salud</p>
+            {SALUD.filter((p) => r.salud[p.key]).map((p) => {
+              const v = r.salud[p.key]
+              const mal = saludEnRiesgo(p, v)
+              return (
+                <div key={p.key}>
+                  <div className={`flex items-start justify-between gap-2 rounded-lg px-2 py-1 text-xs ${mal ? 'bg-coral-400/10' : ''}`}>
+                    <span className="text-ink">{p.label}</span>
+                    <span className={`whitespace-nowrap font-bold ${mal ? 'text-coral-500' : 'text-ink-soft'}`}>{v === 'si' ? 'Sí' : 'No'}</span>
+                  </div>
+                  {r.salud['obs_' + p.key] && <p className="px-2 text-xs italic text-coral-500">• {r.salud['obs_' + p.key]}</p>}
+                </div>
+              )
+            })}
           </div>
         )}
 
