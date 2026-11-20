@@ -1,13 +1,29 @@
 // Service worker mínimo: habilita la instalación de la app (PWA) y un caché básico.
-const CACHE = 'movtek-app-v1'
+const CACHE = 'movtek-app-v2'
 
 self.addEventListener('install', (e) => { self.skipWaiting() })
-self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()) })
+self.addEventListener('activate', (e) => {
+  e.waitUntil((async () => {
+    // Limpia cachés viejos y toma control.
+    const keys = await caches.keys()
+    await Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
+    await self.clients.claim()
+  })())
+})
 
-// Estrategia: red primero; si falla, intenta el caché (para que abra sin conexión lo ya visto).
 self.addEventListener('fetch', (e) => {
   const req = e.request
   if (req.method !== 'GET') return
+  const esNavegacion = req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html')
+
+  // Las páginas (HTML) SIEMPRE van a la red para no mostrar versiones viejas;
+  // solo si no hay conexión se usa lo cacheado.
+  if (esNavegacion) {
+    e.respondWith(fetch(req).catch(() => caches.match(req)))
+    return
+  }
+
+  // Recursos (js, css, imágenes): red primero y guarda copia para uso sin conexión.
   e.respondWith(
     fetch(req)
       .then((res) => {

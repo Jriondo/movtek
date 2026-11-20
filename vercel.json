@@ -8,7 +8,6 @@
     {
       "source": "/sw.js",
       "headers": [
-        { "key": "Service-Worker-Allowed", "value": "/e/" },
         { "key": "Cache-Control", "value": "no-cache" }
       ]
     }
