@@ -22,6 +22,8 @@ export default function PreoperacionalReporte({ empresa, mes, registros = [], ve
   const info = ultimo // datos "foto" del vehículo
   // Preguntas usadas (de la foto del registro, o las de defecto).
   const preguntas = normalizarPreguntas((registros.find((r) => Array.isArray(r.preguntas) && r.preguntas.length) || {}).preguntas)
+  // Alto de cada fila del checklist para que el reporte LLENE la hoja horizontal (menos preguntas = filas más altas).
+  const filaAlto = Math.max(20, Math.round(560 / Math.max(1, preguntas.length)))
   // Datos del vehículo: de la "foto" del registro; si falta, del vehículo actual.
   const v = vehiculo || {}
   const dato = {
@@ -128,9 +130,9 @@ export default function PreoperacionalReporte({ empresa, mes, registros = [], ve
         </thead>
         <tbody>
           {preguntas.map((it) => (
-            <tr key={it.key}>
+            <tr key={it.key} style={{ height: filaAlto + 'px' }}>
               <td className="pr-itm"><b>{it.titulo}</b>{it.descripcion ? <span className="pr-desc"> · {it.descripcion}</span> : ''}</td>
-              {dias.map((d) => <td key={d} className="pr-c" style={{ color: colorCel(it.key, d), fontWeight: cel(it.key, d) && cel(it.key, d) !== 'B' ? 'bold' : 'normal' }}>{cel(it.key, d)}</td>)}
+              {dias.map((d) => <td key={d} className="pr-c" style={{ verticalAlign: 'middle', color: colorCel(it.key, d), fontWeight: cel(it.key, d) && cel(it.key, d) !== 'B' ? 'bold' : 'normal' }}>{cel(it.key, d)}</td>)}
             </tr>
           ))}
         </tbody>
@@ -140,7 +142,7 @@ export default function PreoperacionalReporte({ empresa, mes, registros = [], ve
       <table>
         <tbody>
           <tr>
-            <td style={{ width: '65%', verticalAlign: 'top', height: '60px' }}>
+            <td style={{ width: '65%', verticalAlign: 'top', height: '120px' }}>
               <span className="pr-k">Observaciones del mes:</span><br />
               {novedades.length ? novedades.map((n, i) => <div key={i}>• {n}</div>) : 'Durante el mes no se presentaron novedades. El vehículo se encuentra en condiciones seguras de operación.'}
             </td>
