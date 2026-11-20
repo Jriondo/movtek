@@ -68,6 +68,7 @@ export default async function handler(req, res) {
     .replace(/<title>[\s\S]*?<\/title>/i, tags)
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8')
-  res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600')
+  // La página SIEMPRE se revalida (así la app toma la versión nueva sin reinstalar).
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
   res.status(200).send(html)
 }
