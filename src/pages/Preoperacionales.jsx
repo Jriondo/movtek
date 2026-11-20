@@ -51,24 +51,26 @@ export default function Preoperacionales() {
 
   const [desde, hasta] = useMemo(() => rango(periodo, ancla), [periodo, ancla])
 
+  // Trae los datos filtrados (incluye preoperacional, taller y descanso).
+  async function obtenerDatos() {
+    let data = await listPreoperacionales({ empresaId: empresa?.id, placa, conductor, desde, hasta })
+    if (esPropietario && propietarioId) {
+      const vs = await listVehiculos({ empresaId: empresa?.id })
+      const mias = new Set(vs.filter((v) => String(v.propietario_id) === String(propietarioId)).map((v) => String(v.id)))
+      data = data.filter((r) => mias.has(String(r.vehiculo_id)))
+    }
+    return data
+  }
+
   async function cargar() {
     setCargando(true); setBuscado(true)
-    try {
-      let data = await listPreoperacionales({ empresaId: empresa?.id, placa, conductor, desde, hasta })
-      // El propietario solo ve las preoperacionales de SUS vehículos.
-      if (esPropietario && propietarioId) {
-        const vs = await listVehiculos({ empresaId: empresa?.id })
-        const mias = new Set(vs.filter((v) => String(v.propietario_id) === String(propietarioId)).map((v) => String(v.id)))
-        data = data.filter((r) => mias.has(String(r.vehiculo_id)))
-      }
-      setRows(data)
-    } catch { setRows([]) }
+    try { setRows(await obtenerDatos()) } catch { setRows([]) }
     setCargando(false)
   }
   // Al cambiar de empresa se limpia el resultado (hay que volver a buscar).
   useEffect(() => { setRows([]); setBuscado(false) }, [empresa?.id])
 
-  function exportarExcel() {
+  async function exportarExcel() {
     const cols = [
       { label: 'Fecha', get: (r) => r.fecha }, { label: 'Hora', get: (r) => r.hora || '' },
       { label: 'Placa', get: (r) => r.placa || '' }, { label: 'Móvil', get: (r) => r.numero_interno || '' },
@@ -78,7 +80,10 @@ export default function Preoperacionales() {
       { label: 'Novedades', get: (r) => Object.values(r.respuestas || {}).filter((v) => v === 'R' || v === 'M').length },
       { label: 'Nota', get: (r) => r.nota || '' },
     ]
-    descargarExcel(`Preoperacionales_${desde}_a_${hasta}`, cols, rows, `Preoperacionales ${empresa?.nombre || ''} (${desde} a ${hasta})`)
+    let datos = rows
+    try { datos = await obtenerDatos() } catch {}       // siempre trae lo más reciente
+    if (!datos.length) { alert('No hay registros en este periodo para exportar.'); return }
+    descargarExcel(`Preoperacionales_${desde}_a_${hasta}`, cols, datos, `Preoperacionales ${empresa?.nombre || ''} (${desde} a ${hasta})`)
   }
 
   const mesActual = ancla.slice(0, 7)
