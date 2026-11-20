@@ -47,7 +47,7 @@ function Pantalla({ children }) {
 
 // ---------- LOGIN / REGISTRO del conductor (marca de la empresa) ----------
 function LoginConductor({ empresa, onLogin }) {
-  const { registrarConductor } = useAuth()
+  const { registrarConductor, recuperarPassword } = useAuth()
   const [modo, setModo] = useState('login')   // 'login' | 'registro'
   const [email, setEmail] = useState('')
   const [pass, setPass] = useState('')
@@ -63,6 +63,20 @@ function LoginConductor({ empresa, onLogin }) {
     setErr(''); setBusy(true)
     try { await onLogin(email.trim(), pass) }
     catch (e) { setErr('Correo o contraseña incorrectos.'); setBusy(false) }
+  }
+
+  async function recuperar() {
+    setErr(''); setInfo('')
+    const correo = email.trim()
+    if (!correo) { setErr('Escribe tu correo arriba y vuelve a tocar “¿Olvidaste tu contraseña?”.'); return }
+    setBusy(true)
+    try {
+      await recuperarPassword(correo)
+      setInfo('📧 Te enviamos un correo para restablecer tu contraseña. Ábrelo, crea la nueva y vuelve a ingresar.')
+    } catch (e) {
+      setErr('No se pudo enviar el correo. Verifica que esté bien escrito.')
+    }
+    setBusy(false)
   }
 
   async function crearAcceso(e) {
@@ -106,10 +120,14 @@ function LoginConductor({ empresa, onLogin }) {
             <form onSubmit={entrar} className="flex flex-col gap-3">
               <input type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Correo" autoComplete="username" required />
               <PasswordInput value={pass} onChange={(e) => setPass(e.target.value)} autoComplete="current-password" required />
-              {err && <p className="text-sm font-semibold text-coral-500">{err}</p>}
+              {err && <p className="rounded-lg bg-coral-400/15 px-3 py-2 text-sm font-semibold text-coral-500">{err}</p>}
+              {info && <p className="rounded-lg bg-mint-500/15 px-3 py-2 text-sm font-semibold text-mint-600">{info}</p>}
               <button className="btn-primary" disabled={busy}>{busy ? 'Ingresando…' : 'Ingresar'}</button>
             </form>
-            <button onClick={() => { setModo('registro'); setErr(''); setInfo('') }} className="mt-4 w-full text-center text-sm font-bold text-brand-600">
+            <button type="button" onClick={recuperar} disabled={busy} className="mt-3 w-full text-center text-sm font-semibold text-ink-soft hover:text-brand-500">
+              ¿Olvidaste tu contraseña?
+            </button>
+            <button onClick={() => { setModo('registro'); setErr(''); setInfo('') }} className="mt-2 w-full text-center text-sm font-bold text-brand-600">
               ¿Primera vez? Crear mi acceso
             </button>
           </>
