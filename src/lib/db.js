@@ -1306,14 +1306,23 @@ export async function vehiculosDeConductor({ empresaId, conductorId }) {
 
 // Busca la ficha de conductor que corresponde al usuario que inició sesión.
 export async function conductorDeUsuario({ empresaId, conductorId, email }) {
+  // 1) Por el conductor_id recibido.
   if (conductorId) {
     const c = await getConductor(conductorId).catch(() => null)
     if (c) return c
   }
   if (email) {
-    const lista = await listConductores({ empresaId })
+    // 2) Por el usuario (email -> su conductor_id guardado).
+    const u = await getUsuarioPorEmail(email).catch(() => null)
+    if (u?.conductor_id) {
+      const c = await getConductor(u.conductor_id).catch(() => null)
+      if (c) return c
+    }
+    // 3) Por el correo guardado en la ficha del conductor.
+    const lista = await listConductores({ empresaId }).catch(() => [])
     const norm = String(email).trim().toLowerCase()
-    return lista.find((c) => String(c.correo || '').trim().toLowerCase() === norm) || null
+    const c = lista.find((x) => String(x.correo || '').trim().toLowerCase() === norm)
+    if (c) return c
   }
   return null
 }

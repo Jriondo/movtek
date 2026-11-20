@@ -208,7 +208,11 @@ function Home({ empresa, user, conductorId, onLogout }) {
       onDone={() => { setPantalla('home'); refrescarHoy() }} />
   }
 
-  const nombreCond = conductor ? `${conductor.nombres || ''} ${conductor.apellidos || ''}`.trim() : (user?.email || '')
+  // Saludo: primer nombre + primer apellido (bonito), o el correo si aún no hay ficha.
+  const titulo = (s) => (s || '').toLowerCase().replace(/\b\w/g, (m) => m.toUpperCase())
+  const primerNombre = titulo((conductor?.nombres || '').trim().split(/\s+/)[0])
+  const primerApellido = titulo((conductor?.apellidos || '').trim().split(/\s+/)[0])
+  const nombreCond = (primerNombre || primerApellido) ? `${primerNombre} ${primerApellido}`.trim() : (user?.email || 'Conductor')
 
   return (
     <div className="min-h-screen bg-cloud">
