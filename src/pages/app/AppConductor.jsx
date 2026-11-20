@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom'
 import { getEmpresaPorSlug, vehiculosDeConductor, conductorDeUsuario, preoperacionalHoy, savePreoperacional, fechaLocalISO } from '../../lib/db'
 import { TIPO } from '../../lib/preoperacional'
 import { applyTheme } from '../../lib/theme'
-import { activarPwaEmpresa } from '../../lib/pwa'
+import { activarPwaEmpresa, esStandalone } from '../../lib/pwa'
 import { activarPushConductor } from '../../lib/push'
 import InstalarApp from '../../components/InstalarApp'
 import { useAuth } from '../../context/AuthContext'
@@ -51,6 +51,8 @@ function LoginConductor({ empresa, onLogin }) {
   const [pass, setPass] = useState('')
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
+  // En el navegador se muestra solo el aviso de descargar; el login está dentro de la app ya instalada.
+  const [verLogin, setVerLogin] = useState(esStandalone())
 
   async function entrar(e) {
     e.preventDefault()
@@ -69,14 +71,24 @@ function LoginConductor({ empresa, onLogin }) {
         </div>
         <h1 className="mt-4 text-center font-display text-lg font-extrabold text-ink">{empresa?.nombre}</h1>
         <p className="mb-4 text-center text-sm text-ink-soft">App de preoperacional · Conductores</p>
+
         <InstalarApp empresa={empresa} />
-        <form onSubmit={entrar} className="flex flex-col gap-3">
-          <input type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Correo" autoComplete="username" required />
-          <PasswordInput value={pass} onChange={(e) => setPass(e.target.value)} autoComplete="current-password" required />
-          {err && <p className="text-sm font-semibold text-coral-500">{err}</p>}
-          <button className="btn-primary" disabled={busy}>{busy ? 'Ingresando…' : 'Ingresar'}</button>
-        </form>
-        <p className="mt-4 text-center text-xs text-ink-faint">¿No tienes acceso? Pídele a tu empresa que te cree el usuario de conductor.</p>
+
+        {verLogin ? (
+          <>
+            <form onSubmit={entrar} className="flex flex-col gap-3">
+              <input type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Correo" autoComplete="username" required />
+              <PasswordInput value={pass} onChange={(e) => setPass(e.target.value)} autoComplete="current-password" required />
+              {err && <p className="text-sm font-semibold text-coral-500">{err}</p>}
+              <button className="btn-primary" disabled={busy}>{busy ? 'Ingresando…' : 'Ingresar'}</button>
+            </form>
+            <p className="mt-4 text-center text-xs text-ink-faint">¿No tienes acceso? Pídele a tu empresa que te cree el usuario de conductor.</p>
+          </>
+        ) : (
+          <button onClick={() => setVerLogin(true)} className="mt-1 w-full text-center text-xs font-semibold text-ink-faint hover:text-brand-500">
+            Ya instalé la app · Ingresar
+          </button>
+        )}
       </div>
     </div>
   )
