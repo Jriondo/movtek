@@ -154,6 +154,7 @@ function LoginConductor({ empresa, onLogin }) {
 
 // ---------- INICIO del conductor ----------
 function Home({ empresa, user, conductorId, onLogout }) {
+  const { actualizarPassword } = useAuth()
   const [vehiculos, setVehiculos] = useState([])
   const [conductor, setConductor] = useState(null)
   const [selId, setSelId] = useState('')
@@ -216,7 +217,8 @@ function Home({ empresa, user, conductorId, onLogout }) {
         {empresa?.logo_url
           ? <img src={empresa.logo_url} alt="" className="h-9 w-auto max-w-[120px] object-contain drop-shadow" />
           : <span className="font-display text-lg font-extrabold">{empresa?.nombre}</span>}
-        <button onClick={onLogout} className="ml-auto rounded-lg bg-white/20 px-3 py-1.5 text-sm font-semibold">Salir</button>
+        <button onClick={() => setModal('pass')} className="ml-auto rounded-lg bg-white/20 px-3 py-1.5 text-sm font-semibold" title="Cambiar contraseña">🔑</button>
+        <button onClick={onLogout} className="rounded-lg bg-white/20 px-3 py-1.5 text-sm font-semibold">Salir</button>
       </header>
 
       <div className="mx-auto max-w-xl px-4 py-5">
@@ -288,10 +290,57 @@ function Home({ empresa, user, conductorId, onLogout }) {
         )}
       </div>
 
-      {modal && (
+      {modal === 'pass' && (
+        <ModalCambiarPass actualizarPassword={actualizarPassword} onClose={() => setModal('')} />
+      )}
+      {(modal === 'taller' || modal === 'descanso') && (
         <ModalEstado tipo={modal} empresa={empresa} vehiculo={vehiculo} conductor={conductor}
           onClose={() => setModal('')} onSaved={() => { setModal(''); refrescarHoy() }} />
       )}
+    </div>
+  )
+}
+
+// Modal para que el conductor cambie su contraseña (ya está dentro de la app).
+function ModalCambiarPass({ actualizarPassword, onClose }) {
+  const [p1, setP1] = useState('')
+  const [p2, setP2] = useState('')
+  const [err, setErr] = useState('')
+  const [ok, setOk] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  async function guardar(e) {
+    e.preventDefault()
+    setErr('')
+    if (p1.length < 6) { setErr('La contraseña debe tener al menos 6 caracteres.'); return }
+    if (p1 !== p2) { setErr('Las contraseñas no coinciden.'); return }
+    setBusy(true)
+    try { await actualizarPassword(p1); setOk(true) }
+    catch (e) { setErr('No se pudo cambiar: ' + (e?.message || '')) }
+    setBusy(false)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-end bg-black/40 sm:place-items-center" onClick={onClose}>
+      <div className="w-full rounded-t-3xl bg-white p-5 sm:max-w-sm sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+        <h2 className="font-display text-lg font-extrabold text-ink">🔑 Cambiar contraseña</h2>
+        {ok ? (
+          <>
+            <p className="mt-2 rounded-lg bg-mint-500/15 px-3 py-2 text-sm font-semibold text-mint-600">✅ Tu contraseña se cambió. Úsala la próxima vez que ingreses.</p>
+            <button onClick={onClose} className="btn-primary mt-4 w-full">Listo</button>
+          </>
+        ) : (
+          <form onSubmit={guardar} className="mt-3 flex flex-col gap-3">
+            <PasswordInput value={p1} onChange={(e) => setP1(e.target.value)} placeholder="Nueva contraseña" autoComplete="new-password" />
+            <PasswordInput value={p2} onChange={(e) => setP2(e.target.value)} placeholder="Repite la nueva contraseña" autoComplete="new-password" />
+            {err && <p className="rounded-lg bg-coral-400/15 px-3 py-2 text-sm font-semibold text-coral-500">{err}</p>}
+            <div className="flex gap-2">
+              <button type="button" onClick={onClose} className="btn-ghost flex-1">Cancelar</button>
+              <button className="btn-primary flex-1" disabled={busy}>{busy ? 'Guardando…' : 'Cambiar'}</button>
+            </div>
+          </form>
+        )}
+      </div>
     </div>
   )
 }
