@@ -25,9 +25,11 @@ export function activarPwaEmpresa(empresa, slug) {
   }
 }
 
-// ¿La app ya está abierta como app instalada (pantalla completa)?
+// ¿La app ya está abierta como app instalada (pantalla completa o dentro del APK)?
 export const esStandalone = () => typeof window !== 'undefined' &&
-  (window.matchMedia?.('(display-mode: standalone)')?.matches || window.navigator.standalone === true)
+  (window.matchMedia?.('(display-mode: standalone)')?.matches ||
+    window.navigator.standalone === true ||
+    /MovtekApp/.test(navigator.userAgent || ''))
 
 // ¿Es un iPhone/iPad? (allí se instala con "Agregar a inicio", no con botón).
 export const esIOS = () => typeof navigator !== 'undefined' && /iphone|ipad|ipod/i.test(navigator.userAgent || '')
