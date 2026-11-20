@@ -61,9 +61,9 @@ export default function PreoperacionalReportePage() {
       const canvas = await html2canvas(ref.current, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false })
       const pdf = new jsPDF({ unit: 'mm', format: 'letter', orientation: 'landscape' })
       const pw = pdf.internal.pageSize.getWidth(), ph = pdf.internal.pageSize.getHeight()
-      let w = pw, h = (canvas.height * pw) / canvas.width
-      if (h > ph) { h = ph; w = (canvas.width * ph) / canvas.height }
-      pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', (pw - w) / 2, 0, w, h)
+      // Llena TODA la hoja (con un pequeño margen), sin dejar espacio en blanco.
+      const m = 4
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', m, m, pw - 2 * m, ph - 2 * m)
       pdf.save(`Preoperacional-${placaSel}-${mes}.pdf`)
     } catch (e) { alert('No se pudo generar el PDF. ' + (e?.message || '')) }
     setDescargando(false)
