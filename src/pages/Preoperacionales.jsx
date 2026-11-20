@@ -43,19 +43,21 @@ export default function Preoperacionales() {
   const [conductor, setConductor] = useState('')
   const [rows, setRows] = useState([])
   const [cargando, setCargando] = useState(false)
+  const [buscado, setBuscado] = useState(false)
   const [detalle, setDetalle] = useState(null)
 
   const [desde, hasta] = useMemo(() => rango(periodo, ancla), [periodo, ancla])
 
   async function cargar() {
-    setCargando(true)
+    setCargando(true); setBuscado(true)
     try {
       const data = await listPreoperacionales({ empresaId: empresa?.id, placa, conductor, desde, hasta })
       setRows(data)
     } catch { setRows([]) }
     setCargando(false)
   }
-  useEffect(() => { cargar() }, [empresa?.id, periodo, ancla, placa, conductor])
+  // Al cambiar de empresa se limpia el resultado (hay que volver a buscar).
+  useEffect(() => { setRows([]); setBuscado(false) }, [empresa?.id])
 
   function exportarExcel() {
     const cols = [
@@ -104,10 +106,14 @@ export default function Preoperacionales() {
           </div>
           <div>
             <label className="label">Buscar conductor</label>
-            <input className="input mt-1" value={conductor} onChange={(e) => setConductor(e.target.value)} placeholder="Nombre o documento" />
+            <input className="input mt-1" value={conductor} onChange={(e) => setConductor(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && cargar()} placeholder="Nombre o documento" />
           </div>
         </div>
-        <p className="mt-2 text-xs text-ink-soft">Mostrando del <b>{desde}</b> al <b>{hasta}</b> · {rows.length} registro(s).</p>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <button onClick={cargar} disabled={cargando} className="btn-primary">{cargando ? 'Buscando…' : '🔍 Buscar'}</button>
+          {buscado && <p className="text-xs text-ink-soft">Mostrando del <b>{desde}</b> al <b>{hasta}</b> · {rows.length} registro(s).</p>}
+        </div>
       </div>
 
       {/* Tabla */}
@@ -122,7 +128,9 @@ export default function Preoperacionales() {
           </thead>
           <tbody>
             {cargando ? (
-              <tr><td colSpan={7} className="px-3 py-8 text-center text-ink-faint">Cargando…</td></tr>
+              <tr><td colSpan={7} className="px-3 py-8 text-center text-ink-faint">Buscando…</td></tr>
+            ) : !buscado ? (
+              <tr><td colSpan={7} className="px-3 py-8 text-center text-ink-faint">Elige el periodo y los filtros, luego presiona <b>🔍 Buscar</b>.</td></tr>
             ) : rows.length === 0 ? (
               <tr><td colSpan={7} className="px-3 py-8 text-center text-ink-faint">No hay preoperacionales en este periodo.</td></tr>
             ) : rows.map((r) => (
