@@ -1,5 +1,5 @@
 // Genera la vista previa (meta tags) por empresa para los links /e/<slug> y /e/<slug>/app.
-// Así, al compartir por WhatsApp, aparece "APK <EMPRESA>" en vez del título genérico.
+// Así, al compartir por WhatsApp, aparece "App <EMPRESA>" en vez del título genérico.
 // Devuelve el MISMO index.html de la app, solo con el título y los meta reemplazados.
 
 const esc = (s) => String(s || '')
@@ -36,7 +36,7 @@ export default async function handler(req, res) {
     }
   } catch {}
 
-  const titulo = nombre ? `APK ${nombre}` : 'App de preoperacional'
+  const titulo = nombre ? `App ${nombre}` : 'App de preoperacional'
   const desc = nombre
     ? `Preoperacional de conductores · ${nombre}`
     : 'App de preoperacional para conductores'
