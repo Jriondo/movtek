@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { getEmpresaPorSlug, vehiculosDeConductor, conductorDeUsuario, preoperacionalHoy, savePreoperacional, fechaLocalISO } from '../../lib/db'
+import { getEmpresaPorSlug, vehiculosDeConductor, conductorDeUsuario, preoperacionalHoy } from '../../lib/db'
 import { TIPO } from '../../lib/preoperacional'
 import { applyTheme } from '../../lib/theme'
 import { activarPwaEmpresa, esStandalone } from '../../lib/pwa'
@@ -278,17 +278,13 @@ function Home({ empresa, user, conductorId, onLogout }) {
               </div>
             )}
 
-            {/* Acciones */}
+            {/* Acción principal: dentro se elige Operaciones / Taller / Descanso */}
             <div className="mt-4 flex flex-col gap-3">
               <button onClick={() => setPantalla('captura')} disabled={!conductor}
                 className="rounded-2xl bg-brand-500 px-5 py-4 text-left text-white shadow-glow disabled:opacity-50">
-                <span className="block font-display text-lg font-extrabold">📋 Hacer preoperacional</span>
-                <span className="block text-sm text-white/80">{hoy?.tipo === TIPO.PREOP ? 'Puedes registrar otra si lo necesitas' : 'Revisa el vehículo y firma'}</span>
+                <span className="block font-display text-lg font-extrabold">📋 Registrar el día</span>
+                <span className="block text-sm text-white/80">Operaciones (preoperacional), taller o descanso</span>
               </button>
-              <div className="grid grid-cols-2 gap-3">
-                <button onClick={() => setModal('taller')} className="rounded-2xl border-2 border-cloud-line bg-white px-4 py-4 font-bold text-ink">🔧 En taller</button>
-                <button onClick={() => setModal('descanso')} className="rounded-2xl border-2 border-cloud-line bg-white px-4 py-4 font-bold text-ink">🛌 En descanso</button>
-              </div>
             </div>
           </>
         )}
@@ -296,10 +292,6 @@ function Home({ empresa, user, conductorId, onLogout }) {
 
       {modal === 'pass' && (
         <ModalCambiarPass actualizarPassword={actualizarPassword} onClose={() => setModal('')} />
-      )}
-      {(modal === 'taller' || modal === 'descanso') && (
-        <ModalEstado tipo={modal} empresa={empresa} vehiculo={vehiculo} conductor={conductor}
-          onClose={() => setModal('')} onSaved={() => { setModal(''); refrescarHoy() }} />
       )}
     </div>
   )
@@ -344,42 +336,6 @@ function ModalCambiarPass({ actualizarPassword, onClose }) {
             </div>
           </form>
         )}
-      </div>
-    </div>
-  )
-}
-
-// Modal para reportar el vehículo en taller o en descanso (con nota opcional).
-function ModalEstado({ tipo, empresa, vehiculo, conductor, onClose, onSaved }) {
-  const [nota, setNota] = useState('')
-  const [busy, setBusy] = useState(false)
-  const titulo = tipo === TIPO.TALLER ? '🔧 Vehículo en taller' : '🛌 Vehículo en descanso'
-
-  async function guardar() {
-    setBusy(true)
-    try {
-      const ahora = new Date()
-      await savePreoperacional({
-        empresa_id: empresa.id, vehiculo_id: vehiculo?.id, conductor_id: conductor?.id,
-        tipo, fecha: fechaLocalISO(ahora), hora: ahora.toTimeString().slice(0, 5),
-        placa: vehiculo?.placa, numero_interno: vehiculo?.numero_interno,
-        conductor_nombre: conductor ? `${conductor.nombres || ''} ${conductor.apellidos || ''}`.trim() : '',
-        conductor_doc: conductor?.documento || '', nota,
-      })
-      onSaved()
-    } catch (e) { alert('No se pudo guardar. ' + (e?.message || '')); setBusy(false) }
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-end bg-black/40 sm:place-items-center" onClick={onClose}>
-      <div className="w-full rounded-t-3xl bg-white p-5 sm:max-w-sm sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
-        <h2 className="font-display text-lg font-extrabold text-ink">{titulo}</h2>
-        <p className="mt-1 text-sm text-ink-soft">{vehiculo?.placa} · {vehiculo?.marca} {vehiculo?.modelo}</p>
-        <textarea className="input mt-3 h-20" value={nota} onChange={(e) => setNota(e.target.value)} placeholder="Nota (opcional): motivo, taller, etc." />
-        <div className="mt-4 flex gap-2">
-          <button onClick={onClose} className="btn-ghost flex-1">Cancelar</button>
-          <button onClick={guardar} disabled={busy} className="btn-primary flex-1">{busy ? 'Guardando…' : 'Confirmar'}</button>
-        </div>
       </div>
     </div>
   )

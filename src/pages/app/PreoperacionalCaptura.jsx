@@ -4,14 +4,18 @@ import { savePreoperacional, fechaLocalISO, getPreguntasPreop } from '../../lib/
 import SignaturePad from '../../components/SignaturePad'
 
 // Formulario que llena el conductor. NO pide placa/nombre/datos del vehículo (se toman de la base).
-// Orden: kilometraje → checklist (preguntas editables por empresa) → encuesta de salud → firma.
+// Paso 1: elegir estado del día → Operaciones / Taller / Descanso.
+//   - Operaciones: kilometraje → checklist (preguntas de la empresa) → encuesta de salud → firma.
+//   - Taller / Descanso: solo una nota opcional y Enviar.
 export default function PreoperacionalCaptura({ empresa, vehiculo, conductor, onDone, onCancel }) {
+  const [estado, setEstado] = useState('')   // '' | 'operaciones' | 'taller' | 'descanso'
   const [preguntas, setPreguntas] = useState([])
   const [km, setKm] = useState('')
   const [salud, setSalud] = useState({})
   const [resp, setResp] = useState({})
   const [obs, setObs] = useState({})
   const [firma, setFirma] = useState('')
+  const [nota, setNota] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
 
@@ -42,7 +46,8 @@ export default function PreoperacionalCaptura({ empresa, vehiculo, conductor, on
     return ''
   }
 
-  async function enviar() {
+  // Guardar OPERACIONES (preoperacional completa).
+  async function enviarOperaciones() {
     const err = validar()
     if (err) { setError(err); window.scrollTo({ top: 0, behavior: 'smooth' }); return }
     setError(''); setGuardando(true)
@@ -79,9 +84,82 @@ export default function PreoperacionalCaptura({ empresa, vehiculo, conductor, on
     }
   }
 
+  // Guardar TALLER / DESCANSO (solo una nota opcional).
+  async function enviarEstado(tipo) {
+    setError(''); setGuardando(true)
+    try {
+      const ahora = new Date()
+      await savePreoperacional({
+        empresa_id: empresa?.id, vehiculo_id: vehiculo?.id, conductor_id: conductor?.id,
+        tipo, fecha: fechaLocalISO(ahora), hora: ahora.toTimeString().slice(0, 5),
+        placa: vehiculo?.placa, numero_interno: vehiculo?.numero_interno,
+        conductor_nombre: nombreCond, conductor_doc: conductor?.documento || '', nota,
+      })
+      onDone?.()
+    } catch (e) {
+      setError('No se pudo guardar. ' + (e?.message || ''))
+      setGuardando(false)
+    }
+  }
+
+  // ---------- PASO 1: elegir estado del día ----------
+  if (!estado) {
+    return (
+      <div className="mx-auto max-w-xl px-4 pb-10 pt-4">
+        <button onClick={onCancel} className="text-sm font-semibold text-brand-500">← Volver</button>
+        <h1 className="mt-1 font-display text-xl font-extrabold text-ink">¿Cómo está el vehículo hoy?</h1>
+        <p className="text-sm text-ink-soft">{vehiculo?.placa} · {vehiculo?.marca} {vehiculo?.modelo} · Móvil {vehiculo?.numero_interno || '—'}</p>
+
+        <div className="mt-5 flex flex-col gap-3">
+          <button onClick={() => setEstado('operaciones')}
+            className="rounded-2xl bg-brand-500 px-5 py-4 text-left text-white shadow-glow">
+            <span className="block font-display text-lg font-extrabold">🚍 En operaciones</span>
+            <span className="block text-sm text-white/80">Hacer la revisión preoperacional y firmar</span>
+          </button>
+          <button onClick={() => setEstado('taller')}
+            className="rounded-2xl border-2 border-amber-300 bg-amber-50 px-5 py-4 text-left text-amber-800">
+            <span className="block font-display text-lg font-extrabold">🔧 En taller</span>
+            <span className="block text-sm text-amber-700/80">Hoy no opera por mantenimiento. Solo enviar.</span>
+          </button>
+          <button onClick={() => setEstado('descanso')}
+            className="rounded-2xl border-2 border-cloud-line bg-white px-5 py-4 text-left text-ink">
+            <span className="block font-display text-lg font-extrabold">🛌 En descanso</span>
+            <span className="block text-sm text-ink-soft">Hoy no opera (descanso del vehículo). Solo enviar.</span>
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // ---------- PASO 2a: TALLER / DESCANSO (solo enviar) ----------
+  if (estado === 'taller' || estado === 'descanso') {
+    const esTaller = estado === 'taller'
+    return (
+      <div className="mx-auto max-w-xl px-4 pb-10 pt-4">
+        <button onClick={() => { setEstado(''); setError('') }} className="text-sm font-semibold text-brand-500">← Cambiar estado</button>
+        <h1 className="mt-1 font-display text-xl font-extrabold text-ink">{esTaller ? '🔧 Vehículo en taller' : '🛌 Vehículo en descanso'}</h1>
+        <p className="text-sm text-ink-soft">{vehiculo?.placa} · {vehiculo?.marca} {vehiculo?.modelo} · Móvil {vehiculo?.numero_interno || '—'}</p>
+
+        {error && <p className="mt-3 rounded-xl bg-coral-400/15 px-4 py-2.5 text-sm font-semibold text-coral-500">{error}</p>}
+
+        <div className="card mt-4 p-4">
+          <label className="label">Nota (opcional)</label>
+          <textarea className="input mt-1 h-24" value={nota} onChange={(e) => setNota(e.target.value)}
+            placeholder={esTaller ? 'Motivo o taller donde está…' : 'Observación del descanso…'} />
+        </div>
+
+        <button onClick={() => enviarEstado(esTaller ? TIPO.TALLER : TIPO.DESCANSO)} disabled={guardando}
+          className="btn-primary mt-4 w-full py-3.5 text-base">
+          {guardando ? 'Enviando…' : '✅ Enviar'}
+        </button>
+      </div>
+    )
+  }
+
+  // ---------- PASO 2b: OPERACIONES (preoperacional completa) ----------
   return (
     <div className="mx-auto max-w-xl px-4 pb-28 pt-4">
-      <button onClick={onCancel} className="text-sm font-semibold text-brand-500">← Volver</button>
+      <button onClick={() => { setEstado(''); setError('') }} className="text-sm font-semibold text-brand-500">← Cambiar estado</button>
       <h1 className="mt-1 font-display text-xl font-extrabold text-ink">Revisión preoperacional</h1>
       <p className="text-sm text-ink-soft">{vehiculo?.placa} · {vehiculo?.marca} {vehiculo?.modelo} · Móvil {vehiculo?.numero_interno || '—'}</p>
 
@@ -163,7 +241,7 @@ export default function PreoperacionalCaptura({ empresa, vehiculo, conductor, on
             <span className="font-bold text-amber-600">{resumen.R}</span> reg ·{' '}
             <span className="font-bold text-coral-500">{resumen.M}</span> malos
           </div>
-          <button onClick={enviar} disabled={guardando} className="btn-primary ml-auto">
+          <button onClick={enviarOperaciones} disabled={guardando} className="btn-primary ml-auto">
             {guardando ? 'Guardando…' : '✅ Terminar y firmar'}
           </button>
         </div>
