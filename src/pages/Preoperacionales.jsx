@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { listPreoperacionales, fechaLocalISO } from '../lib/db'
+import { listPreoperacionales, listVehiculos, fechaLocalISO, slugify } from '../lib/db'
 import { descargarExcel } from '../lib/excel'
 import { useEmpresa } from '../context/EmpresaContext'
+import { useAuth } from '../context/AuthContext'
 import { SECCIONES, LEYENDA, TIPO } from '../lib/preoperacional'
 
 const PERIODOS = [
@@ -37,6 +38,8 @@ const nombreEstado = (r) => (r.tipo && r.tipo !== TIPO.PREOP) ? '—' : (r.estad
 export default function Preoperacionales() {
   const navigate = useNavigate()
   const { empresa } = useEmpresa() || {}
+  const { esPropietario, propietarioId } = useAuth()
+  const [copiado, setCopiado] = useState(false)
   const [periodo, setPeriodo] = useState('mes')
   const [ancla, setAncla] = useState(fechaLocalISO())
   const [placa, setPlaca] = useState('')
@@ -51,7 +54,13 @@ export default function Preoperacionales() {
   async function cargar() {
     setCargando(true); setBuscado(true)
     try {
-      const data = await listPreoperacionales({ empresaId: empresa?.id, placa, conductor, desde, hasta })
+      let data = await listPreoperacionales({ empresaId: empresa?.id, placa, conductor, desde, hasta })
+      // El propietario solo ve las preoperacionales de SUS vehículos.
+      if (esPropietario && propietarioId) {
+        const vs = await listVehiculos({ empresaId: empresa?.id })
+        const mias = new Set(vs.filter((v) => String(v.propietario_id) === String(propietarioId)).map((v) => String(v.id)))
+        data = data.filter((r) => mias.has(String(r.vehiculo_id)))
+      }
       setRows(data)
     } catch { setRows([]) }
     setCargando(false)
@@ -73,6 +82,12 @@ export default function Preoperacionales() {
   }
 
   const mesActual = ancla.slice(0, 7)
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
+  const slug = empresa?.slug || slugify(empresa?.nombre || '')
+  const linkApp = `${origin}/e/${slug}/app`
+  const copiarLink = async () => {
+    try { await navigator.clipboard.writeText(linkApp); setCopiado(true); setTimeout(() => setCopiado(false), 1800) } catch {}
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -83,6 +98,17 @@ export default function Preoperacionales() {
           <button onClick={() => navigate(`/preoperacionales/reporte?placa=${encodeURIComponent(placa)}&mes=${mesActual}`)} className="btn-primary">🖨️ Reporte mensual (PDF)</button>
         </div>
       </div>
+
+      {/* Link de la app de conductores para compartir */}
+      {!esPropietario && empresa && (
+        <div className="card flex flex-wrap items-center gap-3 p-3">
+          <span className="text-sm font-bold text-brand-600">📲 App de conductores:</span>
+          <input readOnly value={linkApp} onFocus={(e) => e.target.select()} className="min-w-0 flex-1 rounded-lg bg-cloud px-3 py-2 text-sm text-ink outline-none" />
+          <button onClick={copiarLink} className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-bold text-white hover:bg-brand-600">
+            {copiado ? '✓ Copiado' : '📋 Copiar link'}
+          </button>
+        </div>
+      )}
 
       {/* Filtros */}
       <div className="card p-4">

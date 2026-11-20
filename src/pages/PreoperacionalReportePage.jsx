@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { listPreoperacionales, fechaLocalISO } from '../lib/db'
+import { listPreoperacionales, listVehiculos, fechaLocalISO } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
+import { useAuth } from '../context/AuthContext'
 import PreoperacionalReporte from '../components/PreoperacionalReporte'
 
 export default function PreoperacionalReportePage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const { empresa } = useEmpresa() || {}
+  const { esPropietario, propietarioId } = useAuth()
   const mes = params.get('mes') || fechaLocalISO().slice(0, 7)
   const placaParam = (params.get('placa') || '').trim().toUpperCase()
 
@@ -21,7 +23,15 @@ export default function PreoperacionalReportePage() {
   const hasta = `${anio}-${String(mesNum).padStart(2, '0')}-${String(new Date(anio, mesNum, 0).getDate()).padStart(2, '0')}`
 
   useEffect(() => {
-    listPreoperacionales({ empresaId: empresa?.id, desde, hasta }).then(setRows).catch(() => setRows([]))
+    (async () => {
+      let data = await listPreoperacionales({ empresaId: empresa?.id, desde, hasta })
+      if (esPropietario && propietarioId) {
+        const vs = await listVehiculos({ empresaId: empresa?.id })
+        const mias = new Set(vs.filter((v) => String(v.propietario_id) === String(propietarioId)).map((v) => String(v.id)))
+        data = data.filter((r) => mias.has(String(r.vehiculo_id)))
+      }
+      setRows(data)
+    })().catch(() => setRows([]))
   }, [empresa?.id, mes])
 
   const placas = useMemo(() => [...new Set(rows.map((r) => r.placa).filter(Boolean))].sort(), [rows])
