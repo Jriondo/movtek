@@ -4,6 +4,7 @@ import { getEmpresaPorSlug, vehiculosDeConductor, conductorDeUsuario, preoperaci
 import { TIPO } from '../../lib/preoperacional'
 import { applyTheme } from '../../lib/theme'
 import { activarPwaEmpresa, useInstalar } from '../../lib/pwa'
+import { activarPushConductor } from '../../lib/push'
 import { useAuth } from '../../context/AuthContext'
 import { useEmpresa } from '../../context/EmpresaContext'
 import PasswordInput from '../../components/PasswordInput'
@@ -90,6 +91,20 @@ function Home({ empresa, user, conductorId, onLogout }) {
   const [modal, setModal] = useState('')           // 'taller' | 'descanso' | ''
   const vehiculo = useMemo(() => vehiculos.find((v) => String(v.id) === String(selId)), [vehiculos, selId])
   const { puedeInstalar, instalar } = useInstalar()
+  const [avisos, setAvisos] = useState(typeof Notification !== 'undefined' && Notification.permission === 'granted')
+
+  async function activarAvisos() {
+    const r = await activarPushConductor({ empresa, conductor, email: user?.email })
+    if (r.ok) setAvisos(true)
+    else if (r.motivo === 'sin-permiso') alert('Activa las notificaciones en tu navegador para recibir el recordatorio.')
+    else if (r.motivo === 'no-soportado') alert('Tu teléfono o navegador no soporta notificaciones. Usa Chrome en Android.')
+  }
+  // Si ya dio permiso antes, renueva la suscripción al entrar.
+  useEffect(() => {
+    if (conductor && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      activarPushConductor({ empresa, conductor, email: user?.email }).catch(() => {})
+    }
+  }, [conductor?.id])
 
   async function cargar() {
     setCargando(true)
@@ -140,6 +155,11 @@ function Home({ empresa, user, conductorId, onLogout }) {
         {puedeInstalar && (
           <button onClick={instalar} className="mt-3 w-full rounded-xl border-2 border-dashed border-brand-300 bg-brand-50 px-4 py-2.5 text-sm font-bold text-brand-600">
             📲 Instalar esta app en tu celular
+          </button>
+        )}
+        {!avisos && (
+          <button onClick={activarAvisos} className="mt-2 w-full rounded-xl border-2 border-dashed border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-bold text-amber-700">
+            🔔 Activar recordatorios de preoperacional
           </button>
         )}
 
