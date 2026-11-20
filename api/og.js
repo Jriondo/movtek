@@ -48,8 +48,10 @@ export default async function handler(req, res) {
     <meta property="og:description" content="${esc(desc)}" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="${urlApp}" />
-    <meta property="og:image" content="${origin}/icon-192.png" />
+    <meta property="og:image" content="${origin}/api/logo?slug=${esc(slug)}" />
+    <meta property="og:image:alt" content="${esc(nombre || 'Empresa')}" />
     <meta name="twitter:card" content="summary" />
+    <meta name="twitter:image" content="${origin}/api/logo?slug=${esc(slug)}" />
     <meta name="twitter:title" content="${esc(titulo)}" />
     <meta name="twitter:description" content="${esc(desc)}" />`
 
