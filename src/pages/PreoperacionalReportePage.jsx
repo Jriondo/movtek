@@ -14,6 +14,7 @@ export default function PreoperacionalReportePage() {
   const placaParam = (params.get('placa') || '').trim().toUpperCase()
 
   const [rows, setRows] = useState([])
+  const [vehiculos, setVehiculos] = useState([])
   const [placaSel, setPlacaSel] = useState(placaParam)
   const [descargando, setDescargando] = useState(false)
   const ref = useRef(null)
@@ -34,10 +35,14 @@ export default function PreoperacionalReportePage() {
     })().catch(() => setRows([]))
   }, [empresa?.id, mes])
 
+  // Carga los vehículos para completar la info que falte en la "foto".
+  useEffect(() => { listVehiculos({ empresaId: empresa?.id }).then(setVehiculos).catch(() => setVehiculos([])) }, [empresa?.id])
+
   const placas = useMemo(() => [...new Set(rows.map((r) => r.placa).filter(Boolean))].sort(), [rows])
   useEffect(() => { if (!placaSel && placas.length) setPlacaSel(placas[0]) }, [placas])
 
   const registros = useMemo(() => rows.filter((r) => (r.placa || '').toUpperCase() === placaSel), [rows, placaSel])
+  const vehiculoSel = useMemo(() => vehiculos.find((v) => (v.placa || '').toUpperCase() === placaSel), [vehiculos, placaSel])
 
   async function descargarPdf() {
     if (descargando || !ref.current) return
@@ -80,7 +85,7 @@ export default function PreoperacionalReportePage() {
       ) : (
         <div className="overflow-x-auto">
           <div ref={ref} className="mx-auto w-fit shadow-card">
-            <PreoperacionalReporte empresa={empresa} mes={mes} registros={registros} />
+            <PreoperacionalReporte empresa={empresa} mes={mes} registros={registros} vehiculo={vehiculoSel} />
           </div>
         </div>
       )}

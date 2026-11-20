@@ -5,7 +5,7 @@ import { normalizarPreguntas, TIPO } from '../lib/preoperacional'
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 const LETRA = { B: 'B', R: 'R', M: 'M', NA: 'N/A' }
 
-export default function PreoperacionalReporte({ empresa, mes, registros = [] }) {
+export default function PreoperacionalReporte({ empresa, mes, registros = [], vehiculo = null }) {
   const [anio, mesNum] = (mes || '').split('-').map(Number)
   const diasMes = new Date(anio, mesNum, 0).getDate() || 31
   const dias = Array.from({ length: diasMes }, (_, i) => i + 1)
@@ -22,6 +22,18 @@ export default function PreoperacionalReporte({ empresa, mes, registros = [] }) 
   const info = ultimo // datos "foto" del vehículo
   // Preguntas usadas (de la foto del registro, o las de defecto).
   const preguntas = normalizarPreguntas((registros.find((r) => Array.isArray(r.preguntas) && r.preguntas.length) || {}).preguntas)
+  // Datos del vehículo: de la "foto" del registro; si falta, del vehículo actual.
+  const v = vehiculo || {}
+  const dato = {
+    placa: info.placa || v.placa || '',
+    modelo: info.modelo || v.modelo || '',
+    marca: info.marca || v.marca || '',
+    clase: info.clase || v.clase || '',
+    numero_interno: info.numero_interno || v.numero_interno || '',
+    tarjeta_operacion: info.tarjeta_operacion || v.tarjeta_operacion || '',
+    propietario: info.propietario || v.propietario_nombre || v.propietario || '',
+    kilometraje: info.kilometraje || '',
+  }
 
   const cel = (itemKey, d) => {
     const r = porDia[d]
@@ -81,16 +93,16 @@ export default function PreoperacionalReporte({ empresa, mes, registros = [] }) 
           <tr><td className="pr-band" colSpan={8}>INFORMACIÓN GENERAL</td></tr>
           <tr>
             <td><span className="pr-k">Fecha:</span> 01/{String(mesNum).padStart(2, '0')}/{anio} - {diasMes}/{String(mesNum).padStart(2, '0')}/{anio}</td>
-            <td colSpan={2}><span className="pr-k">Placa:</span> {info.placa || ''}</td>
-            <td><span className="pr-k">Modelo:</span> {info.modelo || ''}</td>
-            <td><span className="pr-k">Clase:</span> {info.clase || ''}</td>
-            <td colSpan={3}><span className="pr-k">Nro interno:</span> {info.numero_interno || ''}</td>
+            <td colSpan={2}><span className="pr-k">Placa:</span> {dato.placa}</td>
+            <td><span className="pr-k">Modelo:</span> {dato.modelo}</td>
+            <td><span className="pr-k">Clase:</span> {dato.clase}</td>
+            <td colSpan={3}><span className="pr-k">Nro interno:</span> {dato.numero_interno}</td>
           </tr>
           <tr>
-            <td><span className="pr-k">Propietario:</span> {info.propietario || ''}</td>
-            <td colSpan={2}><span className="pr-k">Marca:</span> {info.marca || ''}</td>
-            <td colSpan={2}><span className="pr-k">Tarjeta operación:</span> {info.tarjeta_operacion || ''}</td>
-            <td colSpan={3}><span className="pr-k">Kilometraje:</span> {info.kilometraje || ''}</td>
+            <td><span className="pr-k">Propietario:</span> {dato.propietario}</td>
+            <td colSpan={2}><span className="pr-k">Marca:</span> {dato.marca}</td>
+            <td colSpan={2}><span className="pr-k">Tarjeta operación:</span> {dato.tarjeta_operacion}</td>
+            <td colSpan={3}><span className="pr-k">Kilometraje:</span> {dato.kilometraje}</td>
           </tr>
           <tr>
             <td colSpan={8}>
@@ -111,7 +123,7 @@ export default function PreoperacionalReporte({ empresa, mes, registros = [] }) 
         <tbody>
           {preguntas.map((it) => (
             <tr key={it.key}>
-              <td className="pr-itm">{it.titulo}</td>
+              <td className="pr-itm"><b>{it.titulo}</b>{it.descripcion ? <span style={{ fontWeight: 'normal', color: '#475569' }}>: {it.descripcion}</span> : ''}</td>
               {dias.map((d) => <td key={d} className="pr-c" style={{ color: colorCel(it.key, d), fontWeight: cel(it.key, d) && cel(it.key, d) !== 'B' ? 'bold' : 'normal' }}>{cel(it.key, d)}</td>)}
             </tr>
           ))}
