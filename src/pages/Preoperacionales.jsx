@@ -1,0 +1,201 @@
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { listPreoperacionales, fechaLocalISO } from '../lib/db'
+import { descargarExcel } from '../lib/excel'
+import { useEmpresa } from '../context/EmpresaContext'
+import { SECCIONES, LEYENDA, TIPO } from '../lib/preoperacional'
+
+const PERIODOS = [
+  { v: 'dia', label: 'Día' },
+  { v: 'semana', label: 'Semana' },
+  { v: 'mes', label: 'Mes' },
+  { v: 'anio', label: 'Año' },
+]
+
+// Calcula el rango [desde, hasta] (YYYY-MM-DD) según el periodo y una fecha ancla.
+function rango(periodo, anclaISO) {
+  const d = new Date(anclaISO + 'T12:00:00')
+  const iso = (x) => fechaLocalISO(x)
+  if (periodo === 'dia') return [iso(d), iso(d)]
+  if (periodo === 'semana') {
+    const dia = (d.getDay() + 6) % 7 // lunes=0
+    const lun = new Date(d); lun.setDate(d.getDate() - dia)
+    const dom = new Date(lun); dom.setDate(lun.getDate() + 6)
+    return [iso(lun), iso(dom)]
+  }
+  if (periodo === 'mes') {
+    const a = new Date(d.getFullYear(), d.getMonth(), 1)
+    const b = new Date(d.getFullYear(), d.getMonth() + 1, 0)
+    return [iso(a), iso(b)]
+  }
+  return [`${d.getFullYear()}-01-01`, `${d.getFullYear()}-12-31`]
+}
+
+const nombreTipo = (t) => t === TIPO.TALLER ? '🔧 En taller' : t === TIPO.DESCANSO ? '🛌 En descanso' : '📋 Preoperacional'
+const nombreEstado = (r) => (r.tipo && r.tipo !== TIPO.PREOP) ? '—' : (r.estado_general === 'novedad' ? '⚠️ Con novedad' : '✅ OK')
+
+export default function Preoperacionales() {
+  const navigate = useNavigate()
+  const { empresa } = useEmpresa() || {}
+  const [periodo, setPeriodo] = useState('mes')
+  const [ancla, setAncla] = useState(fechaLocalISO())
+  const [placa, setPlaca] = useState('')
+  const [conductor, setConductor] = useState('')
+  const [rows, setRows] = useState([])
+  const [cargando, setCargando] = useState(false)
+  const [detalle, setDetalle] = useState(null)
+
+  const [desde, hasta] = useMemo(() => rango(periodo, ancla), [periodo, ancla])
+
+  async function cargar() {
+    setCargando(true)
+    try {
+      const data = await listPreoperacionales({ empresaId: empresa?.id, placa, conductor, desde, hasta })
+      setRows(data)
+    } catch { setRows([]) }
+    setCargando(false)
+  }
+  useEffect(() => { cargar() }, [empresa?.id, periodo, ancla, placa, conductor])
+
+  function exportarExcel() {
+    const cols = [
+      { label: 'Fecha', get: (r) => r.fecha }, { label: 'Hora', get: (r) => r.hora || '' },
+      { label: 'Placa', get: (r) => r.placa || '' }, { label: 'Móvil', get: (r) => r.numero_interno || '' },
+      { label: 'Conductor', get: (r) => r.conductor_nombre || '' }, { label: 'Documento', get: (r) => r.conductor_doc || '' },
+      { label: 'Kilometraje', get: (r) => r.kilometraje || '' }, { label: 'Tipo', get: (r) => nombreTipo(r.tipo) },
+      { label: 'Estado', get: (r) => nombreEstado(r) },
+      { label: 'Novedades', get: (r) => Object.values(r.respuestas || {}).filter((v) => v === 'R' || v === 'M').length },
+      { label: 'Nota', get: (r) => r.nota || '' },
+    ]
+    descargarExcel(`Preoperacionales_${desde}_a_${hasta}`, cols, rows, `Preoperacionales ${empresa?.nombre || ''} (${desde} a ${hasta})`)
+  }
+
+  const mesActual = ancla.slice(0, 7)
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="font-display text-2xl font-extrabold text-ink">📋 Preoperacionales</h1>
+        <div className="flex flex-wrap gap-2">
+          <button onClick={exportarExcel} className="btn-ghost">⬇️ Excel</button>
+          <button onClick={() => navigate(`/preoperacionales/reporte?placa=${encodeURIComponent(placa)}&mes=${mesActual}`)} className="btn-primary">🖨️ Reporte mensual (PDF)</button>
+        </div>
+      </div>
+
+      {/* Filtros */}
+      <div className="card p-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <label className="label">Periodo</label>
+            <div className="mt-1 flex gap-1 rounded-xl bg-cloud p-1">
+              {PERIODOS.map((p) => (
+                <button key={p.v} onClick={() => setPeriodo(p.v)}
+                  className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-bold transition ${periodo === p.v ? 'bg-white text-brand-600 shadow-card' : 'text-ink-soft'}`}>{p.label}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="label">Fecha</label>
+            <input type="date" className="input mt-1" value={ancla} onChange={(e) => setAncla(e.target.value)} />
+          </div>
+          <div>
+            <label className="label">Buscar placa</label>
+            <input className="input mt-1" value={placa} onChange={(e) => setPlaca(e.target.value.toUpperCase())} placeholder="Ej. GQZ874" />
+          </div>
+          <div>
+            <label className="label">Buscar conductor</label>
+            <input className="input mt-1" value={conductor} onChange={(e) => setConductor(e.target.value)} placeholder="Nombre o documento" />
+          </div>
+        </div>
+        <p className="mt-2 text-xs text-ink-soft">Mostrando del <b>{desde}</b> al <b>{hasta}</b> · {rows.length} registro(s).</p>
+      </div>
+
+      {/* Tabla */}
+      <div className="card overflow-x-auto p-0">
+        <table className="w-full text-sm">
+          <thead className="bg-cloud text-left text-xs uppercase tracking-wide text-ink-soft">
+            <tr>
+              <th className="px-3 py-2.5">Fecha</th><th className="px-3 py-2.5">Placa</th>
+              <th className="px-3 py-2.5">Conductor</th><th className="px-3 py-2.5">Km</th>
+              <th className="px-3 py-2.5">Tipo</th><th className="px-3 py-2.5">Estado</th><th className="px-3 py-2.5"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {cargando ? (
+              <tr><td colSpan={7} className="px-3 py-8 text-center text-ink-faint">Cargando…</td></tr>
+            ) : rows.length === 0 ? (
+              <tr><td colSpan={7} className="px-3 py-8 text-center text-ink-faint">No hay preoperacionales en este periodo.</td></tr>
+            ) : rows.map((r) => (
+              <tr key={r.id} className="border-t border-cloud-line">
+                <td className="whitespace-nowrap px-3 py-2.5">{r.fecha} <span className="text-ink-faint">{r.hora}</span></td>
+                <td className="px-3 py-2.5 font-semibold">{r.placa}</td>
+                <td className="px-3 py-2.5">{r.conductor_nombre}</td>
+                <td className="px-3 py-2.5 tabular-nums">{r.kilometraje || '—'}</td>
+                <td className="whitespace-nowrap px-3 py-2.5">{nombreTipo(r.tipo)}</td>
+                <td className="whitespace-nowrap px-3 py-2.5">{nombreEstado(r)}</td>
+                <td className="px-3 py-2.5 text-right">
+                  {(!r.tipo || r.tipo === TIPO.PREOP) && <button onClick={() => setDetalle(r)} className="text-xs font-semibold text-brand-500 hover:underline">Ver</button>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {detalle && <DetalleModal r={detalle} onClose={() => setDetalle(null)} />}
+    </div>
+  )
+}
+
+function DetalleModal({ r, onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={onClose}>
+      <div className="card max-h-[85vh] w-full max-w-lg overflow-y-auto p-5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="font-display text-lg font-extrabold text-ink">{r.placa} · {r.fecha}</h2>
+            <p className="text-sm text-ink-soft">{r.conductor_nombre} · Km {r.kilometraje || '—'} · {r.hora}</p>
+          </div>
+          <button onClick={onClose} className="text-ink-faint hover:text-ink">✕</button>
+        </div>
+
+        {r.salud && Object.keys(r.salud).length > 0 && (
+          <div className="mt-3 rounded-xl bg-cloud p-3 text-sm">
+            <p className="mb-1 font-bold text-ink">Salud</p>
+            <p className="text-ink-soft">
+              {['durmio_bien', 'condiciones', 'alcohol', 'medicamentos', 'sintomas'].filter((k) => r.salud[k]).map((k) => `${k}: ${r.salud[k]}`).join(' · ')}
+            </p>
+          </div>
+        )}
+
+        {SECCIONES.map((sec) => (
+          <div key={sec.titulo} className="mt-3">
+            <p className="mb-1 font-bold text-brand-600">{sec.titulo}</p>
+            <div className="flex flex-col gap-1">
+              {sec.items.map((it) => {
+                const v = r.respuestas?.[it.key]
+                const mal = v === 'R' || v === 'M'
+                return (
+                  <div key={it.key} className={`flex items-start justify-between gap-2 rounded-lg px-2 py-1 text-xs ${mal ? 'bg-coral-400/10' : ''}`}>
+                    <span className="text-ink">{it.label}</span>
+                    <span className={`whitespace-nowrap font-bold ${mal ? 'text-coral-500' : 'text-ink-soft'}`}>{LEYENDA[v] || '—'}</span>
+                  </div>
+                )
+              })}
+              {sec.items.map((it) => r.observaciones?.[it.key] ? (
+                <p key={'o' + it.key} className="px-2 text-xs italic text-coral-500">• {it.label}: {r.observaciones[it.key]}</p>
+              ) : null)}
+            </div>
+          </div>
+        ))}
+
+        {r.firma_url && (
+          <div className="mt-3">
+            <p className="mb-1 font-bold text-ink">Firma</p>
+            <img src={r.firma_url} alt="firma" className="h-20 rounded-lg border border-cloud-line bg-white object-contain" />
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

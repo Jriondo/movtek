@@ -15,6 +15,7 @@ const nav = [
   { to: '/vehiculos', label: 'Vehículos', icon: 'vehiculo', roles: ['admin', 'operativo', 'propietario'] },
   { to: '/destinos', label: 'Matriz destinos', icon: 'mapa', roles: ['admin', 'operativo'] },
   { to: '/fuec', label: 'FUEC', icon: 'fuec', roles: ['admin', 'operativo', 'propietario'] },
+  { to: '/preoperacionales', label: 'Preoperacionales', icon: 'reportes', roles: ['admin', 'operativo', 'propietario'] },
   { to: '/empresas', label: 'Empresas', icon: 'empresa', roles: ['admin'] },
   { to: '/usuarios', label: 'Usuarios', icon: 'usuarios', roles: ['admin'] },
   { to: '/historial', label: 'Historial', icon: 'reportes', roles: ['admin'] },

@@ -425,3 +425,5 @@ create index if not exists idx_preop_conductor on preoperacionales (conductor_id
 alter table preoperacionales enable row level security;
 drop policy if exists dev_preop_all on preoperacionales;
 create policy dev_preop_all on preoperacionales for all using (true) with check (true);
+
+alter table empresas add column if not exists eslogan text;

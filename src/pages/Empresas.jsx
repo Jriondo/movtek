@@ -11,7 +11,7 @@ import supertransporteImg from '../assets/supertransporte.webp'
 
 const VACIO = {
   nombre: '', slug: '', razon_social: '', nit: '', direccion: '', ciudad: '',
-  telefonos: '', email: '', resolucion: '', dir_territorial: '', anio_habilitacion: '',
+  telefonos: '', email: '', resolucion: '', dir_territorial: '', anio_habilitacion: '', eslogan: '',
   color_primario: '#10b981', color_acento: '#84cc16', logo_url: '', firma_url: '',
 }
 
@@ -151,6 +151,7 @@ export default function Empresas() {
           </Field>
           <Field label="Razón social"><input className="input" value={form.razon_social} onChange={(e) => set('razon_social', e.target.value)} /></Field>
           <Field label="NIT"><input className="input" value={form.nit} onChange={(e) => set('nit', e.target.value)} /></Field>
+          <Field label="Eslogan (aparece en reportes)"><input className="input" value={form.eslogan} onChange={(e) => set('eslogan', e.target.value)} placeholder="Ej. Comprometidos con un transporte seguro y confiable" /></Field>
           <Field label="Dirección"><input className="input" value={form.direccion} onChange={(e) => set('direccion', e.target.value)} /></Field>
           <Field label="Ciudad"><input className="input" value={form.ciudad} onChange={(e) => set('ciudad', e.target.value)} /></Field>
           <Field label="Teléfonos"><input className="input" value={form.telefonos} onChange={(e) => set('telefonos', e.target.value)} /></Field>

@@ -26,6 +26,8 @@ import Historial from './pages/Historial'
 import NuevaPassword from './pages/NuevaPassword'
 import AccesoEmpresa from './pages/AccesoEmpresa'
 import AppConductor from './pages/app/AppConductor'
+import Preoperacionales from './pages/Preoperacionales'
+import PreoperacionalReportePage from './pages/PreoperacionalReportePage'
 
 // Protege las rutas internas: si no hay sesión, manda al login.
 function Protected({ children }) {
@@ -96,6 +98,8 @@ export default function App() {
         <Route path="fuec/duplicar/:id" element={<FuecForm duplicar />} />
         <Route path="fuec/:id" element={<FuecForm />} />
         <Route path="fuec/:id/imprimir" element={<FuecImprimir />} />
+        <Route path="preoperacionales" element={<Preoperacionales />} />
+        <Route path="preoperacionales/reporte" element={<PreoperacionalReportePage />} />
         <Route path="usuarios" element={<Usuarios />} />
         <Route path="empresas" element={<Empresas />} />
         <Route path="historial" element={<Historial />} />
