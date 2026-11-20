@@ -1,0 +1,76 @@
+name: Generar APKs de empresas
+
+# Se ejecuta:
+#  - manualmente (Actions -> Generar APKs -> Run)
+#  - cada hora (recoge empresas nuevas y genera su APK)
+#  - por "repository_dispatch" (para disparo inmediato desde Supabase, opcional)
+on:
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Regenerar TODOS los APK (aunque ya existan)"
+        type: boolean
+        default: false
+  schedule:
+    - cron: "17 * * * *"
+  repository_dispatch:
+    types: [build-apks]
+
+permissions:
+  contents: write
+
+env:
+  # Datos PÚBLICOS del proyecto (la llave publishable es pública, va en el frontend).
+  SUPABASE_URL: "https://vvrvblpourmnjxocbswp.supabase.co"
+  SUPABASE_KEY: "sb_publishable_TjGbC1g1WhmSddT6GYxCbg_fDiDEABK"
+  BASE_URL: "https://movtek.vercel.app"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Herramientas (ImageMagick, jq)
+        run: sudo apt-get update && sudo apt-get install -y imagemagick jq
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Componentes del SDK
+        run: yes | sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" >/dev/null
+
+      - name: Generar APK de cada empresa (solo las que falten)
+        run: |
+          set -e
+          FORCE="${{ github.event.inputs.force }}"
+          EMP=$(curl -fsSL "$SUPABASE_URL/rest/v1/empresas?select=slug,nombre" \
+                 -H "apikey: $SUPABASE_KEY" -H "Authorization: Bearer $SUPABASE_KEY")
+          echo "$EMP" | jq -r '.[] | select(.slug != null and .slug != "") | [.slug, .nombre] | @tsv' \
+          | while IFS=$'\t' read -r slug nombre; do
+              if [ "$FORCE" = "true" ] || [ ! -f "public/apk/$slug.apk" ]; then
+                echo "::group::APK $slug"
+                bash android/build_apk.sh "$slug" "$nombre" "$BASE_URL" || echo "Falló $slug (se continúa)"
+                echo "::endgroup::"
+              else
+                echo "APK ya existe: $slug (se omite)"
+              fi
+            done
+
+      - name: Publicar los APK nuevos (commit)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/apk
+          if git diff --cached --quiet; then
+            echo "Sin APK nuevos."
+          else
+            git commit -m "APKs: generar/actualizar APK de empresas [skip ci]"
+            git push
+          fi
