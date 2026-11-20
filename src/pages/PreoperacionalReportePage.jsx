@@ -58,7 +58,7 @@ export default function PreoperacionalReportePage() {
     try {
       const [{ jsPDF }, h2c] = await Promise.all([import('jspdf'), import('html2canvas-pro')])
       const html2canvas = h2c.default
-      const canvas = await html2canvas(ref.current, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false })
+      const canvas = await html2canvas(ref.current, { scale: 3, backgroundColor: '#ffffff', useCORS: true, logging: false })
       const pdf = new jsPDF({ unit: 'mm', format: 'letter', orientation: 'landscape' })
       const pw = pdf.internal.pageSize.getWidth(), ph = pdf.internal.pageSize.getHeight()
       // Llena TODA la hoja (con un pequeño margen), sin dejar espacio en blanco.
@@ -67,6 +67,19 @@ export default function PreoperacionalReportePage() {
       pdf.save(`Preoperacional-${placaSel}-${mes}.pdf`)
     } catch (e) { alert('No se pudo generar el PDF. ' + (e?.message || '')) }
     setDescargando(false)
+  }
+
+  // Botón de emergencia: borra la caché/service worker y recarga para quedar en la última versión.
+  async function actualizarApp() {
+    try {
+      const regs = (await navigator.serviceWorker?.getRegistrations?.()) || []
+      await Promise.all(regs.map((r) => r.unregister()))
+    } catch {}
+    try {
+      const keys = (await caches?.keys?.()) || []
+      await Promise.all(keys.map((k) => caches.delete(k)))
+    } catch {}
+    window.location.reload()
   }
 
   const nombreMes = new Date(anio, mesNum - 1, 1).toLocaleDateString('es', { month: 'long', year: 'numeric' })
@@ -93,6 +106,7 @@ export default function PreoperacionalReportePage() {
           </select>
         )}
         <div className="ml-auto flex gap-2">
+          <button onClick={actualizarApp} className="btn-ghost" title="Si ves una versión vieja, actualiza">⟳ Actualizar</button>
           <button onClick={descargarPdf} disabled={descargando || !registros.length} className="btn-primary">{descargando ? '⏳ Generando…' : '📥 Descargar PDF'}</button>
           <button onClick={() => window.print()} disabled={!registros.length} className="btn-ghost">🖨️ Imprimir</button>
         </div>
