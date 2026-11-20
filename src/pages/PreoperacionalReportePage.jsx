@@ -73,7 +73,17 @@ export default function PreoperacionalReportePage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <style>{`@media print { header, aside, .no-print { display:none !important; } main { padding:0 !important; } }`}</style>
+      <style>{`
+        @media print {
+          @page { size: Letter landscape; margin: 6mm; }
+          header, aside, .no-print, .aviso-actualizacion { display:none !important; }
+          main { padding:0 !important; }
+          body { background:#fff !important; }
+          /* El reporte (1056px) se reduce para caber en la hoja horizontal. */
+          .preop-rep { zoom: 0.9; }
+          .preop-report-wrap { overflow: visible !important; box-shadow:none !important; }
+        }
+      `}</style>
       <div className="flex flex-wrap items-center gap-2 no-print">
         <button onClick={() => navigate('/preoperacionales')} className="btn-ghost">← Volver</button>
         <span className="font-display text-sm font-bold text-ink">Reporte mensual · {nombreMes}</span>
@@ -91,7 +101,7 @@ export default function PreoperacionalReportePage() {
       {registros.length === 0 ? (
         <div className="card p-8 text-center text-ink-faint">No hay preoperacionales de <b>{placaSel || 'esa placa'}</b> en {nombreMes}.</div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="preop-report-wrap overflow-x-auto">
           <div ref={ref} className="mx-auto w-fit shadow-card">
             <PreoperacionalReporte empresa={empresa} mes={mes} registros={registros} vehiculo={vehiculoSel} propietarioNombre={propNombre} />
           </div>
