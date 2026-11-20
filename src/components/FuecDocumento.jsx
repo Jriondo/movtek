@@ -78,6 +78,16 @@ export default function FuecDocumento({ f, empresa, qr }) {
   const [av, mv, dv] = dmy(f.vigencia_fin)
   const marca = (estr === 'CONVENIO' ? 'conv' : estr === 'CONSORCIO' ? 'cons' : estr === 'UNIÓN TEMPORAL' ? 'ut' : '')
 
+  // Alto de las filas de conductor según cuántos haya: con 1 van más altas y, al sumar
+  // (hasta 7), se adelgazan para que el documento siga cabiendo en 2 hojas.
+  const nCond = Math.max(1, (f.conductores || []).length)
+  const condPadY = Math.max(1, 6 - (nCond - 1) * 0.8)          // 1→6px, 2→5.2, 3→4.4, … 7→1.2
+  const condRow = { height: 'auto' }
+  const condCell = {
+    paddingTop: condPadY + 'px', paddingBottom: condPadY + 'px',
+    lineHeight: 1.1, fontSize: nCond >= 6 ? '9px' : undefined,
+  }
+
   return (
     <div className="fuec">
       <style>{`
@@ -221,13 +231,14 @@ export default function FuecDocumento({ f, empresa, qr }) {
           <tr className="center tall"><td colSpan={2}>{f.movil || ''}</td><td colSpan={2}>{f.tarjeta_operacion || ''}</td></tr>
         </tbody></table>
 
-        {/* Conductores */}
+        {/* Conductores — las filas se adelgazan según cuántos haya (1 = más altas, hasta 7 = delgadas)
+            para que el FUEC siga cabiendo en 2 hojas. */}
         <table><colgroup><col style={{ width: '45%' }} /><col style={{ width: '18%' }} /><col style={{ width: '22%' }} /><col style={{ width: '15%' }} /></colgroup><tbody>
           <tr className="center b sm"><td>NOMBRES Y APELLIDOS.</td><td>NUMERO CÉDULA</td><td>NUMERO DE LICENCIA CONDUCCION</td><td>VIGENCIA</td></tr>
           {(f.conductores || []).map((c, i) => (
-            <tr key={i} className="center">
-              <td style={{ textAlign: 'left' }}><span className="sm" style={{ color: '#333' }}>DATOS DEL CONDUCTOR</span>&nbsp;&nbsp;{i + 1}- {c.nombre}</td>
-              <td>{c.documento || ''}</td><td>{c.licencia_numero || ''}</td><td>{fmt(c.licencia_vencimiento)}</td>
+            <tr key={i} className="center" style={condRow}>
+              <td style={{ textAlign: 'left', ...condCell }}><span className="sm" style={{ color: '#333' }}>DATOS DEL CONDUCTOR</span>&nbsp;&nbsp;{i + 1}- {c.nombre}</td>
+              <td style={condCell}>{c.documento || ''}</td><td style={condCell}>{c.licencia_numero || ''}</td><td style={condCell}>{fmt(c.licencia_vencimiento)}</td>
             </tr>
           ))}
           {!(f.conductores || []).length && <tr><td colSpan={4} className="center sm">Sin conductores</td></tr>}
