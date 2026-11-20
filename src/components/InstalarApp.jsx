@@ -53,38 +53,41 @@ export default function InstalarApp({ empresa }) {
     )
   }
 
-  // Android
+  // Android: se ofrecen LAS DOS opciones; el usuario elige la que le funcione.
   return (
-    <div className="mb-4">
+    <div className="mb-4 rounded-2xl border-2 p-3" style={{ borderColor: color, background: color + '0d' }}>
+      <p className="mb-2 text-center text-sm font-bold text-ink">Instala la app (elige una opción)</p>
+
+      {/* Opción 1: descargar el APK */}
       {apkListo === false ? (
-        <div className="rounded-xl border-2 border-dashed p-3 text-center text-sm" style={{ borderColor: color }}>
-          <p className="font-bold text-ink">⏳ Tu app se está preparando</p>
-          <p className="mt-1 text-xs text-ink-soft">El instalador de tu empresa estará listo en un momento. Mientras tanto puedes instalarla desde el navegador:</p>
-          <button onClick={instalarNavegador} className="mt-2 w-full rounded-lg px-3 py-2 text-sm font-bold text-white" style={{ background: color }}>
-            📲 Instalar desde el navegador
-          </button>
-          {pasos && <p className="mt-2 text-xs text-ink-soft">Menú <b>⋮</b> de Chrome → <b>“Instalar aplicación”</b>.</p>}
+        <div className="rounded-xl border border-dashed p-2.5 text-center text-xs text-ink-soft" style={{ borderColor: color }}>
+          ⏳ <b>Opción 1 — Descargar APK:</b> se está preparando el instalador de tu empresa. Intenta en un momento, o usa la Opción 2.
         </div>
       ) : (
-        <>
-          <a href={apkUrl} download
-            className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-base font-extrabold text-white shadow-glow"
-            style={{ background: color }}>
-            ⬇️ Descargar app (Android)
-          </a>
-          <p className="mt-2 text-center text-xs text-ink-soft">
-            Al abrir el archivo, si el teléfono lo pide, activa <b>“Permitir de esta fuente”</b> y toca <b>Instalar</b>.
-          </p>
-          <button onClick={instalarNavegador} className="mt-2 w-full text-center text-xs font-semibold text-ink-faint hover:text-brand-500">
-            o instalar sin descargar archivo
-          </button>
-          {pasos && (
-            <p className="mt-2 text-center text-xs text-ink-soft">
-              Para instalar sin archivo: menú <b>⋮</b> de Chrome → <b>“Instalar aplicación”</b>.
-            </p>
-          )}
-        </>
+        <a href={apkUrl} download
+          className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-base font-extrabold text-white shadow-glow"
+          style={{ background: color }}>
+          ⬇️ Opción 1 · Descargar APK
+        </a>
       )}
+
+      <div className="my-2 text-center text-xs font-bold text-ink-faint">— o —</div>
+
+      {/* Opción 2: instalar como app (PWA) */}
+      <button onClick={instalarNavegador}
+        className="flex w-full items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-base font-extrabold"
+        style={{ borderColor: color, color }}>
+        📲 Opción 2 · Instalar como app
+      </button>
+
+      {pasos && (
+        <p className="mt-2 text-center text-xs text-ink-soft">
+          Si no se abrió el instalador, usa el menú <b>⋮</b> de Chrome → <b>“Instalar aplicación”</b>.
+        </p>
+      )}
+      <p className="mt-2 text-center text-[11px] text-ink-faint">
+        Con la <b>Opción 1</b>, al abrir el archivo activa <b>“Permitir de esta fuente”</b> y toca Instalar.
+      </p>
     </div>
   )
 }
