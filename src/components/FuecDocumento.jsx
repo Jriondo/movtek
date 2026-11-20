@@ -87,6 +87,10 @@ export default function FuecDocumento({ f, empresa, qr }) {
     paddingTop: condPadY + 'px', paddingBottom: condPadY + 'px',
     lineHeight: 1.1, fontSize: nCond >= 6 ? '9px' : undefined,
   }
+  // Las celdas del vehículo (placa, modelo, marca, clase, nº interno, tarjeta) también bajan de alto
+  // cuando hay más conductores, para cederles espacio.
+  const vehPadY = Math.max(2, 7 - nCond)                      // 1→6px … 5-7→2px
+  const vehCell = { paddingTop: vehPadY + 'px', paddingBottom: vehPadY + 'px', lineHeight: 1.1 }
 
   return (
     <div className="fuec">
@@ -226,9 +230,9 @@ export default function FuecDocumento({ f, empresa, qr }) {
         <table><tbody>
           <tr><td className="sec" colSpan={4}>CARACTERÍSTICAS DEL VEHÍCULO</td></tr>
           <tr className="center b"><td>PLACA</td><td>MODELO</td><td>MARCA</td><td>CLASE</td></tr>
-          <tr className="center tall" style={{ fontSize: '11px' }}><td className="b">{f.placa}</td><td>{f.modelo || ''}</td><td>{f.marca || ''}</td><td>{f.clase || ''}</td></tr>
+          <tr className="center" style={{ fontSize: '11px' }}><td className="b" style={vehCell}>{f.placa}</td><td style={vehCell}>{f.modelo || ''}</td><td style={vehCell}>{f.marca || ''}</td><td style={vehCell}>{f.clase || ''}</td></tr>
           <tr className="center b"><td colSpan={2}>NÚMERO INTERNO</td><td colSpan={2}>NÚMERO DE TARJETA DE OPERACIÓN</td></tr>
-          <tr className="center tall"><td colSpan={2}>{f.movil || ''}</td><td colSpan={2}>{f.tarjeta_operacion || ''}</td></tr>
+          <tr className="center"><td colSpan={2} style={vehCell}>{f.movil || ''}</td><td colSpan={2} style={vehCell}>{f.tarjeta_operacion || ''}</td></tr>
         </tbody></table>
 
         {/* Conductores — las filas se adelgazan según cuántos haya (1 = más altas, hasta 7 = delgadas)
