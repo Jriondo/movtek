@@ -58,7 +58,16 @@ export default function PreoperacionalReportePage() {
     try {
       const [{ jsPDF }, h2c] = await Promise.all([import('jspdf'), import('html2canvas-pro')])
       const html2canvas = h2c.default
-      const canvas = await html2canvas(ref.current, { scale: 3, backgroundColor: '#ffffff', useCORS: true, logging: false })
+      const anchoReal = ref.current.scrollWidth || 1056
+      const altoReal = ref.current.scrollHeight || 800
+      const canvas = await html2canvas(ref.current, {
+        scale: 3, backgroundColor: '#ffffff', useCORS: true, logging: false,
+        // Forzamos el ancho completo del reporte (aunque el celular sea angosto),
+        // para que NUNCA quede espacio en blanco a los lados.
+        width: anchoReal, height: altoReal,
+        windowWidth: anchoReal + 40, windowHeight: altoReal + 40,
+        scrollX: 0, scrollY: 0,
+      })
       const pdf = new jsPDF({ unit: 'mm', format: 'letter', orientation: 'landscape' })
       const pw = pdf.internal.pageSize.getWidth(), ph = pdf.internal.pageSize.getHeight()
       // Llena TODA la hoja (con un pequeño margen), sin dejar espacio en blanco.
