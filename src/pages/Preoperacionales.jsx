@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { listPreoperacionales, listVehiculos, fechaLocalISO, slugify } from '../lib/db'
+import { listPreoperacionales, listVehiculos, fechaLocalISO, slugify, getPropietario, nombrePropietario } from '../lib/db'
 import { descargarExcel } from '../lib/excel'
 import { useEmpresa } from '../context/EmpresaContext'
 import { useAuth } from '../context/AuthContext'
 import { normalizarPreguntas, LEYENDA, TIPO, SALUD, saludEnRiesgo } from '../lib/preoperacional'
+import PreoperacionalReporte from '../components/PreoperacionalReporte'
 
 const PERIODOS = [
   { v: 'dia', label: 'Día' },
@@ -48,6 +49,7 @@ export default function Preoperacionales() {
   const [cargando, setCargando] = useState(false)
   const [buscado, setBuscado] = useState(false)
   const [detalle, setDetalle] = useState(null)
+  const [zip, setZip] = useState({ busy: false, hecho: 0, total: 0 })
 
   const [desde, hasta] = useMemo(() => rango(periodo, ancla), [periodo, ancla])
 
@@ -124,6 +126,74 @@ export default function Preoperacionales() {
     descargarExcel(`Preoperacionales_${desde}_a_${hasta}`, cols, datos, `Preoperacionales ${empresa?.nombre || ''} (${desde} a ${hasta})`)
   }
 
+  // Descarga un ZIP con un PDF (formato oficial) por cada placa del periodo elegido.
+  async function descargarZip() {
+    if (zip.busy) return
+    let datos = rows
+    try { datos = await obtenerDatos() } catch {}
+    if (!datos.length) { alert('No hay registros en este periodo para exportar.'); return }
+
+    // Agrupar por placa.
+    const porPlaca = {}
+    for (const r of datos) { const p = (r.placa || '').toUpperCase() || 'SIN_PLACA'; (porPlaca[p] ||= []).push(r) }
+    const placas = Object.keys(porPlaca).sort()
+    setZip({ busy: true, hecho: 0, total: placas.length })
+
+    try {
+      const [{ default: JSZip }, { jsPDF }, h2c, { createRoot }] = await Promise.all([
+        import('jszip'), import('jspdf'), import('html2canvas-pro'), import('react-dom/client'),
+      ])
+      const html2canvas = h2c.default
+      const vehiculos = await listVehiculos({ empresaId: empresa?.id }).catch(() => [])
+      const mes = ancla.slice(0, 7)
+
+      // Contenedor oculto para renderizar cada reporte.
+      const host = document.createElement('div')
+      host.style.cssText = 'position:fixed;left:-10000px;top:0;width:1056px;background:#fff;z-index:-1;'
+      document.body.appendChild(host)
+
+      const zipFile = new JSZip()
+      let hechos = 0
+      for (const placa of placas) {
+        const registros = porPlaca[placa]
+        const veh = vehiculos.find((v) => (v.placa || '').toUpperCase() === placa)
+        let propNombre = veh?.propietario_nombre || ''
+        if (veh?.propietario_id) { try { const pr = await getPropietario(veh.propietario_id); if (pr) propNombre = nombrePropietario(pr) } catch {} }
+
+        const mount = document.createElement('div'); host.appendChild(mount)
+        const root = createRoot(mount)
+        await new Promise((res) => {
+          root.render(<PreoperacionalReporte empresa={empresa} mes={mes} registros={registros} vehiculo={veh} propietarioNombre={propNombre} />)
+          setTimeout(res, 400)
+        })
+        const el = mount.firstChild
+        const canvas = await html2canvas(el, {
+          scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false,
+          width: el.scrollWidth, height: el.scrollHeight,
+          windowWidth: el.scrollWidth + 40, windowHeight: el.scrollHeight + 40, scrollX: 0, scrollY: 0,
+        })
+        const pdf = new jsPDF({ unit: 'mm', format: 'letter', orientation: 'landscape' })
+        const pw = pdf.internal.pageSize.getWidth(), ph = pdf.internal.pageSize.getHeight(), m = 4
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', m, m, pw - 2 * m, ph - 2 * m)
+        zipFile.file(`${placa}.pdf`, pdf.output('arraybuffer'))
+
+        root.unmount(); mount.remove()
+        hechos++; setZip({ busy: true, hecho: hechos, total: placas.length })
+      }
+      document.body.removeChild(host)
+
+      const blob = await zipFile.generateAsync({ type: 'blob' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url; a.download = `Preoperacionales_${desde}_a_${hasta}.zip`
+      document.body.appendChild(a); a.click(); a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 2000)
+    } catch (e) {
+      alert('No se pudo generar el ZIP. ' + (e?.message || ''))
+    }
+    setZip({ busy: false, hecho: 0, total: 0 })
+  }
+
   const mesActual = ancla.slice(0, 7)
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
   const slug = empresa?.slug || slugify(empresa?.nombre || '')
@@ -139,6 +209,9 @@ export default function Preoperacionales() {
         <div className="flex flex-wrap gap-2">
           {!esPropietario && <button onClick={() => navigate('/preoperacionales/preguntas')} className="btn-ghost">⚙️ Preguntas</button>}
           <button onClick={exportarExcel} className="btn-ghost">⬇️ Excel</button>
+          <button onClick={descargarZip} disabled={zip.busy} className="btn-ghost" title="Un PDF por placa del periodo, en un ZIP">
+            {zip.busy ? `⏳ ZIP ${zip.hecho}/${zip.total}…` : '🗜️ ZIP (PDF x placa)'}
+          </button>
           <button onClick={() => navigate(`/preoperacionales/reporte?placa=${encodeURIComponent(placa)}&mes=${mesActual}`)} className="btn-primary">🖨️ Reporte mensual (PDF)</button>
         </div>
       </div>
