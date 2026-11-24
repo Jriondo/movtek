@@ -1,6 +1,7 @@
 import { supabase, isSupabaseConfigured } from './supabase'
 import { catalogoDestinos, AREAS_METROPOLITANAS } from './colombia'
 import { normalizarPreguntas } from './preoperacional'
+import { subirFirma, subirLogo, esDataUrl } from './storage'
 
 // Capa de datos de Movtek (multiempresa).
 // Con Supabase usa la base real; sin conectar, modo demo en el navegador.
@@ -115,6 +116,8 @@ export async function saveEmpresa(data) {
   const esNuevo = !(payload.id && payload.id !== 'movtek')
   let res
   if (isSupabaseConfigured) {
+    // El logo se guarda en Storage (no en la base) para no llenarla: solo queda la URL.
+    if (esDataUrl(payload.logo_url)) payload.logo_url = await subirLogo(payload.logo_url, payload.slug || payload.id)
     // Si una columna opcional (p. ej. firma_url) aún no existe en la BD, se reintenta sin ella.
     const guardar = async (p) => {
       if (p.id && p.id !== 'movtek') {
@@ -1372,6 +1375,8 @@ export async function savePreoperacional(data) {
   if (!payload.fecha) payload.fecha = fechaLocalISO()
   let res
   if (isSupabaseConfigured) {
+    // La firma se sube a Storage (no base64 en la base): solo se guarda la URL.
+    if (esDataUrl(payload.firma_url)) payload.firma_url = await subirFirma(payload.firma_url, payload.empresa_id)
     const guardar = async (p) => {
       if (p.id) {
         const { id, created_at, ...rest } = p
@@ -1723,3 +1728,44 @@ export const getMantTipos = (empresaId) => getListaEmpresa(empresaId, 'mant_tipo
 export const saveMantTipos = (empresaId, lista) => saveListaEmpresa(empresaId, 'mant_tipos', 'movtek_mant_tipos', lista, MANT_TIPOS_DEFAULT, 'Tipos de mantenimiento')
 export const getRodTurnos = (empresaId) => getListaEmpresa(empresaId, 'rod_turnos', 'movtek_rod_turnos', ROD_TURNOS_DEFAULT)
 export const saveRodTurnos = (empresaId, lista) => saveListaEmpresa(empresaId, 'rod_turnos', 'movtek_rod_turnos', lista, ROD_TURNOS_DEFAULT, 'Turnos de rodamiento')
+
+// ================= ALMACENAMIENTO (Storage vs base) =================
+// Cuenta cuántas imágenes siguen guardadas como base64 dentro de la base (lo que la llena)
+// y cuántas ya están en Storage (solo URL). Estima el espacio ocupado por esas imágenes.
+export async function almacenamientoStats() {
+  if (!isSupabaseConfigured) return null
+  const cnt = async (tabla, col, patron) => {
+    try { const { count } = await supabase.from(tabla).select(col, { count: 'exact', head: true }).like(col, patron); return count || 0 }
+    catch { return 0 }
+  }
+  const firmasBase64 = await cnt('preoperacionales', 'firma_url', 'data:%')
+  const firmasUrl = await cnt('preoperacionales', 'firma_url', 'http%')
+  const logosBase64 = await cnt('empresas', 'logo_url', 'data:%')
+  const logosUrl = await cnt('empresas', 'logo_url', 'http%')
+  // Estimación aproximada (firma ~12 KB, logo ~120 KB) del espacio que ocupan en la BASE.
+  const estMB = (firmasBase64 * 12 + logosBase64 * 120) / 1024
+  return { firmasBase64, firmasUrl, logosBase64, logosUrl, estMB }
+}
+
+// Migra las imágenes base64 que queden en la base a Storage (y deja solo la URL).
+export async function migrarImagenesAStorage(onProgress) {
+  if (!isSupabaseConfigured) return { ok: false, motivo: 'demo' }
+  let firmas = 0, logos = 0
+  try {
+    const { data: pre } = await supabase.from('preoperacionales').select('id,empresa_id,firma_url').like('firma_url', 'data:%')
+    for (const r of (pre || [])) {
+      const url = await subirFirma(r.firma_url, r.empresa_id)
+      if (url && url !== r.firma_url) { await supabase.from('preoperacionales').update({ firma_url: url }).eq('id', r.id); firmas++ }
+      onProgress?.({ firmas, logos })
+    }
+    const { data: emp } = await supabase.from('empresas').select('id,slug,logo_url').like('logo_url', 'data:%')
+    for (const e of (emp || [])) {
+      const url = await subirLogo(e.logo_url, e.slug || e.id)
+      if (url && url !== e.logo_url) { await supabase.from('empresas').update({ logo_url: url }).eq('id', e.id); logos++ }
+      onProgress?.({ firmas, logos })
+    }
+    return { ok: true, firmas, logos }
+  } catch (e) {
+    return { ok: false, motivo: 'error', error: e?.message, firmas, logos }
+  }
+}

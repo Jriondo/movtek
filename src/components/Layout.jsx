@@ -20,6 +20,7 @@ const nav = [
   { to: '/mantenimiento', label: 'Plan de mantenimiento', icon: 'mantenimiento', roles: ['admin', 'operativo', 'propietario'] },
   { to: '/empresas', label: 'Empresas', icon: 'empresa', roles: ['admin'] },
   { to: '/usuarios', label: 'Usuarios', icon: 'usuarios', roles: ['admin'] },
+  { to: '/almacenamiento', label: 'Almacenamiento', icon: 'almacenamiento', roles: ['admin'] },
   { to: '/historial', label: 'Historial', icon: 'libro', roles: ['admin'] },
   { label: 'Reportes', icon: 'reportes', soon: true, roles: ['admin', 'operativo'] },
 ]

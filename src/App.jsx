@@ -35,6 +35,7 @@ const PreoperacionalReportePage = lazy(() => import('./pages/PreoperacionalRepor
 const PreguntasPreop = lazy(() => import('./pages/PreguntasPreop'))
 const PlanRodamiento = lazy(() => import('./pages/PlanRodamiento'))
 const PlanMantenimiento = lazy(() => import('./pages/PlanMantenimiento'))
+const Almacenamiento = lazy(() => import('./pages/Almacenamiento'))
 
 function Cargando() {
   return <div className="grid min-h-screen place-items-center text-ink-faint">Cargando…</div>
@@ -116,6 +117,7 @@ export default function App() {
         <Route path="rodamiento" element={<PlanRodamiento />} />
         <Route path="mantenimiento" element={<PlanMantenimiento />} />
         <Route path="usuarios" element={<Usuarios />} />
+        <Route path="almacenamiento" element={<Almacenamiento />} />
         <Route path="empresas" element={<Empresas />} />
         <Route path="historial" element={<Historial />} />
       </Route>

@@ -16,6 +16,7 @@ const MODULOS = [
   { label: 'Plan de mantenimiento', icon: 'mantenimiento', to: '/mantenimiento', desc: 'Preventivo y bitácora', roles: ['admin', 'operativo', 'propietario'] },
   { label: 'Empresas', icon: 'empresa', to: '/empresas', desc: 'Plataforma de cada empresa', roles: ['admin'] },
   { label: 'Usuarios', icon: 'usuarios', to: '/usuarios', desc: 'Accesos y roles', roles: ['admin'] },
+  { label: 'Almacenamiento', icon: 'almacenamiento', to: '/almacenamiento', desc: 'Espacio y optimización', roles: ['admin'] },
 ]
 
 export default function Inicio() {
