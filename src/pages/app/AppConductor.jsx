@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { getEmpresaPorSlug, vehiculosDeConductor, conductorDeUsuario, preoperacionalHoy, listVehiculos, listFuec, listRodamiento, listMantPlan, estadoMantenimiento, fechaLocalISO } from '../../lib/db'
+import { getEmpresaPorSlug, vehiculosDeConductor, conductorDeUsuario, preoperacionalHoy, listVehiculos, listFuec, listRodamiento, saveRodamiento, listMantPlan, estadoMantenimiento, fechaLocalISO } from '../../lib/db'
 
 // FUEC se carga solo cuando un propietario/admin entra a generarlo (no pesa para el conductor).
 const FuecForm = lazy(() => import('../FuecForm'))
@@ -377,6 +377,7 @@ function MiProgramacion({ empresa, conductor, vehiculos, primary }) {
   const [vista, setVista] = useState('hoy')
   const [rodas, setRodas] = useState([])
   const [alertas, setAlertas] = useState([])
+  const [accion, setAccion] = useState(null)   // { tipo:'terminar'|'cancelar', servicio }
   const hoyISO = fechaLocalISO()
 
   const rangos = useMemo(() => {
@@ -390,13 +391,15 @@ function MiProgramacion({ empresa, conductor, vehiculos, primary }) {
     return { hoy: [hoyISO, hoyISO], semana: [isod(lun), isod(dom)], mes: [isod(m1), isod(m2)] }
   }, [hoyISO])
 
-  useEffect(() => {
+  async function cargarRodas() {
     if (!conductor?.id) return
     const starts = [rangos.semana[0], rangos.mes[0]].sort()[0]
     const ends = [rangos.semana[1], rangos.mes[1]].sort().slice(-1)[0]
-    listRodamiento({ empresaId: empresa?.id, desde: starts, hasta: ends })
-      .then((rs) => setRodas(rs.filter((r) => String(r.conductor_id) === String(conductor.id))))
-      .catch(() => setRodas([]))
+    const rs = await listRodamiento({ empresaId: empresa?.id, desde: starts, hasta: ends }).catch(() => [])
+    setRodas(rs.filter((r) => String(r.conductor_id) === String(conductor.id)))
+  }
+  useEffect(() => {
+    cargarRodas()
     const ids = new Set(vehiculos.map((v) => String(v.id)))
     listMantPlan({ empresaId: empresa?.id })
       .then((ps) => setAlertas(ps.filter((p) => ids.has(String(p.vehiculo_id))).map((p) => ({ ...p, _est: estadoMantenimiento(p) })).filter((p) => p._est !== 'ok')))
@@ -409,6 +412,17 @@ function MiProgramacion({ empresa, conductor, vehiculos, primary }) {
   const fechaCorta = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('es', { weekday: 'short', day: '2-digit', month: 'short' })
   const nVenc = alertas.filter((a) => a._est === 'vencido').length
   const nProx = alertas.filter((a) => a._est === 'proximo').length
+
+  async function guardarAccion({ hora_final, motivo }) {
+    const s = accion.servicio
+    if (accion.tipo === 'terminar') {
+      if (!hora_final) return
+      await saveRodamiento({ ...s, hora_final, estado: 'completado' }).catch(() => {})
+    } else {
+      await saveRodamiento({ ...s, estado: 'cancelado', motivo_cancelacion: motivo || '' }).catch(() => {})
+    }
+    setAccion(null); cargarRodas()
+  }
 
   return (
     <div className="mt-6">
@@ -438,8 +452,11 @@ function MiProgramacion({ empresa, conductor, vehiculos, primary }) {
           {items.map((r) => {
             const hora = (r.hora_inicial || '').slice(0, 5)
             const horaF = (r.hora_final || '').slice(0, 5)
+            const cancelado = r.estado === 'cancelado'
+            const completado = !!horaF && !cancelado
+            const pendiente = !completado && !cancelado
             return (
-              <div key={r.id} className="rounded-xl px-3 py-2.5" style={{ background: '#13201a', border: '1px solid #203a2d' }}>
+              <div key={r.id} className="rounded-xl px-3 py-2.5" style={{ background: cancelado ? '#241515' : '#13201a', border: `1px solid ${cancelado ? '#4a2a2a' : '#203a2d'}` }}>
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-bold capitalize" style={{ color: '#8fb6a3' }}>{fechaCorta(r.fecha)}{r.descripcion ? ` · ${r.descripcion}` : ''}</span>
                   {hora && <span className="rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums" style={{ background: '#172a12', color: '#b6f08a' }}>{hora}{horaF ? `–${horaF}` : ''}</span>}
@@ -447,11 +464,64 @@ function MiProgramacion({ empresa, conductor, vehiculos, primary }) {
                 <p className="font-display text-base font-extrabold" style={{ color: '#eafff3' }}>{r.ruta || 'Sin ruta'}</p>
                 {(r.origen || r.destino) && <p className="text-xs" style={{ color: '#8fb6a3' }}>{r.origen || '—'} → {r.destino || '—'}</p>}
                 <p className="text-[11px]" style={{ color: '#5f8a74' }}>{[r.placa, r.empresa_cliente].filter(Boolean).join(' · ')}</p>
+
+                {completado && <p className="mt-1 text-xs font-bold" style={{ color: '#7dffb9' }}>✓ Terminado{r.tiempo ? ` · ${r.tiempo}` : ''}</p>}
+                {cancelado && <p className="mt-1 text-xs font-bold" style={{ color: '#f5a3a3' }}>✕ No realizado{r.motivo_cancelacion ? ` · ${r.motivo_cancelacion}` : ''}</p>}
+                {pendiente && (
+                  <div className="mt-2 flex gap-2">
+                    <button onClick={() => setAccion({ tipo: 'terminar', servicio: r })} className="flex-1 rounded-lg py-2 text-xs font-extrabold" style={{ background: 'linear-gradient(135deg,#17d36f,#0fb98f)', color: '#042012' }}>✓ Terminé</button>
+                    <button onClick={() => setAccion({ tipo: 'cancelar', servicio: r })} className="flex-1 rounded-lg py-2 text-xs font-extrabold text-white" style={{ background: '#7a2e2e' }}>✕ No pude</button>
+                  </div>
+                )}
               </div>
             )
           })}
         </div>
       )}
+
+      {accion && <ModalAccionServicio accion={accion} onClose={() => setAccion(null)} onSave={guardarAccion} />}
+    </div>
+  )
+}
+
+// Modal del conductor: terminar servicio (hora fin) o cancelar con motivo.
+function ModalAccionServicio({ accion, onClose, onSave }) {
+  const esTerminar = accion.tipo === 'terminar'
+  const ahora = new Date().toTimeString().slice(0, 5)
+  const [horaFin, setHoraFin] = useState(esTerminar ? ahora : '')
+  const [motivo, setMotivo] = useState('')
+  const [busy, setBusy] = useState(false)
+  const s = accion.servicio
+
+  async function confirmar() {
+    if (esTerminar && !horaFin) return
+    if (!esTerminar && !motivo.trim()) return
+    setBusy(true)
+    await onSave({ hora_final: horaFin, motivo })
+    setBusy(false)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-end bg-black/50 sm:place-items-center" onClick={onClose}>
+      <div className="w-full rounded-t-3xl bg-white p-5 sm:max-w-sm sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+        <h2 className="font-display text-lg font-extrabold text-ink">{esTerminar ? '✓ Terminar servicio' : '✕ No pude terminar'}</h2>
+        <p className="mt-0.5 text-sm text-ink-soft">{s.ruta}{s.hora_inicial ? ` · inició ${(s.hora_inicial || '').slice(0, 5)}` : ''}</p>
+        {esTerminar ? (
+          <div className="mt-4">
+            <label className="label">¿A qué hora terminó?</label>
+            <input type="time" className="input mt-1" value={horaFin} onChange={(e) => setHoraFin(e.target.value)} />
+          </div>
+        ) : (
+          <div className="mt-4">
+            <label className="label">Motivo (por qué no se pudo terminar)</label>
+            <textarea className="input mt-1 h-24" value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Ej. daño mecánico, accidente, novedad…" />
+          </div>
+        )}
+        <div className="mt-4 flex gap-2">
+          <button onClick={onClose} className="btn-ghost flex-1">Cancelar</button>
+          <button onClick={confirmar} disabled={busy} className="btn-primary flex-1">{busy ? 'Guardando…' : esTerminar ? 'Terminar' : 'Enviar'}</button>
+        </div>
+      </div>
     </div>
   )
 }

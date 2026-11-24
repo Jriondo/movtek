@@ -125,7 +125,11 @@ export default function PlanRodamiento() {
                       <td className="whitespace-nowrap px-2 py-1.5">{s.descripcion || ''}</td>
                       <td className="whitespace-nowrap px-2 py-1.5 tabular-nums">{hhmm(s.hora_inicial)}</td>
                       <td className="whitespace-nowrap px-2 py-1.5 tabular-nums">{hhmm(s.hora_final)}</td>
-                      <td className="whitespace-nowrap px-2 py-1.5 tabular-nums">{s.tiempo || ''}</td>
+                      <td className="whitespace-nowrap px-2 py-1.5 tabular-nums">
+                        {s.estado === 'cancelado'
+                          ? <span className="font-bold text-coral-500" title={s.motivo_cancelacion || ''}>✕ Cancelado</span>
+                          : s.hora_final ? (s.tiempo || '') : <span className="text-amber-600">⏳ pendiente</span>}
+                      </td>
                       <td className="px-2 py-1.5">{s.ruta || ''}</td>
                       <td className="px-2 py-1.5">{s.origen || ''}</td>
                       <td className="px-2 py-1.5">{s.destino || ''}</td>
@@ -172,7 +176,7 @@ function RutasMaestras({ rutas, onNew, onEdit, onDelete }) {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] text-sm">
             <thead><tr className="border-b border-cloud-line text-left text-xs uppercase text-ink-faint">
-              <th className="py-2 pr-3">Ruta</th><th className="pr-3">Empresa</th><th className="pr-3">Tipo</th><th className="pr-3">Origen → Destino</th><th className="pr-3">Clase</th><th className="pr-3">Horas</th><th></th>
+              <th className="py-2 pr-3">Ruta</th><th className="pr-3">Empresa</th><th className="pr-3">Tipo</th><th className="pr-3">Origen → Destino</th><th></th>
             </tr></thead>
             <tbody>
               {rutas.map((r) => (
@@ -181,8 +185,6 @@ function RutasMaestras({ rutas, onNew, onEdit, onDelete }) {
                   <td className="pr-3">{r.empresa_cliente || '—'}</td>
                   <td className="pr-3">{r.descripcion || '—'}</td>
                   <td className="pr-3 text-ink-soft">{r.origen || '—'} → {r.destino || '—'}</td>
-                  <td className="pr-3">{r.clase || '—'}</td>
-                  <td className="whitespace-nowrap pr-3 tabular-nums">{hhmm(r.hora_inicial)}{r.hora_final ? ` - ${hhmm(r.hora_final)}` : ''}</td>
                   <td className="whitespace-nowrap pr-1 text-right">
                     <button onClick={() => onEdit(r)} className="mr-2 text-xs font-bold text-brand-600">Editar</button>
                     <button onClick={() => onDelete(r.id)} className="text-xs font-bold text-coral-500">✕</button>
@@ -200,7 +202,7 @@ function RutasMaestras({ rutas, onNew, onEdit, onDelete }) {
 function ModalRuta({ empresa, base, onClose, onSaved }) {
   const [f, setF] = useState({
     id: base.id, nombre: base.nombre || '', empresa_cliente: base.empresa_cliente || '', descripcion: base.descripcion || 'Ingreso Personal',
-    origen: base.origen || '', destino: base.destino || '', clase: base.clase || '', hora_inicial: base.hora_inicial || '', hora_final: base.hora_final || '',
+    origen: base.origen || '', destino: base.destino || '',
   })
   const set = (k, v) => setF((o) => ({ ...o, [k]: v }))
   const [busy, setBusy] = useState(false)
@@ -215,20 +217,15 @@ function ModalRuta({ empresa, base, onClose, onSaved }) {
       <div className="card max-h-[88vh] w-full max-w-md overflow-y-auto p-5" onClick={(e) => e.stopPropagation()}>
         <h2 className="font-display text-lg font-extrabold text-ink">{base.id ? 'Editar ruta' : 'Nueva ruta maestra'}</h2>
         <div className="mt-3 flex flex-col gap-3">
-          <div><label className="label">Nombre de la ruta *</label><input className="input mt-1" value={f.nombre} onChange={(e) => set('nombre', e.target.value)} placeholder="Ej. ITALCOL CIRCUNVALAR 27" /></div>
+          <div><label className="label">Nombre de la ruta *</label><input className="input mt-1" value={f.nombre} onChange={(e) => set('nombre', e.target.value)} /></div>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="label">Empresa (cliente)</label><input className="input mt-1" value={f.empresa_cliente} onChange={(e) => set('empresa_cliente', e.target.value)} placeholder="ITALCOL" /></div>
+            <div><label className="label">Empresa (cliente)</label><input className="input mt-1" value={f.empresa_cliente} onChange={(e) => set('empresa_cliente', e.target.value)} /></div>
             <div><label className="label">Tipo</label>
               <select className="input mt-1" value={f.descripcion} onChange={(e) => set('descripcion', e.target.value)}>{DESCRIPCIONES_ROD.map((d) => <option key={d}>{d}</option>)}</select>
             </div>
           </div>
           <div><label className="label">Origen</label><input className="input mt-1" value={f.origen} onChange={(e) => set('origen', e.target.value)} /></div>
           <div><label className="label">Destino</label><input className="input mt-1" value={f.destino} onChange={(e) => set('destino', e.target.value)} /></div>
-          <div className="grid grid-cols-3 gap-3">
-            <div><label className="label">Clase</label><input className="input mt-1" value={f.clase} onChange={(e) => set('clase', e.target.value)} placeholder="BUSETA" /></div>
-            <div><label className="label">Hora ini.</label><input type="time" className="input mt-1" value={hhmm(f.hora_inicial)} onChange={(e) => set('hora_inicial', e.target.value)} /></div>
-            <div><label className="label">Hora fin</label><input type="time" className="input mt-1" value={hhmm(f.hora_final)} onChange={(e) => set('hora_final', e.target.value)} /></div>
-          </div>
         </div>
         <div className="mt-4 flex gap-2">
           <button onClick={onClose} className="btn-ghost ml-auto">Cancelar</button>
@@ -246,7 +243,7 @@ function ModalGenerarDia({ empresa, rutas, vehiculos, conductores, onClose, onDo
   const [busy, setBusy] = useState(false)
   const toggle = (r) => setSel((s) => s[r.id]?.on
     ? { ...s, [r.id]: { ...s[r.id], on: false } }
-    : { ...s, [r.id]: { on: true, placa: s[r.id]?.placa || '', conductor_id: s[r.id]?.conductor_id || '', hora_inicial: hhmm(r.hora_inicial), hora_final: hhmm(r.hora_final) } })
+    : { ...s, [r.id]: { on: true, placa: s[r.id]?.placa || '', conductor_id: s[r.id]?.conductor_id || '', hora_inicial: s[r.id]?.hora_inicial || '' } })
   const setv = (id, k, v) => setSel((s) => ({ ...s, [id]: { ...s[id], [k]: v } }))
   const marcadas = rutas.filter((r) => sel[r.id]?.on)
 
@@ -259,10 +256,10 @@ function ModalGenerarDia({ empresa, rutas, vehiculos, conductores, onClose, onDo
       const cond = conductores.find((x) => String(x.id) === String(v.conductor_id))
       await saveRodamiento({
         empresa_id: empresa?.id, fecha, ruta_id: r.id, ruta: r.nombre,
-        placa: v.placa || '', vehiculo_id: veh?.id || null, clase: veh?.clase || r.clase || '',
+        placa: v.placa || '', vehiculo_id: veh?.id || null, clase: veh?.clase || '',
         conductor_id: v.conductor_id || null, conductor_nombre: cond ? nombreConductor(cond) : '',
         descripcion: r.descripcion || '', origen: r.origen || '', destino: r.destino || '', empresa_cliente: r.empresa_cliente || '',
-        hora_inicial: v.hora_inicial || '', hora_final: v.hora_final || '',
+        hora_inicial: v.hora_inicial || '', hora_final: '', estado: 'programado',
       }).catch(() => {})
     }
     setBusy(false); onDone()
@@ -291,7 +288,7 @@ function ModalGenerarDia({ empresa, rutas, vehiculos, conductores, onClose, onDo
                     <span className="text-xs text-ink-soft">{r.empresa_cliente} · {r.descripcion}</span>
                   </label>
                   {v.on && (
-                    <div className="mt-2 grid grid-cols-2 gap-2 pl-6 sm:grid-cols-4">
+                    <div className="mt-2 grid grid-cols-1 gap-2 pl-6 sm:grid-cols-3">
                       <select className="input" value={v.placa} onChange={(e) => setv(r.id, 'placa', e.target.value)}>
                         <option value="">Placa…</option>
                         {vehiculos.map((x) => <option key={x.id} value={x.placa}>{x.placa}</option>)}
@@ -300,8 +297,8 @@ function ModalGenerarDia({ empresa, rutas, vehiculos, conductores, onClose, onDo
                         <option value="">Conductor…</option>
                         {conductores.filter((c) => c.estado_habilitacion !== 'inactivo').map((c) => <option key={c.id} value={c.id}>{nombreConductor(c)}</option>)}
                       </select>
-                      <input type="time" className="input" value={v.hora_inicial} onChange={(e) => setv(r.id, 'hora_inicial', e.target.value)} />
-                      <input type="time" className="input" value={v.hora_final} onChange={(e) => setv(r.id, 'hora_final', e.target.value)} />
+                      <label className="flex items-center gap-1.5 text-xs text-ink-soft">H. inicio
+                        <input type="time" className="input" value={v.hora_inicial} onChange={(e) => setv(r.id, 'hora_inicial', e.target.value)} /></label>
                     </div>
                   )}
                 </div>
@@ -324,7 +321,8 @@ function ModalServicio({ empresa, base, rutas, vehiculos, conductores, onClose, 
     id: base.id, fecha: base.fecha || fechaLocalISO(), placa: base.placa || '', clase: base.clase || '',
     conductor_id: base.conductor_id || '', conductor_nombre: base.conductor_nombre || '', descripcion: base.descripcion || 'Ingreso Personal',
     hora_inicial: hhmm(base.hora_inicial), hora_final: hhmm(base.hora_final), ruta: base.ruta || '', ruta_id: base.ruta_id || '',
-    origen: base.origen || '', destino: base.destino || '', empresa_cliente: base.empresa_cliente || '',
+    origen: base.origen || '', destino: base.destino || '', empresa_cliente: base.empresa_cliente || '', estado: base.estado || 'programado',
+    motivo_cancelacion: base.motivo_cancelacion || '',
   })
   const set = (k, v) => setF((o) => ({ ...o, [k]: v }))
   const [busy, setBusy] = useState(false)
@@ -364,13 +362,11 @@ function ModalServicio({ empresa, base, rutas, vehiculos, conductores, onClose, 
               <select className="input mt-1" value={f.descripcion} onChange={(e) => set('descripcion', e.target.value)}>{DESCRIPCIONES_ROD.map((d) => <option key={d}>{d}</option>)}</select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="label">Placa</label>
-              <select className="input mt-1" value={f.placa} onChange={(e) => aplicarPlaca(e.target.value)}>
-                <option value="">—</option>{vehiculos.map((x) => <option key={x.id} value={x.placa}>{x.placa}</option>)}
-              </select>
-            </div>
-            <div><label className="label">Clase</label><input className="input mt-1" value={f.clase} onChange={(e) => set('clase', e.target.value)} /></div>
+          <div><label className="label">Placa</label>
+            <select className="input mt-1" value={f.placa} onChange={(e) => aplicarPlaca(e.target.value)}>
+              <option value="">—</option>{vehiculos.map((x) => <option key={x.id} value={x.placa}>{x.placa}</option>)}
+            </select>
+            {f.clase && <p className="mt-1 text-xs text-ink-faint">Clase: {f.clase}</p>}
           </div>
           <div><label className="label">Conductor</label>
             <select className="input mt-1" value={f.conductor_id} onChange={(e) => set('conductor_id', e.target.value)}>
@@ -382,12 +378,11 @@ function ModalServicio({ empresa, base, rutas, vehiculos, conductores, onClose, 
             <div><label className="label">Origen</label><input className="input mt-1" value={f.origen} onChange={(e) => set('origen', e.target.value)} /></div>
             <div><label className="label">Destino</label><input className="input mt-1" value={f.destino} onChange={(e) => set('destino', e.target.value)} /></div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div><label className="label">Empresa</label><input className="input mt-1" value={f.empresa_cliente} onChange={(e) => set('empresa_cliente', e.target.value)} /></div>
-            <div><label className="label">Hora ini.</label><input type="time" className="input mt-1" value={f.hora_inicial} onChange={(e) => set('hora_inicial', e.target.value)} /></div>
-            <div><label className="label">Hora fin</label><input type="time" className="input mt-1" value={f.hora_final} onChange={(e) => set('hora_final', e.target.value)} /></div>
+            <div><label className="label">Hora inicio</label><input type="time" className="input mt-1" value={f.hora_inicial} onChange={(e) => set('hora_inicial', e.target.value)} /></div>
           </div>
-          <p className="rounded-lg bg-cloud px-3 py-2 text-xs text-ink-soft">Tiempo de recorrido: <b className="text-ink">{tiempoRecorrido(f.hora_inicial, f.hora_final) || '—'}</b></p>
+          <p className="rounded-lg bg-cloud px-3 py-2 text-xs text-ink-soft">La <b>hora final</b> y el tiempo los registra el conductor desde su app al terminar el servicio.{f.hora_final ? <> · Hora final: <b className="text-ink">{hhmm(f.hora_final)}</b> · Tiempo: <b className="text-ink">{tiempoRecorrido(f.hora_inicial, f.hora_final) || '—'}</b></> : ''}</p>
         </div>
         <div className="mt-4 flex gap-2">
           <button onClick={onClose} className="btn-ghost ml-auto">Cancelar</button>
