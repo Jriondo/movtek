@@ -435,16 +435,21 @@ function MiProgramacion({ empresa, conductor, vehiculos, primary }) {
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {items.map((r) => (
-            <div key={r.id} className="rounded-xl px-3 py-2.5" style={{ background: '#13201a', border: '1px solid #203a2d' }}>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold capitalize" style={{ color: '#8fb6a3' }}>{fechaCorta(r.fecha)}</span>
-                {r.turno && <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: '#172a12', color: '#b6f08a' }}>{r.turno}</span>}
+          {items.map((r) => {
+            const hora = (r.hora_inicial || '').slice(0, 5)
+            const horaF = (r.hora_final || '').slice(0, 5)
+            return (
+              <div key={r.id} className="rounded-xl px-3 py-2.5" style={{ background: '#13201a', border: '1px solid #203a2d' }}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-bold capitalize" style={{ color: '#8fb6a3' }}>{fechaCorta(r.fecha)}{r.descripcion ? ` · ${r.descripcion}` : ''}</span>
+                  {hora && <span className="rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums" style={{ background: '#172a12', color: '#b6f08a' }}>{hora}{horaF ? `–${horaF}` : ''}</span>}
+                </div>
+                <p className="font-display text-base font-extrabold" style={{ color: '#eafff3' }}>{r.ruta || 'Sin ruta'}</p>
+                {(r.origen || r.destino) && <p className="text-xs" style={{ color: '#8fb6a3' }}>{r.origen || '—'} → {r.destino || '—'}</p>}
+                <p className="text-[11px]" style={{ color: '#5f8a74' }}>{[r.placa, r.empresa_cliente].filter(Boolean).join(' · ')}</p>
               </div>
-              <p className="font-display text-base font-extrabold" style={{ color: '#eafff3' }}>{r.ruta || 'Sin ruta'}</p>
-              <p className="text-xs" style={{ color: '#8fb6a3' }}>{r.placa}{r.nota ? ` · ${r.nota}` : ''}</p>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>

@@ -1450,17 +1450,31 @@ export async function savePreguntasPreop(empresaId, preguntas) {
   return limpias
 }
 
-// ================= MÓDULO: PLAN DE RODAMIENTO =================
-// Programación por días: asigna vehículo→(conductor, ruta, turno) en una fecha.
+// ================= MÓDULO: PLAN DE RODAMIENTO (CRONOGRAMA DE RUTAS) =================
+// Formato oficial: cada registro = un SERVICIO/recorrido con fecha, placa, conductor,
+// descripción (Ingreso/Salida/Traslado), horas, ruta, origen, destino, empresa cliente, clase.
 const LS_KEY_ROD = 'movtek_rodamiento'
 function lsAllR() { try { return JSON.parse(localStorage.getItem(LS_KEY_ROD) || '[]') } catch { return [] } }
 function lsSaveR(rows) { try { localStorage.setItem(LS_KEY_ROD, JSON.stringify(rows)) } catch {} }
 
-export async function listRodamiento({ empresaId = null, desde = '', hasta = '', vehiculoId = '' } = {}) {
+// Calcula el tiempo HH:MM entre dos horas "HH:MM".
+export function tiempoRecorrido(ini, fin) {
+  if (!ini || !fin) return ''
+  const [h1, m1] = String(ini).split(':').map(Number)
+  const [h2, m2] = String(fin).split(':').map(Number)
+  if ([h1, m1, h2, m2].some((x) => Number.isNaN(x))) return ''
+  let min = (h2 * 60 + m2) - (h1 * 60 + m1)
+  if (min < 0) min += 24 * 60
+  return `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`
+}
+
+export async function listRodamiento({ empresaId = null, desde = '', hasta = '', vehiculoId = '', placa = '', conductorId = '' } = {}) {
   if (isSupabaseConfigured) {
-    let q = supabase.from('rodamiento').select('*')
+    let q = supabase.from('rodamiento').select('*').order('fecha', { ascending: true })
     if (empresaId) q = q.eq('empresa_id', empresaId)
     if (vehiculoId) q = q.eq('vehiculo_id', vehiculoId)
+    if (placa) q = q.ilike('placa', `%${placa}%`)
+    if (conductorId) q = q.eq('conductor_id', conductorId)
     if (desde) q = q.gte('fecha', desde)
     if (hasta) q = q.lte('fecha', hasta)
     const { data, error } = await q
@@ -1470,44 +1484,77 @@ export async function listRodamiento({ empresaId = null, desde = '', hasta = '',
   let rows = lsAllR()
   if (empresaId) rows = rows.filter((r) => r.empresa_id === empresaId)
   if (vehiculoId) rows = rows.filter((r) => String(r.vehiculo_id) === String(vehiculoId))
+  if (placa) rows = rows.filter((r) => (r.placa || '').toLowerCase().includes(placa.toLowerCase()))
+  if (conductorId) rows = rows.filter((r) => String(r.conductor_id) === String(conductorId))
   if (desde) rows = rows.filter((r) => (r.fecha || '') >= desde)
   if (hasta) rows = rows.filter((r) => (r.fecha || '') <= hasta)
-  return rows
+  return rows.sort((a, b) => (a.fecha + (a.hora_inicial || '')).localeCompare(b.fecha + (b.hora_inicial || '')))
 }
 
-// Guarda una asignación (una celda). Si queda vacía (sin conductor ni ruta), la borra.
+// Guarda un servicio del cronograma (insertar o actualizar por id).
 export async function saveRodamiento(data) {
-  const payload = { ...data }
-  const vacio = !(payload.conductor_id || payload.ruta || payload.nota || payload.turno)
+  const payload = { ...data, tiempo: data.tiempo || tiempoRecorrido(data.hora_inicial, data.hora_final) }
   if (isSupabaseConfigured) {
-    // upsert por (empresa, vehiculo, fecha)
-    if (vacio) {
-      if (payload.id) await supabase.from('rodamiento').delete().eq('id', payload.id)
-      else await supabase.from('rodamiento').delete().match({ empresa_id: payload.empresa_id, vehiculo_id: payload.vehiculo_id, fecha: payload.fecha })
-      return null
-    }
     if (payload.id) {
       const { id, created_at, ...rest } = payload
       const { data: d, error } = await supabase.from('rodamiento').update(nulls(rest)).eq('id', id).select().single()
-      if (error) throw error
-      return d
+      if (error) throw error; return d
     }
+    delete payload.id
     const { data: d, error } = await supabase.from('rodamiento').insert(nulls(payload)).select().single()
-    if (error) throw error
-    return d
+    if (error) throw error; return d
   }
-  let rows = lsAllR()
-  const idx = rows.findIndex((r) => payload.id ? String(r.id) === String(payload.id)
-    : (String(r.vehiculo_id) === String(payload.vehiculo_id) && r.fecha === payload.fecha && r.empresa_id === payload.empresa_id))
-  if (vacio) { if (idx >= 0) { rows.splice(idx, 1); lsSaveR(rows) } return null }
-  if (idx >= 0) { rows[idx] = { ...rows[idx], ...payload }; lsSaveR(rows); return rows[idx] }
-  payload.id = newId(); rows.unshift(payload); lsSaveR(rows); return payload
+  const rows = lsAllR()
+  if (payload.id) { const i = rows.findIndex((r) => String(r.id) === String(payload.id)); if (i >= 0) rows[i] = { ...rows[i], ...payload }; lsSaveR(rows); return rows[i] || payload }
+  payload.id = newId(); rows.push(payload); lsSaveR(rows); return payload
 }
 
 export async function deleteRodamiento(id) {
   if (isSupabaseConfigured) { const { error } = await supabase.from('rodamiento').delete().eq('id', id); if (error) throw error; return }
   lsSaveR(lsAllR().filter((r) => String(r.id) !== String(id)))
 }
+
+// ---- Rutas maestras (plantillas de ruta con datos fijos) ----
+const LS_KEY_RM = 'movtek_rutas_maestras'
+function lsAllRM() { try { return JSON.parse(localStorage.getItem(LS_KEY_RM) || '[]') } catch { return [] } }
+function lsSaveRM(rows) { try { localStorage.setItem(LS_KEY_RM, JSON.stringify(rows)) } catch {} }
+
+export async function listRutasMaestras({ empresaId = null } = {}) {
+  if (isSupabaseConfigured) {
+    let q = supabase.from('rutas_maestras').select('*').order('nombre', { ascending: true })
+    if (empresaId) q = q.eq('empresa_id', empresaId)
+    const { data, error } = await q
+    if (error) throw error
+    return data
+  }
+  let rows = lsAllRM()
+  if (empresaId) rows = rows.filter((r) => r.empresa_id === empresaId)
+  return rows.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''))
+}
+
+export async function saveRutaMaestra(data) {
+  const payload = { ...data }
+  if (isSupabaseConfigured) {
+    if (payload.id) {
+      const { id, created_at, ...rest } = payload
+      const { data: d, error } = await supabase.from('rutas_maestras').update(nulls(rest)).eq('id', id).select().single()
+      if (error) throw error; return d
+    }
+    delete payload.id
+    const { data: d, error } = await supabase.from('rutas_maestras').insert(nulls(payload)).select().single()
+    if (error) throw error; return d
+  }
+  const rows = lsAllRM()
+  if (payload.id) { const i = rows.findIndex((r) => String(r.id) === String(payload.id)); if (i >= 0) rows[i] = { ...rows[i], ...payload }; lsSaveRM(rows); return rows[i] || payload }
+  payload.id = newId(); rows.push(payload); lsSaveRM(rows); return payload
+}
+
+export async function deleteRutaMaestra(id) {
+  if (isSupabaseConfigured) { const { error } = await supabase.from('rutas_maestras').delete().eq('id', id); if (error) throw error; return }
+  lsSaveRM(lsAllRM().filter((r) => String(r.id) !== String(id)))
+}
+
+export const DESCRIPCIONES_ROD = ['Ingreso Personal', 'Salida Personal', 'Traslado']
 
 // ================= MÓDULO: PLAN DE MANTENIMIENTO =================
 // (A) Plan preventivo por vehículo (tareas con próximo por fecha/km).
