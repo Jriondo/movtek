@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { getEmpresaPorSlug, vehiculosDeConductor, conductorDeUsuario, preoperacionalHoy, listVehiculos, listFuec, listRodamiento, saveRodamiento, listMantPlan, estadoMantenimiento, fechaLocalISO } from '../../lib/db'
 
@@ -173,27 +173,28 @@ function LoginConductor({ empresa, onLogin }) {
 }
 
 // ---------- INICIO del conductor ----------
+const SEEN_KEY = (cid) => `movtek_rutas_vistas_${cid}`
+const getSeen = (cid) => { try { return new Set(JSON.parse(localStorage.getItem(SEEN_KEY(cid)) || '[]')) } catch { return new Set() } }
+const saveSeen = (cid, ids) => { try { localStorage.setItem(SEEN_KEY(cid), JSON.stringify([...ids])) } catch {} }
+
 function Home({ empresa, user, conductorId, onLogout }) {
   const { actualizarPassword } = useAuth()
   const [vehiculos, setVehiculos] = useState([])
   const [conductor, setConductor] = useState(null)
   const [selId, setSelId] = useState('')
   const [pantalla, setPantalla] = useState('home') // 'home' | 'captura'
-  const [hoy, setHoy] = useState(null)             // registro de hoy del vehículo seleccionado
+  const [seccion, setSeccion] = useState('preop')  // 'preop' | 'rutas'
+  const [hoy, setHoy] = useState(null)
   const [cargando, setCargando] = useState(true)
-  const [modal, setModal] = useState('')           // 'taller' | 'descanso' | ''
+  const [modal, setModal] = useState('')
+  const [nuevas, setNuevas] = useState(0)
+  const rutasIdsRef = useRef([])
   const vehiculo = useMemo(() => vehiculos.find((v) => String(v.id) === String(selId)), [vehiculos, selId])
-  const [avisos, setAvisos] = useState(typeof Notification !== 'undefined' && Notification.permission === 'granted')
 
-  async function activarAvisos() {
-    const r = await activarPushConductor({ empresa, conductor, email: user?.email })
-    if (r.ok) setAvisos(true)
-    else if (r.motivo === 'sin-permiso') alert('Activa las notificaciones en tu navegador para recibir el recordatorio.')
-    else if (r.motivo === 'no-soportado') alert('Tu teléfono o navegador no soporta notificaciones. Usa Chrome en Android.')
-  }
-  // Si ya dio permiso antes, renueva la suscripción al entrar.
+  // Recordatorios AUTOMÁTICOS: al abrir la app se pide permiso y se activa (sin botón).
   useEffect(() => {
-    if (conductor && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+    if (!conductor) return
+    if (typeof Notification !== 'undefined' && Notification.permission !== 'denied') {
       activarPushConductor({ empresa, conductor, email: user?.email }).catch(() => {})
     }
   }, [conductor?.id])
@@ -204,12 +205,12 @@ function Home({ empresa, user, conductorId, onLogout }) {
     setConductor(cond)
     const vs = await vehiculosDeConductor({ empresaId: empresa.id, conductorId: cond?.id }).catch(() => [])
     setVehiculos(vs)
-    setSelId((prev) => prev || vs[0]?.id || '')
+    // Un solo vehículo: entra directo. Varios: muestra el selector antes de entrar.
+    setSelId((prev) => prev || (vs.length === 1 ? vs[0].id : ''))
     setCargando(false)
   }
   useEffect(() => { cargar() }, [empresa?.id])
 
-  // Estado de hoy del vehículo seleccionado.
   async function refrescarHoy() {
     if (!vehiculo) { setHoy(null); return }
     const r = await preoperacionalHoy({ empresaId: empresa.id, vehiculoId: vehiculo.id, conductorId: conductor?.id }).catch(() => null)
@@ -217,7 +218,25 @@ function Home({ empresa, user, conductorId, onLogout }) {
   }
   useEffect(() => { refrescarHoy() }, [selId, conductor?.id])
 
-  // Recordatorio: pide permiso y avisa si falta la preoperacional (y cada 2h mientras la app esté abierta).
+  // Rutas nuevas asignadas (badge/aviso).
+  useEffect(() => {
+    if (!conductor?.id) return
+    const h = fechaLocalISO()
+    const fin = new Date(h + 'T12:00:00'); fin.setDate(fin.getDate() + 45)
+    listRodamiento({ empresaId: empresa.id, desde: h, hasta: fin.toISOString().slice(0, 10) })
+      .then((rs) => {
+        const mine = rs.filter((r) => String(r.conductor_id) === String(conductor.id) && r.estado !== 'cancelado')
+        rutasIdsRef.current = mine.map((r) => String(r.id))
+        const seen = getSeen(conductor.id)
+        setNuevas(mine.filter((r) => !seen.has(String(r.id))).length)
+      }).catch(() => {})
+  }, [conductor?.id, selId])
+
+  function verRutas() {
+    setSeccion('rutas')
+    if (conductor?.id) { saveSeen(conductor.id, rutasIdsRef.current); setNuevas(0) }
+  }
+
   useRecordatorio({ pendiente: !hoy && !!vehiculo, empresa })
 
   if (cargando) return <Pantalla><p className="text-ink-faint">Cargando tu información…</p></Pantalla>
@@ -228,42 +247,58 @@ function Home({ empresa, user, conductorId, onLogout }) {
       onDone={() => { setPantalla('home'); refrescarHoy() }} />
   }
 
-  // Saludo: primer nombre + primer apellido (bonito), o el correo si aún no hay ficha.
   const titulo = (s) => (s || '').toLowerCase().replace(/\b\w/g, (m) => m.toUpperCase())
   const primerNombre = titulo((conductor?.nombres || '').trim().split(/\s+/)[0])
   const primerApellido = titulo((conductor?.apellidos || '').trim().split(/\s+/)[0])
   const nombreCond = (primerNombre || primerApellido) ? `${primerNombre} ${primerApellido}`.trim() : (user?.email || 'Conductor')
-
   const primary = empresa?.color_primario || '#16a34a'
+
+  const Header = () => (
+    <header className="flex items-center gap-3 px-4 pb-6 pt-3 text-white"
+      style={{ background: `linear-gradient(135deg, ${primary} 0%, ${primary} 45%, #0e9488 100%)`, borderRadius: '0 0 24px 24px', boxShadow: '0 10px 30px -14px #0e9488' }}>
+      {empresa?.logo_url
+        ? <img src={empresa.logo_url} alt="" className="h-9 w-auto max-w-[120px] rounded-lg bg-white/90 object-contain p-0.5 drop-shadow" />
+        : <span className="font-display text-lg font-extrabold">{empresa?.nombre}</span>}
+      <button onClick={() => setModal('pass')} className="ml-auto rounded-lg bg-white/25 px-3 py-1.5 text-sm font-semibold backdrop-blur" title="Cambiar contraseña">🔑</button>
+      <button onClick={onLogout} className="rounded-lg bg-white/25 px-3 py-1.5 text-sm font-semibold backdrop-blur">Salir</button>
+    </header>
+  )
+
+  // --- Pantalla: elegir vehículo antes de entrar ---
+  if (vehiculos.length > 0 && !selId) {
+    return (
+      <div className="min-h-screen" style={{ background: '#0e1512', color: '#e6f2ec' }}>
+        <Header />
+        <div className="mx-auto -mt-2 max-w-xl px-4 py-5">
+          <p className="text-sm" style={{ color: '#8fb6a3' }}>Hola, {nombreCond}</p>
+          <h1 className="mb-1 font-display text-2xl font-extrabold" style={{ color: '#eafff3' }}>Elige tu vehículo</h1>
+          <p className="mb-4 text-sm" style={{ color: '#8fb6a3' }}>Selecciona con cuál vas a trabajar hoy.</p>
+          <div className="flex flex-col gap-3">
+            {vehiculos.map((v) => (
+              <button key={v.id} onClick={() => setSelId(v.id)} className="rounded-2xl border px-5 py-4 text-left"
+                style={{ borderColor: '#203a2d', background: '#13201a' }}>
+                <span className="block font-display text-xl font-extrabold" style={{ color: '#eafff3' }}>{v.placa}</span>
+                <span className="block text-sm" style={{ color: '#8fb6a3' }}>{v.marca} {v.modelo} · Móvil {v.numero_interno || '—'}</span>
+              </button>
+            ))}
+          </div>
+          <div className="mt-4"><InstalarApp empresa={empresa} /></div>
+        </div>
+        {modal === 'pass' && <ModalCambiarPass actualizarPassword={actualizarPassword} onClose={() => setModal('')} />}
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen" style={{ background: '#0e1512', color: '#e6f2ec' }}>
-      {/* Encabezado con degradado de la marca */}
-      <header className="flex items-center gap-3 px-4 pb-6 pt-3 text-white"
-        style={{ background: `linear-gradient(135deg, ${primary} 0%, ${primary} 45%, #0e9488 100%)`, borderRadius: '0 0 24px 24px', boxShadow: '0 10px 30px -14px #0e9488' }}>
-        {empresa?.logo_url
-          ? <img src={empresa.logo_url} alt="" className="h-9 w-auto max-w-[120px] rounded-lg bg-white/90 object-contain p-0.5 drop-shadow" />
-          : <span className="font-display text-lg font-extrabold">{empresa?.nombre}</span>}
-        <button onClick={() => setModal('pass')} className="ml-auto rounded-lg bg-white/25 px-3 py-1.5 text-sm font-semibold backdrop-blur" title="Cambiar contraseña">🔑</button>
-        <button onClick={onLogout} className="rounded-lg bg-white/25 px-3 py-1.5 text-sm font-semibold backdrop-blur">Salir</button>
-      </header>
-
+      <Header />
       <div className="mx-auto -mt-2 max-w-xl px-4 py-5">
         <p className="text-sm" style={{ color: '#8fb6a3' }}>Hola,</p>
-        <h1 className="font-display text-2xl font-extrabold" style={{ color: '#eafff3' }}>{nombreCond || 'Conductor'}</h1>
-
-        <div className="mt-3">
-          <InstalarApp empresa={empresa} />
-        </div>
-        {!avisos && (
-          <button onClick={activarAvisos} className="mt-2 w-full rounded-xl border px-4 py-2.5 text-sm font-bold"
-            style={{ borderColor: '#2f5a1c', background: '#172a12', color: '#b6f08a' }}>
-            🔔 Activar recordatorios de preoperacional
-          </button>
-        )}
+        <h1 className="font-display text-2xl font-extrabold" style={{ color: '#eafff3' }}>{nombreCond}</h1>
 
         {!conductor && (
           <p className="mt-2 rounded-xl px-4 py-2.5 text-sm" style={{ background: '#2a2410', color: '#f5d98a' }}>
-            Tu usuario no está vinculado a una ficha de conductor. Pídele a tu empresa que la asocie para registrar tus datos.
+            Tu usuario no está vinculado a una ficha de conductor. Pídele a tu empresa que la asocie.
           </p>
         )}
 
@@ -271,59 +306,56 @@ function Home({ empresa, user, conductorId, onLogout }) {
           <p className="mt-4 rounded-xl px-4 py-3 text-sm" style={{ background: '#2a1414', color: '#f5a3a3' }}>No tienes vehículos activos asignados. Avisa a tu empresa.</p>
         ) : (
           <>
-            {/* Selector de vehículo (puede tener varios y cambiarse) */}
-            <div className="mt-4">
-              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide" style={{ color: '#5f8a74' }}>Tu vehículo</p>
-              <div className="flex flex-wrap gap-2">
-                {vehiculos.map((v) => {
-                  const sel = String(v.id) === String(selId)
-                  return (
-                    <button key={v.id} onClick={() => setSelId(v.id)}
-                      className="rounded-xl border px-3 py-2 text-left transition"
-                      style={sel
-                        ? { borderColor: '#22e07a', background: '#132a1e', boxShadow: '0 0 0 1px #22e07a, 0 0 18px -6px #22e07a' }
-                        : { borderColor: '#203a2d', background: '#13201a' }}>
-                      <span className="block font-display text-base font-extrabold" style={{ color: '#eafff3' }}>{v.placa}</span>
-                      <span className="block text-xs" style={{ color: '#8fb6a3' }}>{v.marca} {v.modelo} · Móvil {v.numero_interno || '—'}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Estado de hoy */}
-            {hoy ? (
-              <div className="mt-4 rounded-xl px-4 py-3 text-sm font-semibold"
-                style={hoy.tipo === TIPO.PREOP ? { background: '#132a1e', color: '#8ff0bd' } : { background: '#17221d', color: '#9fc3b2' }}>
-                {hoy.tipo === TIPO.PREOP && `✅ Ya hiciste la preoperacional hoy (${hoy.hora || ''}).`}
-                {hoy.tipo === TIPO.TALLER && '🔧 Reportaste este vehículo EN TALLER hoy.'}
-                {hoy.tipo === TIPO.DESCANSO && '🛌 Reportaste este vehículo EN DESCANSO hoy.'}
-              </div>
-            ) : (
-              <div className="mt-4 rounded-xl px-4 py-3 text-sm font-semibold" style={{ background: '#2a2410', color: '#f5d98a' }}>
-                ⏰ Aún no has registrado el día.
+            {/* Vehículo activo + cambiar */}
+            {vehiculo && (
+              <div className="mt-3 flex items-center gap-2 rounded-xl px-4 py-2.5" style={{ background: '#132a1e', border: '1px solid #22e07a' }}>
+                <span className="font-display text-base font-extrabold" style={{ color: '#eafff3' }}>🚍 {vehiculo.placa}</span>
+                <span className="text-xs" style={{ color: '#8fb6a3' }}>Móvil {vehiculo.numero_interno || '—'}</span>
+                {vehiculos.length > 1 && <button onClick={() => setSelId('')} className="ml-auto rounded-lg px-2.5 py-1 text-xs font-bold" style={{ background: '#0e9488', color: '#042012' }}>Cambiar</button>}
               </div>
             )}
 
-            {/* Acción principal: dentro se elige Operaciones / Taller / Descanso */}
-            <div className="mt-4 flex flex-col gap-3">
-              <button onClick={() => setPantalla('captura')} disabled={!conductor}
-                className="rounded-2xl px-5 py-4 text-left disabled:opacity-50"
-                style={{ background: `linear-gradient(135deg, ${primary}, #0fb98f)`, color: '#042012', boxShadow: '0 12px 26px -10px #17d36f' }}>
-                <span className="block font-display text-lg font-extrabold">📋 Registrar el día</span>
-                <span className="block text-sm" style={{ color: '#063' }}>Operaciones (preoperacional), taller o descanso</span>
+            {/* Pestañas / carpetas */}
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button onClick={() => setSeccion('preop')} className="rounded-xl py-2.5 text-sm font-extrabold"
+                style={seccion === 'preop' ? { background: primary, color: '#042012' } : { background: '#13201a', color: '#8fb6a3' }}>📋 Preoperacional</button>
+              <button onClick={verRutas} className="relative rounded-xl py-2.5 text-sm font-extrabold"
+                style={seccion === 'rutas' ? { background: primary, color: '#042012' } : { background: '#13201a', color: '#8fb6a3' }}>
+                🗓️ Mis rutas
+                {nuevas > 0 && <span className="absolute -right-1 -top-1 rounded-full px-1.5 py-0.5 text-[10px] font-extrabold text-white" style={{ background: '#ef4444' }}>{nuevas}</span>}
               </button>
             </div>
 
-            {/* Mis rutas (plan de rodamiento) + alertas de mantenimiento */}
-            <MiProgramacion empresa={empresa} conductor={conductor} vehiculos={vehiculos} primary={primary} />
+            {seccion === 'preop' ? (
+              <>
+                {hoy ? (
+                  <div className="mt-4 rounded-xl px-4 py-3 text-sm font-semibold"
+                    style={hoy.tipo === TIPO.PREOP ? { background: '#132a1e', color: '#8ff0bd' } : { background: '#17221d', color: '#9fc3b2' }}>
+                    {hoy.tipo === TIPO.PREOP && `✅ Ya hiciste la preoperacional hoy (${hoy.hora || ''}).`}
+                    {hoy.tipo === TIPO.TALLER && '🔧 Reportaste este vehículo EN TALLER hoy.'}
+                    {hoy.tipo === TIPO.DESCANSO && '🛌 Reportaste este vehículo EN DESCANSO hoy.'}
+                  </div>
+                ) : (
+                  <div className="mt-4 rounded-xl px-4 py-3 text-sm font-semibold" style={{ background: '#2a2410', color: '#f5d98a' }}>
+                    ⏰ Aún no has registrado el día.
+                  </div>
+                )}
+                <button onClick={() => setPantalla('captura')} disabled={!conductor}
+                  className="mt-4 w-full rounded-2xl px-5 py-4 text-left disabled:opacity-50"
+                  style={{ background: `linear-gradient(135deg, ${primary}, #0fb98f)`, color: '#042012', boxShadow: '0 12px 26px -10px #17d36f' }}>
+                  <span className="block font-display text-lg font-extrabold">📋 Registrar el día</span>
+                  <span className="block text-sm" style={{ color: '#063' }}>Operaciones (preoperacional), taller o descanso</span>
+                </button>
+                <div className="mt-4"><InstalarApp empresa={empresa} /></div>
+              </>
+            ) : (
+              <MiProgramacion empresa={empresa} conductor={conductor} vehiculos={vehiculos} primary={primary} />
+            )}
           </>
         )}
       </div>
 
-      {modal === 'pass' && (
-        <ModalCambiarPass actualizarPassword={actualizarPassword} onClose={() => setModal('')} />
-      )}
+      {modal === 'pass' && <ModalCambiarPass actualizarPassword={actualizarPassword} onClose={() => setModal('')} />}
     </div>
   )
 }

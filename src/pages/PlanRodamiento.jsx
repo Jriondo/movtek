@@ -11,12 +11,25 @@ import { useAuth } from '../context/AuthContext'
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 const hhmm = (t) => (t ? String(t).slice(0, 5) : '')
+const PERIODOS = [['dia', 'Día'], ['mes', 'Mes'], ['anio', 'Año']]
+
+// Rango [desde, hasta] (YYYY-MM-DD) según periodo y fecha ancla.
+function rangoFechas(periodo, anclaISO) {
+  const d = new Date(anclaISO + 'T12:00:00')
+  const iso = (x) => x.toISOString().slice(0, 10)
+  if (periodo === 'dia') return [anclaISO, anclaISO]
+  if (periodo === 'anio') return [`${d.getFullYear()}-01-01`, `${d.getFullYear()}-12-31`]
+  const a = new Date(d.getFullYear(), d.getMonth(), 1)
+  const b = new Date(d.getFullYear(), d.getMonth() + 1, 0)
+  return [iso(a), iso(b)]
+}
 
 export default function PlanRodamiento() {
   const { empresa } = useEmpresa() || {}
   const { esPropietario, propietarioId } = useAuth()
   const [tab, setTab] = useState('crono')
-  const [mes, setMes] = useState(fechaLocalISO().slice(0, 7))
+  const [periodo, setPeriodo] = useState('mes')
+  const [ancla, setAncla] = useState(fechaLocalISO())
   const [q, setQ] = useState('')
   const [vehiculos, setVehiculos] = useState([])
   const [conductores, setConductores] = useState([])
@@ -27,9 +40,9 @@ export default function PlanRodamiento() {
   const [modalServ, setModalServ] = useState(null)   // servicio a crear/editar
   const [modalRuta, setModalRuta] = useState(null)   // ruta maestra a crear/editar
 
+  const [desde, hasta] = useMemo(() => rangoFechas(periodo, ancla), [periodo, ancla])
+  const mes = ancla.slice(0, 7)
   const [anio, mesNum] = mes.split('-').map(Number)
-  const desde = `${mes}-01`
-  const hasta = `${mes}-${String(new Date(anio, mesNum, 0).getDate()).padStart(2, '0')}`
 
   async function cargarBase() {
     let vs = await listVehiculos({ empresaId: empresa?.id }).catch(() => [])
@@ -44,7 +57,7 @@ export default function PlanRodamiento() {
     setCargando(false)
   }
   useEffect(() => { cargarBase() }, [empresa?.id])
-  useEffect(() => { cargarServicios() }, [empresa?.id, mes])
+  useEffect(() => { cargarServicios() }, [empresa?.id, desde, hasta])
 
   const filtrados = useMemo(() => {
     const t = q.trim().toLowerCase()
@@ -73,7 +86,7 @@ export default function PlanRodamiento() {
       { label: 'EMPRESA', get: (r) => r.empresa_cliente || '' },
       { label: 'Clase', get: (r) => r.clase || '' },
     ]
-    descargarExcel(`Plan_rodamiento_${mes}`, cols, filtrados, `PLAN DE RODAMIENTO · ${MESES[mesNum - 1]} ${anio} · ${empresa?.nombre || ''}`)
+    descargarExcel(`Plan_rodamiento_${desde}_a_${hasta}`, cols, filtrados, `PLAN DE RODAMIENTO · ${desde} a ${hasta} · ${empresa?.nombre || ''}`)
   }
 
   return (
@@ -100,8 +113,12 @@ export default function PlanRodamiento() {
         <>
           {/* Filtros */}
           <div className="card flex flex-wrap items-center gap-3 p-3">
-            <label className="text-sm font-bold text-ink">Mes:</label>
-            <input type="month" className="input w-auto" value={mes} onChange={(e) => setMes(e.target.value)} />
+            <div className="flex rounded-lg bg-cloud p-0.5">
+              {PERIODOS.map(([v, l]) => (
+                <button key={v} onClick={() => setPeriodo(v)} className={`rounded-md px-3 py-1.5 text-sm font-bold ${periodo === v ? 'bg-white text-brand-600 shadow-sm' : 'text-ink-soft'}`}>{l}</button>
+              ))}
+            </div>
+            <input type="date" className="input w-auto" value={ancla} onChange={(e) => setAncla(e.target.value)} />
             <input className="input w-auto flex-1" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar placa, conductor, ruta, empresa…" />
             <span className="text-sm text-ink-soft">{filtrados.length} servicio(s)</span>
           </div>
