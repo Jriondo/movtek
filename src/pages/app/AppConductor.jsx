@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { getEmpresaPorSlug, vehiculosDeConductor, conductorDeUsuario, preoperacionalHoy, listVehiculos, listFuec } from '../../lib/db'
+import { getEmpresaPorSlug, vehiculosDeConductor, conductorDeUsuario, preoperacionalHoy, listVehiculos, listFuec, listRodamiento, listMantPlan, estadoMantenimiento, fechaLocalISO } from '../../lib/db'
 
 // FUEC se carga solo cuando un propietario/admin entra a generarlo (no pesa para el conductor).
 const FuecForm = lazy(() => import('../FuecForm'))
@@ -314,6 +314,9 @@ function Home({ empresa, user, conductorId, onLogout }) {
                 <span className="block text-sm" style={{ color: '#063' }}>Operaciones (preoperacional), taller o descanso</span>
               </button>
             </div>
+
+            {/* Mis rutas (plan de rodamiento) + alertas de mantenimiento */}
+            <MiProgramacion empresa={empresa} conductor={conductor} vehiculos={vehiculos} primary={primary} />
           </>
         )}
       </div>
@@ -365,6 +368,85 @@ function ModalCambiarPass({ actualizarPassword, onClose }) {
           </form>
         )}
       </div>
+    </div>
+  )
+}
+
+// Rutas del conductor (plan de rodamiento) Hoy/Semana/Mes + alertas de mantenimiento de sus vehículos.
+function MiProgramacion({ empresa, conductor, vehiculos, primary }) {
+  const [vista, setVista] = useState('hoy')
+  const [rodas, setRodas] = useState([])
+  const [alertas, setAlertas] = useState([])
+  const hoyISO = fechaLocalISO()
+
+  const rangos = useMemo(() => {
+    const d = new Date(hoyISO + 'T12:00:00')
+    const isod = (x) => fechaLocalISO(x)
+    const off = (d.getDay() + 6) % 7
+    const lun = new Date(d); lun.setDate(d.getDate() - off)
+    const dom = new Date(lun); dom.setDate(lun.getDate() + 6)
+    const m1 = new Date(d.getFullYear(), d.getMonth(), 1)
+    const m2 = new Date(d.getFullYear(), d.getMonth() + 1, 0)
+    return { hoy: [hoyISO, hoyISO], semana: [isod(lun), isod(dom)], mes: [isod(m1), isod(m2)] }
+  }, [hoyISO])
+
+  useEffect(() => {
+    if (!conductor?.id) return
+    const starts = [rangos.semana[0], rangos.mes[0]].sort()[0]
+    const ends = [rangos.semana[1], rangos.mes[1]].sort().slice(-1)[0]
+    listRodamiento({ empresaId: empresa?.id, desde: starts, hasta: ends })
+      .then((rs) => setRodas(rs.filter((r) => String(r.conductor_id) === String(conductor.id))))
+      .catch(() => setRodas([]))
+    const ids = new Set(vehiculos.map((v) => String(v.id)))
+    listMantPlan({ empresaId: empresa?.id })
+      .then((ps) => setAlertas(ps.filter((p) => ids.has(String(p.vehiculo_id))).map((p) => ({ ...p, _est: estadoMantenimiento(p) })).filter((p) => p._est !== 'ok')))
+      .catch(() => setAlertas([]))
+  }, [conductor?.id, empresa?.id])
+
+  if (!conductor?.id) return null
+  const [d1, d2] = rangos[vista]
+  const items = rodas.filter((r) => r.fecha >= d1 && r.fecha <= d2).sort((a, b) => (a.fecha + (a.turno || '')).localeCompare(b.fecha + (b.turno || '')))
+  const fechaCorta = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('es', { weekday: 'short', day: '2-digit', month: 'short' })
+  const nVenc = alertas.filter((a) => a._est === 'vencido').length
+  const nProx = alertas.filter((a) => a._est === 'proximo').length
+
+  return (
+    <div className="mt-6">
+      {alertas.length > 0 && (
+        <div className="mb-3 rounded-xl px-4 py-3 text-sm" style={{ background: '#2a2410', color: '#f5d98a' }}>
+          🔧 <b>Mantenimiento:</b> {nVenc} vencido(s){nProx ? `, ${nProx} próximo(s)` : ''}.
+          <ul className="mt-1 list-disc pl-5 text-xs">
+            {alertas.slice(0, 4).map((a) => <li key={a.id}>{a.placa}: {a.tipo}{a.proxima_fecha ? ` (${a.proxima_fecha})` : ''}</li>)}
+          </ul>
+        </div>
+      )}
+
+      <p className="mb-2 text-[10px] font-bold uppercase tracking-wide" style={{ color: '#5f8a74' }}>Mis rutas</p>
+      <div className="mb-2 flex gap-1.5">
+        {[['hoy', 'Hoy'], ['semana', 'Semana'], ['mes', 'Mes']].map(([v, l]) => (
+          <button key={v} onClick={() => setVista(v)} className="rounded-lg px-3 py-1.5 text-xs font-bold"
+            style={vista === v ? { background: primary, color: '#042012' } : { background: '#13201a', color: '#8fb6a3' }}>{l}</button>
+        ))}
+      </div>
+
+      {items.length === 0 ? (
+        <div className="rounded-xl px-4 py-3 text-sm" style={{ background: '#13201a', color: '#8fb6a3' }}>
+          No tienes rutas asignadas {vista === 'hoy' ? 'para hoy' : vista === 'semana' ? 'esta semana' : 'este mes'}.
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {items.map((r) => (
+            <div key={r.id} className="rounded-xl px-3 py-2.5" style={{ background: '#13201a', border: '1px solid #203a2d' }}>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold capitalize" style={{ color: '#8fb6a3' }}>{fechaCorta(r.fecha)}</span>
+                {r.turno && <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: '#172a12', color: '#b6f08a' }}>{r.turno}</span>}
+              </div>
+              <p className="font-display text-base font-extrabold" style={{ color: '#eafff3' }}>{r.ruta || 'Sin ruta'}</p>
+              <p className="text-xs" style={{ color: '#8fb6a3' }}>{r.placa}{r.nota ? ` · ${r.nota}` : ''}</p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
