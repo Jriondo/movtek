@@ -1,6 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { getEmpresaPorSlug, vehiculosDeConductor, conductorDeUsuario, preoperacionalHoy } from '../../lib/db'
+import { getEmpresaPorSlug, vehiculosDeConductor, conductorDeUsuario, preoperacionalHoy, listVehiculos, listFuec } from '../../lib/db'
+
+// FUEC se carga solo cuando un propietario/admin entra a generarlo (no pesa para el conductor).
+const FuecForm = lazy(() => import('../FuecForm'))
+const FuecImprimir = lazy(() => import('../FuecImprimir'))
 import { TIPO } from '../../lib/preoperacional'
 import { applyTheme } from '../../lib/theme'
 import { activarPwaEmpresa, esStandalone } from '../../lib/pwa'
@@ -14,7 +18,7 @@ import PreoperacionalCaptura from './PreoperacionalCaptura'
 // App de conductores (PWA) por empresa: movtek.app/e/<slug>/app
 export default function AppConductor() {
   const { slug } = useParams()
-  const { user, login, logout, empresaIdUsuario, conductorId } = useAuth()
+  const { user, login, logout, empresaIdUsuario, conductorId, esConductor, esPropietario, esAdmin, esOperativo, propietarioId, sinAcceso } = useAuth()
   const { entrarAEmpresa } = useEmpresa() || {}
   const [empresa, setEmpresa] = useState(undefined)
 
@@ -38,6 +42,22 @@ export default function AppConductor() {
   )
 
   if (!user) return <LoginConductor empresa={empresa} onLogin={login} />
+  // Propietario / admin / operativo → app de FUEC. Conductor → app de preoperacional.
+  if (esPropietario || esAdmin || esOperativo) {
+    return <HomeFuec empresa={empresa} user={user} propietarioId={propietarioId} esPropietario={esPropietario} onLogout={logout} />
+  }
+  if (!esConductor && sinAcceso) {
+    return (
+      <Pantalla>
+        <div className="text-center">
+          <div className="text-4xl">🔒</div>
+          <h1 className="mt-3 font-display text-xl font-extrabold">Sin acceso</h1>
+          <p className="mt-1 text-sm text-ink-soft">Tu usuario no está habilitado en {empresa?.nombre}. Habla con tu empresa.</p>
+          <button onClick={logout} className="btn-ghost mt-4">Salir</button>
+        </div>
+      </Pantalla>
+    )
+  }
   return <Home empresa={empresa} user={user} conductorId={conductorId} onLogout={logout} />
 }
 
@@ -345,6 +365,157 @@ function ModalCambiarPass({ actualizarPassword, onClose }) {
           </form>
         )}
       </div>
+    </div>
+  )
+}
+
+// ---------- APP DE FUEC (propietarios / admin / operativo) ----------
+function HomeFuec({ empresa, user, propietarioId, esPropietario, onLogout }) {
+  const { actualizarPassword } = useAuth()
+  const [pantalla, setPantalla] = useState('home') // home | completo | form | ver | rapidoPick
+  const [dupId, setDupId] = useState(null)
+  const [verId, setVerId] = useState(null)
+  const [vehiculos, setVehiculos] = useState([])
+  const [fuecs, setFuecs] = useState([])
+  const [cargando, setCargando] = useState(true)
+  const [modal, setModal] = useState('')
+  const primary = empresa?.color_primario || '#16a34a'
+
+  async function cargar() {
+    setCargando(true)
+    let vs = await listVehiculos({ empresaId: empresa.id }).catch(() => [])
+    if (esPropietario && propietarioId) vs = vs.filter((v) => String(v.propietario_id) === String(propietarioId))
+    setVehiculos(vs)
+    let fs = await listFuec({ empresaId: empresa.id }).catch(() => [])
+    if (esPropietario && propietarioId) {
+      const mias = new Set(vs.map((v) => String(v.id)))
+      fs = fs.filter((f) => mias.has(String(f.vehiculo_id)))
+    }
+    setFuecs(fs.slice(0, 25))
+    setCargando(false)
+  }
+  useEffect(() => { cargar() }, [empresa?.id])
+
+  function volverHome() { setPantalla('home'); setDupId(null); setVerId(null); cargar() }
+  function verGenerado(id) { setVerId(id); setPantalla('ver') }
+  function repetir(id) { setDupId(id); setPantalla('form') }
+  function elegirVehiculoRapido(veh) {
+    const ultimo = fuecs.find((f) => String(f.vehiculo_id) === String(veh.id))
+    if (!ultimo) { alert(`${veh.placa} no tiene un FUEC previo para copiar. Usa "FUEC completo" la primera vez.`); return }
+    setDupId(ultimo.id); setPantalla('form')
+  }
+
+  // Formulario FUEC (reutiliza el de la plataforma; tema claro para leer bien).
+  if (pantalla === 'completo' || pantalla === 'form') {
+    return (
+      <div className="min-h-screen bg-cloud">
+        <div className="mx-auto max-w-3xl px-4 py-4">
+          <Suspense fallback={<p className="text-ink-faint">Cargando FUEC…</p>}>
+            <FuecForm duplicar={pantalla === 'form'} idProp={pantalla === 'form' ? dupId : null}
+              onDone={(id) => verGenerado(id)} onCancel={volverHome} />
+          </Suspense>
+        </div>
+      </div>
+    )
+  }
+  if (pantalla === 'ver') {
+    return (
+      <div className="min-h-screen bg-cloud">
+        <div className="mx-auto max-w-4xl px-4 py-4">
+          <Suspense fallback={<p className="text-ink-faint">Cargando…</p>}>
+            <FuecImprimir idProp={verId} onBack={volverHome} />
+          </Suspense>
+        </div>
+      </div>
+    )
+  }
+
+  // Selector de vehículo para "FUEC rápido".
+  if (pantalla === 'rapidoPick') {
+    return (
+      <div className="min-h-screen bg-cloud">
+        <header className="flex items-center gap-3 px-4 py-3 text-white" style={{ background: primary }}>
+          <button onClick={() => setPantalla('home')} className="text-sm font-semibold">← Volver</button>
+          <span className="font-display text-base font-extrabold">⚡ FUEC rápido</span>
+        </header>
+        <div className="mx-auto max-w-xl px-4 py-5">
+          <p className="mb-3 text-sm text-ink-soft">Elige el vehículo. Se copiará su <b>último FUEC</b> y solo cambias las fechas (y conductor si quieres).</p>
+          <div className="flex flex-col gap-2">
+            {vehiculos.map((v) => {
+              const tiene = fuecs.some((f) => String(f.vehiculo_id) === String(v.id))
+              return (
+                <button key={v.id} onClick={() => elegirVehiculoRapido(v)}
+                  className="flex items-center justify-between rounded-xl border-2 border-cloud-line bg-white px-4 py-3 text-left">
+                  <span>
+                    <span className="block font-display text-base font-extrabold text-ink">{v.placa}</span>
+                    <span className="block text-xs text-ink-soft">{v.marca} {v.modelo} · Móvil {v.numero_interno || '—'}</span>
+                  </span>
+                  <span className={`text-xs font-bold ${tiene ? 'text-brand-600' : 'text-ink-faint'}`}>{tiene ? 'Copiar último →' : 'Sin FUEC previo'}</span>
+                </button>
+              )
+            })}
+            {vehiculos.length === 0 && <p className="rounded-xl bg-coral-400/15 px-4 py-3 text-sm text-coral-500">No tienes vehículos asignados.</p>}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // HOME de la app de FUEC.
+  return (
+    <div className="min-h-screen bg-cloud">
+      <header className="flex items-center gap-3 px-4 py-3 text-white" style={{ background: primary }}>
+        {empresa?.logo_url
+          ? <img src={empresa.logo_url} alt="" className="h-9 w-auto max-w-[120px] rounded-lg bg-white/90 object-contain p-0.5" />
+          : <span className="font-display text-lg font-extrabold">{empresa?.nombre}</span>}
+        <button onClick={() => setModal('pass')} className="ml-auto rounded-lg bg-white/20 px-3 py-1.5 text-sm font-semibold" title="Cambiar contraseña">🔑</button>
+        <button onClick={onLogout} className="rounded-lg bg-white/20 px-3 py-1.5 text-sm font-semibold">Salir</button>
+      </header>
+
+      <div className="mx-auto max-w-xl px-4 py-5">
+        <p className="text-sm text-ink-soft">Hola,</p>
+        <h1 className="font-display text-2xl font-extrabold text-ink">{user?.email || 'Propietario'}</h1>
+
+        <div className="mt-4 grid grid-cols-1 gap-3">
+          <button onClick={() => setPantalla('rapidoPick')}
+            className="rounded-2xl px-5 py-4 text-left text-white shadow-glow" style={{ background: primary }}>
+            <span className="block font-display text-lg font-extrabold">⚡ FUEC rápido</span>
+            <span className="block text-sm text-white/85">Copia el último del vehículo y solo cambia las fechas</span>
+          </button>
+          <button onClick={() => { setDupId(null); setPantalla('completo') }}
+            className="rounded-2xl border-2 border-cloud-line bg-white px-5 py-4 text-left text-ink">
+            <span className="block font-display text-lg font-extrabold">📝 FUEC completo</span>
+            <span className="block text-sm text-ink-soft">Formulario completo (para el primero o casos nuevos)</span>
+          </button>
+        </div>
+
+        {/* FUEC recientes */}
+        <div className="mt-6">
+          <p className="label mb-1.5">Últimos FUEC</p>
+          {cargando ? (
+            <p className="text-sm text-ink-faint">Cargando…</p>
+          ) : fuecs.length === 0 ? (
+            <p className="rounded-xl bg-white px-4 py-3 text-sm text-ink-soft">Aún no hay FUEC. Crea el primero con “FUEC completo”.</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {fuecs.map((f) => (
+                <div key={f.id} className="flex items-center justify-between gap-2 rounded-xl border border-cloud-line bg-white px-3 py-2.5">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold text-ink">{f.placa || '—'} · FUEC {f.contrato_hijo || f.numero_fuec || ''}</p>
+                    <p className="truncate text-xs text-ink-soft">Vigencia: {f.vigencia_inicio || '—'} a {f.vigencia_fin || '—'}</p>
+                  </div>
+                  <div className="flex flex-none gap-1.5">
+                    <button onClick={() => repetir(f.id)} className="rounded-lg bg-brand-50 px-2.5 py-1.5 text-xs font-bold text-brand-600">⚡ Repetir</button>
+                    <button onClick={() => verGenerado(f.id)} className="rounded-lg bg-cloud px-2.5 py-1.5 text-xs font-bold text-ink">Ver</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {modal === 'pass' && <ModalCambiarPass actualizarPassword={actualizarPassword} onClose={() => setModal('')} />}
     </div>
   )
 }

@@ -5,8 +5,9 @@ import { getFuec } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
 import FuecDocumento from '../components/FuecDocumento'
 
-export default function FuecImprimir() {
-  const { id } = useParams()
+export default function FuecImprimir({ idProp = null, onBack = null }) {
+  const { id: idRoute } = useParams()
+  const id = idProp ?? idRoute
   const navigate = useNavigate()
   const { empresa } = useEmpresa()
   const [f, setF] = useState(null)
@@ -84,7 +85,7 @@ export default function FuecImprimir() {
       <div className="mb-4 flex flex-wrap gap-2 no-print">
         <button onClick={descargarPdf} disabled={descargando} className="btn-primary">{descargando ? '⏳ Generando PDF…' : '📥 Descargar PDF'}</button>
         <button onClick={() => window.print()} className="btn-ghost">🖨️ Imprimir</button>
-        <button onClick={() => navigate('/fuec')} className="btn-ghost">Retornar</button>
+        <button onClick={() => onBack ? onBack() : navigate('/fuec')} className="btn-ghost">Retornar</button>
       </div>
       <div className="fuec-screen" style={{ '--fuec-scale': scale }}>
         <FuecDocumento f={f} empresa={empresa} qr={qr} />

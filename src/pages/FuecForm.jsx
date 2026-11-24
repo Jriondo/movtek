@@ -16,8 +16,11 @@ const ESTRATEGIAS = ['N/A', 'CONSORCIO', 'CONVENIO', 'UNIÓN TEMPORAL']
 const TIPOS_DOC = ['Cédula de ciudadanía', 'NIT', 'Cédula de extranjería', 'Pasaporte', 'Tarjeta de identidad']
 const OCASIONAL_VACIO = { tipo_documento: '', documento: '', nombre: '', responsable: true, direccion: '', telefono: '', empresa_nombre: '', empresa_nit: '' }
 
-export default function FuecForm({ duplicar = false }) {
-  const { id } = useParams()
+// Se usa en la plataforma (rutas) y también DENTRO de la app del propietario
+// pasando idProp/onDone/onCancel (así no depende del router de la plataforma).
+export default function FuecForm({ duplicar = false, idProp = null, onDone = null, onCancel = null }) {
+  const { id: idRoute } = useParams()
+  const id = idProp ?? idRoute
   const navigate = useNavigate()
   const { empresa } = useEmpresa()
   const { user, esPropietario, propietarioId } = useAuth()
@@ -257,6 +260,7 @@ export default function FuecForm({ duplicar = false }) {
       delete payload.num_extracto
       if (forzarNuevo) delete payload.id // pasado el plazo, se crea un FUEC nuevo
       const saved = await saveFuec(payload)
+      if (onDone) { onDone(saved.id, { imprimir: irAImprimir }); return }
       if (irAImprimir) navigate(`/fuec/${saved.id}/imprimir`)
       else navigate('/fuec')
     } catch (e) {
@@ -268,7 +272,7 @@ export default function FuecForm({ duplicar = false }) {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <button onClick={() => navigate('/fuec')} className="text-sm font-semibold text-brand-500 hover:underline">← FUEC</button>
+        <button onClick={() => onCancel ? onCancel() : navigate('/fuec')} className="text-sm font-semibold text-brand-500 hover:underline">← FUEC</button>
         <h1 className="mt-1 font-display text-2xl font-extrabold text-ink">{duplicar ? 'Duplicar FUEC' : editando ? 'Editar FUEC' : 'Generar FUEC'}</h1>
         <p className="mt-0.5 text-sm text-ink-soft">Completa los datos del contrato; el documento se arma automáticamente con el formato oficial.</p>
       </div>
