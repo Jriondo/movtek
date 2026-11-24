@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { getEmpresaPorSlug, vehiculosDeConductor, conductorDeUsuario, preoperacionalHoy, listVehiculos, listFuec, listRodamiento, saveRodamiento, listMantPlan, estadoMantenimiento, fechaLocalISO } from '../../lib/db'
+import { getEmpresaPorSlug, vehiculosDeConductor, conductorDeUsuario, preoperacionalHoy, listVehiculos, listFuec, listRodamiento, saveRodamiento, listMantPlan, estadoMantenimiento, fechaLocalISO, getPropietario } from '../../lib/db'
 
 // FUEC se carga solo cuando un propietario/admin entra a generarlo (no pesa para el conductor).
 const FuecForm = lazy(() => import('../FuecForm'))
@@ -568,6 +568,8 @@ function HomeFuec({ empresa, user, propietarioId, esPropietario, onLogout }) {
   const [fuecs, setFuecs] = useState([])
   const [cargando, setCargando] = useState(true)
   const [modal, setModal] = useState('')
+  const [condProp, setCondProp] = useState(null)   // propietario como "conductor" para la preoperacional
+  const [vehSel, setVehSel] = useState(null)       // vehículo elegido para preoperacional
   const primary = empresa?.color_primario || '#16a34a'
 
   async function cargar() {
@@ -581,11 +583,17 @@ function HomeFuec({ empresa, user, propietarioId, esPropietario, onLogout }) {
       fs = fs.filter((f) => mias.has(String(f.vehiculo_id)))
     }
     setFuecs(fs.slice(0, 25))
+    // Propietario como "conductor" para firmar la preoperacional.
+    if (propietarioId) {
+      const pr = await getPropietario(propietarioId).catch(() => null)
+      if (pr) setCondProp({ id: pr.id, nombres: pr.nombres || pr.compania || '', apellidos: pr.apellidos || '', documento: pr.documento || '' })
+    }
+    if (!propietarioId) setCondProp({ id: null, nombres: (user?.email || 'Responsable'), apellidos: '', documento: '' })
     setCargando(false)
   }
   useEffect(() => { cargar() }, [empresa?.id])
 
-  function volverHome() { setPantalla('home'); setDupId(null); setVerId(null); cargar() }
+  function volverHome() { setPantalla('home'); setDupId(null); setVerId(null); setVehSel(null); cargar() }
   function verGenerado(id) { setVerId(id); setPantalla('ver') }
   function repetir(id) { setDupId(id); setPantalla('form') }
   function elegirVehiculoRapido(veh) {
@@ -650,6 +658,39 @@ function HomeFuec({ empresa, user, propietarioId, esPropietario, onLogout }) {
     )
   }
 
+  // Preoperacional (propietario): elegir vehículo.
+  if (pantalla === 'preopPick') {
+    return (
+      <div className="min-h-screen bg-cloud">
+        <header className="flex items-center gap-3 px-4 py-3 text-white" style={{ background: primary }}>
+          <button onClick={() => setPantalla('home')} className="text-sm font-semibold">← Volver</button>
+          <span className="font-display text-base font-extrabold">📋 Preoperacional</span>
+        </header>
+        <div className="mx-auto max-w-xl px-4 py-5">
+          <p className="mb-3 text-sm text-ink-soft">Elige el vehículo para hacer la revisión preoperacional.</p>
+          <div className="flex flex-col gap-2">
+            {vehiculos.map((v) => (
+              <button key={v.id} onClick={() => { setVehSel(v); setPantalla('preopCaptura') }}
+                className="rounded-xl border-2 border-cloud-line bg-white px-4 py-3 text-left">
+                <span className="block font-display text-base font-extrabold text-ink">{v.placa}</span>
+                <span className="block text-xs text-ink-soft">{v.marca} {v.modelo} · Móvil {v.numero_interno || '—'}</span>
+              </button>
+            ))}
+            {vehiculos.length === 0 && <p className="rounded-xl bg-white px-4 py-3 text-sm text-coral-500">No tienes vehículos asignados.</p>}
+          </div>
+        </div>
+        {modal === 'pass' && <ModalCambiarPass actualizarPassword={actualizarPassword} onClose={() => setModal('')} />}
+      </div>
+    )
+  }
+  if (pantalla === 'preopCaptura' && vehSel) {
+    return <PreoperacionalCaptura empresa={empresa} vehiculo={vehSel} conductor={condProp}
+      onCancel={() => setPantalla('preopPick')} onDone={() => volverHome()} />
+  }
+  if (pantalla === 'rutas') {
+    return <RegistroRutas empresa={empresa} vehiculos={vehiculos} primary={primary} onBack={() => setPantalla('home')} />
+  }
+
   // HOME de la app de FUEC.
   return (
     <div className="min-h-screen bg-cloud">
@@ -676,6 +717,16 @@ function HomeFuec({ empresa, user, propietarioId, esPropietario, onLogout }) {
             <span className="block font-display text-lg font-extrabold">📝 FUEC completo</span>
             <span className="block text-sm text-ink-soft">Formulario completo (para el primero o casos nuevos)</span>
           </button>
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={() => setPantalla('preopPick')} className="rounded-2xl border-2 border-cloud-line bg-white px-4 py-4 text-left text-ink">
+              <span className="block font-display text-base font-extrabold">📋 Preoperacional</span>
+              <span className="block text-xs text-ink-soft">Revisar un vehículo</span>
+            </button>
+            <button onClick={() => setPantalla('rutas')} className="rounded-2xl border-2 border-cloud-line bg-white px-4 py-4 text-left text-ink">
+              <span className="block font-display text-base font-extrabold">🗓️ Rutas</span>
+              <span className="block text-xs text-ink-soft">Registro de recorridos</span>
+            </button>
+          </div>
         </div>
 
         {/* FUEC recientes */}
@@ -705,6 +756,75 @@ function HomeFuec({ empresa, user, propietarioId, esPropietario, onLogout }) {
       </div>
 
       {modal === 'pass' && <ModalCambiarPass actualizarPassword={actualizarPassword} onClose={() => setModal('')} />}
+    </div>
+  )
+}
+
+// Registro de rutas del propietario (lectura): recorridos de SUS vehículos por día/semana/mes.
+function RegistroRutas({ empresa, vehiculos, primary, onBack }) {
+  const [vista, setVista] = useState('hoy')
+  const [rodas, setRodas] = useState([])
+  const hoyISO = fechaLocalISO()
+  const placas = useMemo(() => new Set(vehiculos.map((v) => (v.placa || '').toUpperCase())), [vehiculos])
+
+  const rangos = useMemo(() => {
+    const d = new Date(hoyISO + 'T12:00:00'); const iso = (x) => fechaLocalISO(x)
+    const off = (d.getDay() + 6) % 7; const lun = new Date(d); lun.setDate(d.getDate() - off)
+    const dom = new Date(lun); dom.setDate(lun.getDate() + 6)
+    const m1 = new Date(d.getFullYear(), d.getMonth(), 1); const m2 = new Date(d.getFullYear(), d.getMonth() + 1, 0)
+    return { hoy: [hoyISO, hoyISO], semana: [iso(lun), iso(dom)], mes: [iso(m1), iso(m2)] }
+  }, [hoyISO])
+
+  useEffect(() => {
+    const starts = [rangos.semana[0], rangos.mes[0]].sort()[0]
+    const ends = [rangos.semana[1], rangos.mes[1]].sort().slice(-1)[0]
+    listRodamiento({ empresaId: empresa?.id, desde: starts, hasta: ends })
+      .then((rs) => setRodas(rs.filter((r) => placas.has((r.placa || '').toUpperCase()))))
+      .catch(() => setRodas([]))
+  }, [empresa?.id, vehiculos.length])
+
+  const [d1, d2] = rangos[vista]
+  const items = rodas.filter((r) => r.fecha >= d1 && r.fecha <= d2).sort((a, b) => (a.fecha + (a.hora_inicial || '')).localeCompare(b.fecha + (b.hora_inicial || '')))
+  const fechaCorta = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('es', { weekday: 'short', day: '2-digit', month: 'short' })
+
+  return (
+    <div className="min-h-screen bg-cloud">
+      <header className="flex items-center gap-3 px-4 py-3 text-white" style={{ background: primary }}>
+        <button onClick={onBack} className="text-sm font-semibold">← Volver</button>
+        <span className="font-display text-base font-extrabold">🗓️ Registro de rutas</span>
+      </header>
+      <div className="mx-auto max-w-xl px-4 py-5">
+        <div className="mb-3 flex gap-1.5">
+          {[['hoy', 'Hoy'], ['semana', 'Semana'], ['mes', 'Mes']].map(([v, l]) => (
+            <button key={v} onClick={() => setVista(v)} className={`rounded-lg px-3 py-1.5 text-sm font-bold ${vista === v ? 'bg-brand-500 text-white' : 'bg-white text-ink-soft'}`}>{l}</button>
+          ))}
+        </div>
+        {items.length === 0 ? (
+          <p className="rounded-xl bg-white px-4 py-3 text-sm text-ink-soft">No hay recorridos de tus vehículos {vista === 'hoy' ? 'hoy' : 'en este ' + vista}.</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {items.map((r) => {
+              const cancelado = r.estado === 'cancelado'
+              return (
+                <div key={r.id} className="rounded-xl border border-cloud-line bg-white px-3 py-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold capitalize text-ink-soft">{fechaCorta(r.fecha)} · {r.placa}</span>
+                    <span className="text-xs tabular-nums text-ink-soft">{(r.hora_inicial || '').slice(0, 5)}{r.hora_final ? `–${(r.hora_final || '').slice(0, 5)}` : ''}</span>
+                  </div>
+                  <p className="font-bold text-ink">{r.ruta || 'Sin ruta'}</p>
+                  {(r.origen || r.destino) && <p className="text-xs text-ink-soft">{r.origen || '—'} → {r.destino || '—'}</p>}
+                  <p className="text-xs text-ink-faint">
+                    {r.conductor_nombre || 'Sin conductor'}
+                    {cancelado ? <span className="ml-1 font-bold text-coral-500">· ✕ {r.motivo_cancelacion || 'Cancelado'}</span>
+                      : r.hora_final ? <span className="ml-1 font-bold text-brand-600">· ✓ {r.tiempo || 'Terminado'}</span>
+                        : <span className="ml-1 text-amber-600">· ⏳ pendiente</span>}
+                  </p>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
