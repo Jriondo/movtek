@@ -188,16 +188,25 @@ function Home({ empresa, user, conductorId, onLogout }) {
   const [cargando, setCargando] = useState(true)
   const [modal, setModal] = useState('')
   const [nuevas, setNuevas] = useState(0)
+  const [permiso, setPermiso] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'denied')
   const rutasIdsRef = useRef([])
   const vehiculo = useMemo(() => vehiculos.find((v) => String(v.id) === String(selId)), [vehiculos, selId])
 
-  // Recordatorios AUTOMÁTICOS: al abrir la app se pide permiso y se activa (sin botón).
+  // Intenta activar al abrir (si ya dio permiso, renueva la suscripción sin molestar).
   useEffect(() => {
     if (!conductor) return
-    if (typeof Notification !== 'undefined' && Notification.permission !== 'denied') {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
       activarPushConductor({ empresa, conductor, email: user?.email }).catch(() => {})
     }
   }, [conductor?.id])
+
+  // Activación con un toque (los navegadores exigen un gesto para pedir el permiso).
+  async function activarAvisos() {
+    const r = await activarPushConductor({ empresa, conductor, email: user?.email })
+    setPermiso(typeof Notification !== 'undefined' ? Notification.permission : 'denied')
+    if (!r.ok && r.motivo === 'sin-permiso') alert('Debes permitir las notificaciones en tu navegador para recibir el recordatorio.')
+    else if (!r.ok && r.motivo === 'no-soportado') alert('Tu teléfono o navegador no soporta notificaciones. En iPhone debes “Agregar a inicio” primero.')
+  }
 
   async function cargar() {
     setCargando(true)
@@ -313,6 +322,14 @@ function Home({ empresa, user, conductorId, onLogout }) {
                 <span className="text-xs" style={{ color: '#8fb6a3' }}>Móvil {vehiculo.numero_interno || '—'}</span>
                 {vehiculos.length > 1 && <button onClick={() => setSelId('')} className="ml-auto rounded-lg px-2.5 py-1 text-xs font-bold" style={{ background: '#0e9488', color: '#042012' }}>Cambiar</button>}
               </div>
+            )}
+
+            {/* Activar avisos (solo si aún no están activados) */}
+            {permiso !== 'granted' && (
+              <button onClick={activarAvisos} className="mt-3 flex w-full items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-bold"
+                style={{ borderColor: '#2f5a1c', background: '#172a12', color: '#b6f08a' }}>
+                🔔 Toca para activar los avisos de preoperacional y rutas
+              </button>
             )}
 
             {/* Pestañas / carpetas */}
