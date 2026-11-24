@@ -1449,3 +1449,192 @@ export async function savePreguntasPreop(empresaId, preguntas) {
   registrarCambio({ accion: 'editar', entidad: 'Preguntas preoperacional', descripcion: `${limpias.length} preguntas`, empresa_id: empresaId })
   return limpias
 }
+
+// ================= MÓDULO: PLAN DE RODAMIENTO =================
+// Programación por días: asigna vehículo→(conductor, ruta, turno) en una fecha.
+const LS_KEY_ROD = 'movtek_rodamiento'
+function lsAllR() { try { return JSON.parse(localStorage.getItem(LS_KEY_ROD) || '[]') } catch { return [] } }
+function lsSaveR(rows) { try { localStorage.setItem(LS_KEY_ROD, JSON.stringify(rows)) } catch {} }
+
+export async function listRodamiento({ empresaId = null, desde = '', hasta = '', vehiculoId = '' } = {}) {
+  if (isSupabaseConfigured) {
+    let q = supabase.from('rodamiento').select('*')
+    if (empresaId) q = q.eq('empresa_id', empresaId)
+    if (vehiculoId) q = q.eq('vehiculo_id', vehiculoId)
+    if (desde) q = q.gte('fecha', desde)
+    if (hasta) q = q.lte('fecha', hasta)
+    const { data, error } = await q
+    if (error) throw error
+    return data
+  }
+  let rows = lsAllR()
+  if (empresaId) rows = rows.filter((r) => r.empresa_id === empresaId)
+  if (vehiculoId) rows = rows.filter((r) => String(r.vehiculo_id) === String(vehiculoId))
+  if (desde) rows = rows.filter((r) => (r.fecha || '') >= desde)
+  if (hasta) rows = rows.filter((r) => (r.fecha || '') <= hasta)
+  return rows
+}
+
+// Guarda una asignación (una celda). Si queda vacía (sin conductor ni ruta), la borra.
+export async function saveRodamiento(data) {
+  const payload = { ...data }
+  const vacio = !(payload.conductor_id || payload.ruta || payload.nota || payload.turno)
+  if (isSupabaseConfigured) {
+    // upsert por (empresa, vehiculo, fecha)
+    if (vacio) {
+      if (payload.id) await supabase.from('rodamiento').delete().eq('id', payload.id)
+      else await supabase.from('rodamiento').delete().match({ empresa_id: payload.empresa_id, vehiculo_id: payload.vehiculo_id, fecha: payload.fecha })
+      return null
+    }
+    if (payload.id) {
+      const { id, created_at, ...rest } = payload
+      const { data: d, error } = await supabase.from('rodamiento').update(nulls(rest)).eq('id', id).select().single()
+      if (error) throw error
+      return d
+    }
+    const { data: d, error } = await supabase.from('rodamiento').insert(nulls(payload)).select().single()
+    if (error) throw error
+    return d
+  }
+  let rows = lsAllR()
+  const idx = rows.findIndex((r) => payload.id ? String(r.id) === String(payload.id)
+    : (String(r.vehiculo_id) === String(payload.vehiculo_id) && r.fecha === payload.fecha && r.empresa_id === payload.empresa_id))
+  if (vacio) { if (idx >= 0) { rows.splice(idx, 1); lsSaveR(rows) } return null }
+  if (idx >= 0) { rows[idx] = { ...rows[idx], ...payload }; lsSaveR(rows); return rows[idx] }
+  payload.id = newId(); rows.unshift(payload); lsSaveR(rows); return payload
+}
+
+export async function deleteRodamiento(id) {
+  if (isSupabaseConfigured) { const { error } = await supabase.from('rodamiento').delete().eq('id', id); if (error) throw error; return }
+  lsSaveR(lsAllR().filter((r) => String(r.id) !== String(id)))
+}
+
+// ================= MÓDULO: PLAN DE MANTENIMIENTO =================
+// (A) Plan preventivo por vehículo (tareas con próximo por fecha/km).
+// (B) Bitácora de mantenimientos realizados.
+const LS_KEY_MP = 'movtek_mant_plan'
+const LS_KEY_MR = 'movtek_mant_registro'
+function lsAllMP() { try { return JSON.parse(localStorage.getItem(LS_KEY_MP) || '[]') } catch { return [] } }
+function lsSaveMP(rows) { try { localStorage.setItem(LS_KEY_MP, JSON.stringify(rows)) } catch {} }
+function lsAllMR() { try { return JSON.parse(localStorage.getItem(LS_KEY_MR) || '[]') } catch { return [] } }
+function lsSaveMR(rows) { try { localStorage.setItem(LS_KEY_MR, JSON.stringify(rows)) } catch {} }
+
+const sumarDias = (iso, dias) => {
+  if (!iso || !dias) return ''
+  const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + Number(dias))
+  return d.toISOString().slice(0, 10)
+}
+// Calcula próximo mantenimiento a partir del último + intervalos.
+export function calcularProximo(plan) {
+  const proxima_fecha = plan.ultima_fecha && plan.cada_dias ? sumarDias(plan.ultima_fecha, plan.cada_dias) : (plan.proxima_fecha || '')
+  const proximo_km = plan.ultimo_km && plan.cada_km ? (Number(plan.ultimo_km) + Number(plan.cada_km)) : (plan.proximo_km || '')
+  return { proxima_fecha, proximo_km: proximo_km ? String(proximo_km) : '' }
+}
+
+export async function listMantPlan({ empresaId = null, vehiculoId = '' } = {}) {
+  if (isSupabaseConfigured) {
+    let q = supabase.from('mantenimiento_plan').select('*').order('created_at', { ascending: false })
+    if (empresaId) q = q.eq('empresa_id', empresaId)
+    if (vehiculoId) q = q.eq('vehiculo_id', vehiculoId)
+    const { data, error } = await q
+    if (error) throw error
+    return data
+  }
+  let rows = lsAllMP()
+  if (empresaId) rows = rows.filter((r) => r.empresa_id === empresaId)
+  if (vehiculoId) rows = rows.filter((r) => String(r.vehiculo_id) === String(vehiculoId))
+  return rows
+}
+
+export async function saveMantPlan(data) {
+  const payload = { ...data, ...calcularProximo(data) }
+  if (isSupabaseConfigured) {
+    if (payload.id) {
+      const { id, created_at, ...rest } = payload
+      const { data: d, error } = await supabase.from('mantenimiento_plan').update(nulls(rest)).eq('id', id).select().single()
+      if (error) throw error; return d
+    }
+    delete payload.id
+    const { data: d, error } = await supabase.from('mantenimiento_plan').insert(nulls(payload)).select().single()
+    if (error) throw error; return d
+  }
+  const rows = lsAllMP()
+  if (payload.id) { const i = rows.findIndex((r) => String(r.id) === String(payload.id)); if (i >= 0) rows[i] = { ...rows[i], ...payload }; lsSaveMP(rows); return rows[i] }
+  payload.id = newId(); rows.unshift(payload); lsSaveMP(rows); return payload
+}
+
+export async function deleteMantPlan(id) {
+  if (isSupabaseConfigured) { const { error } = await supabase.from('mantenimiento_plan').delete().eq('id', id); if (error) throw error; return }
+  lsSaveMP(lsAllMP().filter((r) => String(r.id) !== String(id)))
+}
+
+export async function listMantRegistro({ empresaId = null, vehiculoId = '', desde = '', hasta = '' } = {}) {
+  if (isSupabaseConfigured) {
+    let q = supabase.from('mantenimiento_registro').select('*').order('fecha', { ascending: false })
+    if (empresaId) q = q.eq('empresa_id', empresaId)
+    if (vehiculoId) q = q.eq('vehiculo_id', vehiculoId)
+    if (desde) q = q.gte('fecha', desde)
+    if (hasta) q = q.lte('fecha', hasta)
+    const { data, error } = await q
+    if (error) throw error
+    return data
+  }
+  let rows = lsAllMR()
+  if (empresaId) rows = rows.filter((r) => r.empresa_id === empresaId)
+  if (vehiculoId) rows = rows.filter((r) => String(r.vehiculo_id) === String(vehiculoId))
+  if (desde) rows = rows.filter((r) => (r.fecha || '') >= desde)
+  if (hasta) rows = rows.filter((r) => (r.fecha || '') <= hasta)
+  return rows.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''))
+}
+
+// Guarda un mantenimiento realizado; si viene de un plan, actualiza su último y recalcula el próximo.
+export async function saveMantRegistro(data) {
+  const payload = { ...data }
+  let res
+  if (isSupabaseConfigured) {
+    if (payload.id) {
+      const { id, created_at, ...rest } = payload
+      const { data: d, error } = await supabase.from('mantenimiento_registro').update(nulls(rest)).eq('id', id).select().single()
+      if (error) throw error; res = d
+    } else {
+      delete payload.id
+      const { data: d, error } = await supabase.from('mantenimiento_registro').insert(nulls(payload)).select().single()
+      if (error) throw error; res = d
+    }
+  } else {
+    const rows = lsAllMR()
+    if (payload.id) { const i = rows.findIndex((r) => String(r.id) === String(payload.id)); if (i >= 0) rows[i] = { ...rows[i], ...payload }; res = rows[i] }
+    else { payload.id = newId(); payload.created_at = new Date().toISOString(); rows.unshift(payload); res = payload }
+    lsSaveMR(rows)
+  }
+  // Actualiza el plan asociado (último km/fecha → próximo).
+  if (payload.plan_id) {
+    try {
+      const planes = await listMantPlan({})
+      const plan = planes.find((p) => String(p.id) === String(payload.plan_id))
+      if (plan) await saveMantPlan({ ...plan, ultima_fecha: payload.fecha || plan.ultima_fecha, ultimo_km: payload.km || plan.ultimo_km })
+    } catch {}
+  }
+  return res
+}
+
+export async function deleteMantRegistro(id) {
+  if (isSupabaseConfigured) { const { error } = await supabase.from('mantenimiento_registro').delete().eq('id', id); if (error) throw error; return }
+  lsSaveMR(lsAllMR().filter((r) => String(r.id) !== String(id)))
+}
+
+// Estado de un plan según fecha/km actual: 'vencido' | 'proximo' | 'ok'.
+export function estadoMantenimiento(plan, kmActual = null, diasAviso = 15, kmAviso = 1000) {
+  const hoy = new Date().toISOString().slice(0, 10)
+  let venc = false, prox = false
+  if (plan.proxima_fecha) {
+    if (plan.proxima_fecha < hoy) venc = true
+    else if (plan.proxima_fecha <= sumarDias(hoy, diasAviso)) prox = true
+  }
+  if (plan.proximo_km && kmActual != null && kmActual !== '') {
+    const km = Number(kmActual), pk = Number(plan.proximo_km)
+    if (km >= pk) venc = true
+    else if (km >= pk - kmAviso) prox = true
+  }
+  return venc ? 'vencido' : prox ? 'proximo' : 'ok'
+}

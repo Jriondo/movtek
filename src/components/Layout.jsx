@@ -16,6 +16,8 @@ const nav = [
   { to: '/destinos', label: 'Matriz destinos', icon: 'mapa', roles: ['admin', 'operativo'] },
   { to: '/fuec', label: 'FUEC', icon: 'fuec', roles: ['admin', 'operativo', 'propietario'] },
   { to: '/preoperacionales', label: 'Preoperacionales', icon: 'checklist', roles: ['admin', 'operativo', 'propietario'] },
+  { to: '/rodamiento', label: 'Plan de rodamiento', icon: 'rodamiento', roles: ['admin', 'operativo', 'propietario'] },
+  { to: '/mantenimiento', label: 'Plan de mantenimiento', icon: 'mantenimiento', roles: ['admin', 'operativo', 'propietario'] },
   { to: '/empresas', label: 'Empresas', icon: 'empresa', roles: ['admin'] },
   { to: '/usuarios', label: 'Usuarios', icon: 'usuarios', roles: ['admin'] },
   { to: '/historial', label: 'Historial', icon: 'libro', roles: ['admin'] },

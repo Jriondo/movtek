@@ -16,6 +16,10 @@ const ICONS = {
   checklist: <><path d="M6 3h11a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" /><polyline points="8.5 12.5 11 15 15.5 9.5" /></>,
   // Libro abierto (historial).
   libro: <><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></>,
+  // Calendario (plan de rodamiento).
+  rodamiento: <><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /><line x1="8" y1="14" x2="8" y2="14" /><line x1="12" y1="14" x2="12" y2="14" /><line x1="16" y1="14" x2="16" y2="14" /></>,
+  // Llave de mecánico (plan de mantenimiento).
+  mantenimiento: <><path d="M14.7 6.3a4 4 0 0 0-5.2 5.2L3 18v3h3l6.5-6.5a4 4 0 0 0 5.2-5.2l-2.6 2.6-2.1-.4-.4-2.1z" /></>,
 }
 
 export default function Icon({ name, className = 'h-5 w-5' }) {
