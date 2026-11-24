@@ -1,5 +1,5 @@
 import { useEmpresa } from '../context/EmpresaContext'
-import movtekLogo from '../assets/movtek-logo.png'
+import movtekLogo from '../assets/movtek-logo.webp'
 
 // Logo de la empresa activa. Movtek usa su logo oficial (transparente);
 // cada empresa el suyo (logo_url); si no tiene, una marca con su inicial + color.

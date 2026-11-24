@@ -1,34 +1,42 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import { useEmpresa } from './context/EmpresaContext'
 import { slugify } from './lib/db'
-import Login from './pages/Login'
 import Layout from './components/Layout'
-import Inicio from './pages/Inicio'
-import Clientes from './pages/Clientes'
-import ClienteForm from './pages/ClienteForm'
-import Conductores from './pages/Conductores'
-import ConductorForm from './pages/ConductorForm'
-import Propietarios from './pages/Propietarios'
-import PropietarioForm from './pages/PropietarioForm'
-import Transportadoras from './pages/Transportadoras'
-import TransportadoraForm from './pages/TransportadoraForm'
-import Vehiculos from './pages/Vehiculos'
-import VehiculoForm from './pages/VehiculoForm'
-import MatrizDestinos from './pages/MatrizDestinos'
-import Fuec from './pages/Fuec'
-import FuecForm from './pages/FuecForm'
-import FuecImprimir from './pages/FuecImprimir'
-import VerificarFuec from './pages/VerificarFuec'
-import Usuarios from './pages/Usuarios'
-import Empresas from './pages/Empresas'
-import Historial from './pages/Historial'
-import NuevaPassword from './pages/NuevaPassword'
-import AccesoEmpresa from './pages/AccesoEmpresa'
-import AppConductor from './pages/app/AppConductor'
-import Preoperacionales from './pages/Preoperacionales'
-import PreoperacionalReportePage from './pages/PreoperacionalReportePage'
-import PreguntasPreop from './pages/PreguntasPreop'
+
+// Carga diferida: cada página se descarga solo cuando se entra a ella.
+// Así la app abre rápido (no baja las 20 pantallas de una).
+const Login = lazy(() => import('./pages/Login'))
+const Inicio = lazy(() => import('./pages/Inicio'))
+const Clientes = lazy(() => import('./pages/Clientes'))
+const ClienteForm = lazy(() => import('./pages/ClienteForm'))
+const Conductores = lazy(() => import('./pages/Conductores'))
+const ConductorForm = lazy(() => import('./pages/ConductorForm'))
+const Propietarios = lazy(() => import('./pages/Propietarios'))
+const PropietarioForm = lazy(() => import('./pages/PropietarioForm'))
+const Transportadoras = lazy(() => import('./pages/Transportadoras'))
+const TransportadoraForm = lazy(() => import('./pages/TransportadoraForm'))
+const Vehiculos = lazy(() => import('./pages/Vehiculos'))
+const VehiculoForm = lazy(() => import('./pages/VehiculoForm'))
+const MatrizDestinos = lazy(() => import('./pages/MatrizDestinos'))
+const Fuec = lazy(() => import('./pages/Fuec'))
+const FuecForm = lazy(() => import('./pages/FuecForm'))
+const FuecImprimir = lazy(() => import('./pages/FuecImprimir'))
+const VerificarFuec = lazy(() => import('./pages/VerificarFuec'))
+const Usuarios = lazy(() => import('./pages/Usuarios'))
+const Empresas = lazy(() => import('./pages/Empresas'))
+const Historial = lazy(() => import('./pages/Historial'))
+const NuevaPassword = lazy(() => import('./pages/NuevaPassword'))
+const AccesoEmpresa = lazy(() => import('./pages/AccesoEmpresa'))
+const AppConductor = lazy(() => import('./pages/app/AppConductor'))
+const Preoperacionales = lazy(() => import('./pages/Preoperacionales'))
+const PreoperacionalReportePage = lazy(() => import('./pages/PreoperacionalReportePage'))
+const PreguntasPreop = lazy(() => import('./pages/PreguntasPreop'))
+
+function Cargando() {
+  return <div className="grid min-h-screen place-items-center text-ink-faint">Cargando…</div>
+}
 
 // Protege las rutas internas: si no hay sesión, manda al login.
 function Protected({ children }) {
@@ -62,6 +70,7 @@ function Protected({ children }) {
 export default function App() {
   const { user } = useAuth()
   return (
+    <Suspense fallback={<Cargando />}>
     <Routes>
       {/* Verificación pública del FUEC (QR) — sin login */}
       <Route path="/verificar/:id" element={<VerificarFuec />} />
@@ -108,5 +117,6 @@ export default function App() {
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
   )
 }
