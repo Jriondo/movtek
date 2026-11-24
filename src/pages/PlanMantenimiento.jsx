@@ -4,11 +4,11 @@ import {
   listMantPlan, saveMantPlan, deleteMantPlan,
   listMantRegistro, saveMantRegistro, deleteMantRegistro,
   estadoMantenimiento, calcularProximo, fechaLocalISO,
+  getMantTipos, saveMantTipos, MANT_TIPOS_DEFAULT,
 } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
 import { useAuth } from '../context/AuthContext'
-
-const TIPOS = ['Cambio de aceite', 'Filtros', 'Frenos', 'Llantas', 'Alineación y balanceo', 'Batería', 'Correas', 'Revisión general', 'Suspensión', 'Refrigeración', 'Otro']
+import ListaEditableModal from '../components/ListaEditableModal'
 const EST = {
   vencido: { label: '🔴 Vencido', cls: 'bg-coral-400/15 text-coral-500' },
   proximo: { label: '🟠 Próximo', cls: 'bg-amber-100 text-amber-700' },
@@ -25,7 +25,9 @@ export default function PlanMantenimiento() {
   const [kmPorVeh, setKmPorVeh] = useState({})
   const [cargando, setCargando] = useState(true)
   const [modalTarea, setModalTarea] = useState(null)   // plan a editar/crear
-  const [modalReg, setModalReg] = useState(null)       // registro a crear (puede venir de un plan)
+  const [modalReg, setModalReg] = useState(null)       // registro a crear/editar (puede venir de un plan)
+  const [tipos, setTipos] = useState(MANT_TIPOS_DEFAULT)
+  const [modalTipos, setModalTipos] = useState(false)
 
   async function cargarBase() {
     setCargando(true)
@@ -46,6 +48,13 @@ export default function PlanMantenimiento() {
     setCargando(false)
   }
   useEffect(() => { cargarBase() }, [empresa?.id])
+  useEffect(() => { getMantTipos(empresa?.id).then(setTipos).catch(() => setTipos(MANT_TIPOS_DEFAULT)) }, [empresa?.id])
+
+  async function guardarTipos(lista) {
+    const g = await saveMantTipos(empresa?.id, lista).catch(() => null)
+    if (g) setTipos(g)
+    setModalTipos(false)
+  }
 
   async function cargarVeh() {
     if (!selId) { setPlanes([]); setRegistros([]); return }
@@ -110,7 +119,10 @@ export default function PlanMantenimiento() {
           <div className="card p-4">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="font-display text-sm font-bold uppercase tracking-wide text-brand-600">📋 Plan preventivo</h2>
-              <button onClick={() => setModalTarea({})} className="btn-primary text-sm">+ Tarea</button>
+              <div className="flex gap-2">
+                <button onClick={() => setModalTipos(true)} className="btn-ghost text-sm">⚙️ Tipos</button>
+                <button onClick={() => setModalTarea({})} className="btn-primary text-sm">+ Tarea</button>
+              </div>
             </div>
             {planes.length === 0 ? (
               <p className="text-sm text-ink-soft">Sin tareas programadas. Agrega, por ejemplo, “Cambio de aceite cada 5.000 km o 90 días”.</p>
@@ -165,7 +177,10 @@ export default function PlanMantenimiento() {
                         <td className="pr-3">{r.descripcion || '—'}</td>
                         <td className="pr-3">{r.taller || '—'}</td>
                         <td className="pr-3 tabular-nums">{r.costo ? `$${Number(r.costo).toLocaleString()}` : '—'}</td>
-                        <td className="pr-1 text-right"><button onClick={() => borrarRegistro(r.id)} className="text-xs font-bold text-coral-500">✕</button></td>
+                        <td className="whitespace-nowrap pr-1 text-right">
+                          <button onClick={() => setModalReg(r)} className="mr-2 text-xs font-bold text-brand-600">Editar</button>
+                          <button onClick={() => borrarRegistro(r.id)} className="text-xs font-bold text-coral-500">✕</button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -176,15 +191,19 @@ export default function PlanMantenimiento() {
         </>
       )}
 
-      {modalTarea && <ModalTarea plan={modalTarea} onClose={() => setModalTarea(null)} onSave={guardarTarea} />}
-      {modalReg && <ModalRegistro base={modalReg} onClose={() => setModalReg(null)} onSave={guardarRegistro} />}
+      {modalTarea && <ModalTarea plan={modalTarea} tipos={tipos} onClose={() => setModalTarea(null)} onSave={guardarTarea} />}
+      {modalReg && <ModalRegistro base={modalReg} tipos={tipos} onClose={() => setModalReg(null)} onSave={guardarRegistro} />}
+      {modalTipos && (
+        <ListaEditableModal titulo="Tipos de mantenimiento" descripcion="Personaliza la lista de tipos para este negocio."
+          items={tipos} onClose={() => setModalTipos(false)} onSave={guardarTipos} />
+      )}
     </div>
   )
 }
 
-function ModalTarea({ plan, onClose, onSave }) {
+function ModalTarea({ plan, tipos, onClose, onSave }) {
   const [f, setF] = useState({
-    id: plan.id, tipo: plan.tipo || 'Cambio de aceite', cada_km: plan.cada_km || '', cada_dias: plan.cada_dias || '',
+    id: plan.id, tipo: plan.tipo || tipos[0] || 'Otro', cada_km: plan.cada_km || '', cada_dias: plan.cada_dias || '',
     ultimo_km: plan.ultimo_km || '', ultima_fecha: plan.ultima_fecha || '',
   })
   const set = (k, v) => setF((o) => ({ ...o, [k]: v }))
@@ -195,7 +214,10 @@ function ModalTarea({ plan, onClose, onSave }) {
         <h2 className="font-display text-lg font-extrabold text-ink">{plan.id ? 'Editar tarea' : 'Nueva tarea preventiva'}</h2>
         <div className="mt-3 flex flex-col gap-3">
           <div><label className="label">Tipo de mantenimiento</label>
-            <select className="input mt-1" value={f.tipo} onChange={(e) => set('tipo', e.target.value)}>{TIPOS.map((t) => <option key={t}>{t}</option>)}</select>
+            <select className="input mt-1" value={f.tipo} onChange={(e) => set('tipo', e.target.value)}>
+              {tipos.map((t) => <option key={t}>{t}</option>)}
+              {f.tipo && !tipos.includes(f.tipo) && <option>{f.tipo}</option>}
+            </select>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div><label className="label">Cada (km)</label><input className="input mt-1" inputMode="numeric" value={f.cada_km} onChange={(e) => set('cada_km', e.target.value)} placeholder="5000" /></div>
@@ -218,24 +240,27 @@ function ModalTarea({ plan, onClose, onSave }) {
   )
 }
 
-function ModalRegistro({ base, onClose, onSave }) {
+function ModalRegistro({ base, tipos, onClose, onSave }) {
   const [f, setF] = useState({
-    plan_id: base.plan_id || '', fecha: base.fecha || fechaLocalISO(), km: base.km || '',
-    tipo: base.tipo || 'Cambio de aceite', descripcion: '', taller: '', costo: '', nota: '',
+    id: base.id, plan_id: base.plan_id || '', fecha: base.fecha || fechaLocalISO(), km: base.km || '',
+    tipo: base.tipo || tipos[0] || 'Otro', descripcion: base.descripcion || '', taller: base.taller || '', costo: base.costo || '', nota: base.nota || '',
   })
   const set = (k, v) => setF((o) => ({ ...o, [k]: v }))
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={onClose}>
       <div className="card w-full max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
-        <h2 className="font-display text-lg font-extrabold text-ink">Registrar mantenimiento</h2>
-        {base.plan_id && <p className="mt-1 text-xs text-brand-600">Actualiza el próximo del plan preventivo.</p>}
+        <h2 className="font-display text-lg font-extrabold text-ink">{base.id ? 'Editar mantenimiento' : 'Registrar mantenimiento'}</h2>
+        {base.plan_id && !base.id && <p className="mt-1 text-xs text-brand-600">Actualiza el próximo del plan preventivo.</p>}
         <div className="mt-3 flex flex-col gap-3">
           <div className="grid grid-cols-2 gap-3">
             <div><label className="label">Fecha</label><input type="date" className="input mt-1" value={f.fecha} onChange={(e) => set('fecha', e.target.value)} /></div>
             <div><label className="label">Kilometraje</label><input className="input mt-1" inputMode="numeric" value={f.km} onChange={(e) => set('km', e.target.value)} /></div>
           </div>
           <div><label className="label">Tipo</label>
-            <select className="input mt-1" value={f.tipo} onChange={(e) => set('tipo', e.target.value)}>{TIPOS.map((t) => <option key={t}>{t}</option>)}</select>
+            <select className="input mt-1" value={f.tipo} onChange={(e) => set('tipo', e.target.value)}>
+              {tipos.map((t) => <option key={t}>{t}</option>)}
+              {f.tipo && !tipos.includes(f.tipo) && <option>{f.tipo}</option>}
+            </select>
           </div>
           <div><label className="label">Descripción</label><textarea className="input mt-1 h-16" value={f.descripcion} onChange={(e) => set('descripcion', e.target.value)} placeholder="Qué se hizo…" /></div>
           <div className="grid grid-cols-2 gap-3">

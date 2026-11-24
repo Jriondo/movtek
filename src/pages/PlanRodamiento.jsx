@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { listVehiculos, listConductores, listRodamiento, saveRodamiento, nombreConductor, fechaLocalISO } from '../lib/db'
+import { listVehiculos, listConductores, listRodamiento, saveRodamiento, nombreConductor, fechaLocalISO, getRodTurnos, saveRodTurnos, ROD_TURNOS_DEFAULT } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
 import { useAuth } from '../context/AuthContext'
+import ListaEditableModal from '../components/ListaEditableModal'
 
 const DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
@@ -23,6 +24,8 @@ export default function PlanRodamiento() {
   const [asign, setAsign] = useState({})   // clave `${vehId}|${fecha}` -> registro
   const [cargando, setCargando] = useState(true)
   const [edit, setEdit] = useState(null)   // { vehiculo, fecha, registro }
+  const [turnos, setTurnos] = useState(ROD_TURNOS_DEFAULT)
+  const [modalTurnos, setModalTurnos] = useState(false)
 
   const lun = useMemo(() => lunesDe(ancla), [ancla])
   const dias = useMemo(() => Array.from({ length: 7 }, (_, i) => { const d = new Date(lun); d.setDate(lun.getDate() + i); return d }), [lun])
@@ -42,6 +45,13 @@ export default function PlanRodamiento() {
     setCargando(false)
   }
   useEffect(() => { cargar() }, [empresa?.id, desde])
+  useEffect(() => { getRodTurnos(empresa?.id).then(setTurnos).catch(() => setTurnos(ROD_TURNOS_DEFAULT)) }, [empresa?.id])
+
+  async function guardarTurnos(lista) {
+    const g = await saveRodTurnos(empresa?.id, lista).catch(() => null)
+    if (g) setTurnos(g)
+    setModalTurnos(false)
+  }
 
   function moverSemana(n) { const d = new Date(lun); d.setDate(lun.getDate() + n * 7); setAncla(iso(d)) }
 
@@ -67,6 +77,7 @@ export default function PlanRodamiento() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="font-display text-2xl font-extrabold text-ink">🗓️ Plan de rodamiento</h1>
         <div className="flex items-center gap-2">
+          <button onClick={() => setModalTurnos(true)} className="btn-ghost">⚙️ Turnos</button>
           <button onClick={() => moverSemana(-1)} className="btn-ghost">← Semana</button>
           <button onClick={() => setAncla(fechaLocalISO())} className="btn-ghost">Hoy</button>
           <button onClick={() => moverSemana(1)} className="btn-ghost">Semana →</button>
@@ -125,14 +136,18 @@ export default function PlanRodamiento() {
       )}
 
       {edit && (
-        <ModalAsignar empresa={empresa} conductores={conductores} {...edit}
+        <ModalAsignar empresa={empresa} conductores={conductores} turnos={turnos} {...edit}
           onClose={() => setEdit(null)} onSave={guardarCelda} nombreCorto={nombreCorto} />
+      )}
+      {modalTurnos && (
+        <ListaEditableModal titulo="Turnos" descripcion="Personaliza los turnos para la programación."
+          items={turnos} onClose={() => setModalTurnos(false)} onSave={guardarTurnos} />
       )}
     </div>
   )
 }
 
-function ModalAsignar({ empresa, conductores, vehiculo, fecha, registro, onClose, onSave }) {
+function ModalAsignar({ empresa, conductores, turnos = [], vehiculo, fecha, registro, onClose, onSave }) {
   const [conductorId, setConductorId] = useState(registro?.conductor_id || '')
   const [ruta, setRuta] = useState(registro?.ruta || '')
   const [turno, setTurno] = useState(registro?.turno || '')
@@ -165,7 +180,9 @@ function ModalAsignar({ empresa, conductores, vehiculo, fecha, registro, onClose
           <div>
             <label className="label">Turno (opcional)</label>
             <select className="input mt-1" value={turno} onChange={(e) => setTurno(e.target.value)}>
-              <option value="">—</option><option>Mañana</option><option>Tarde</option><option>Noche</option><option>Todo el día</option>
+              <option value="">—</option>
+              {turnos.map((t) => <option key={t}>{t}</option>)}
+              {turno && !turnos.includes(turno) && <option>{turno}</option>}
             </select>
           </div>
           <div><label className="label">Nota (opcional)</label><input className="input mt-1" value={nota} onChange={(e) => setNota(e.target.value)} /></div>

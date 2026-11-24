@@ -1638,3 +1638,41 @@ export function estadoMantenimiento(plan, kmActual = null, diasAviso = 15, kmAvi
   }
   return venc ? 'vencido' : prox ? 'proximo' : 'ok'
 }
+
+// ====== Listas personalizables por empresa (tipos de mantenimiento, turnos) ======
+export const MANT_TIPOS_DEFAULT = ['Cambio de aceite', 'Filtros', 'Frenos', 'Llantas', 'Alineación y balanceo', 'Batería', 'Correas', 'Revisión general', 'Suspensión', 'Refrigeración', 'Otro']
+export const ROD_TURNOS_DEFAULT = ['Mañana', 'Tarde', 'Noche', 'Todo el día']
+
+const limpiarLista = (lista, def) => {
+  const arr = Array.isArray(lista) ? lista.map((x) => String(x || '').trim()).filter(Boolean) : []
+  // sin duplicados, conservando orden
+  const out = []; for (const x of arr) if (!out.includes(x)) out.push(x)
+  return out.length ? out : [...def]
+}
+
+async function getListaEmpresa(empresaId, columna, lsKey, def) {
+  if (isSupabaseConfigured && empresaId) {
+    try {
+      const { data, error } = await supabase.from('empresas').select(columna).eq('id', empresaId).single()
+      if (!error && Array.isArray(data?.[columna]) && data[columna].length) return limpiarLista(data[columna], def)
+    } catch {}
+    return [...def]
+  }
+  try { const all = JSON.parse(localStorage.getItem(lsKey) || '{}'); return limpiarLista(all[empresaId], def) } catch { return [...def] }
+}
+async function saveListaEmpresa(empresaId, columna, lsKey, lista, def, entidad) {
+  const limpias = limpiarLista(lista, def)
+  if (isSupabaseConfigured && empresaId) {
+    const { error } = await supabase.from('empresas').update({ [columna]: limpias }).eq('id', empresaId)
+    if (error) throw error
+  } else {
+    try { const all = JSON.parse(localStorage.getItem(lsKey) || '{}'); all[empresaId] = limpias; localStorage.setItem(lsKey, JSON.stringify(all)) } catch {}
+  }
+  registrarCambio({ accion: 'editar', entidad, descripcion: `${limpias.length} ítems`, empresa_id: empresaId })
+  return limpias
+}
+
+export const getMantTipos = (empresaId) => getListaEmpresa(empresaId, 'mant_tipos', 'movtek_mant_tipos', MANT_TIPOS_DEFAULT)
+export const saveMantTipos = (empresaId, lista) => saveListaEmpresa(empresaId, 'mant_tipos', 'movtek_mant_tipos', lista, MANT_TIPOS_DEFAULT, 'Tipos de mantenimiento')
+export const getRodTurnos = (empresaId) => getListaEmpresa(empresaId, 'rod_turnos', 'movtek_rod_turnos', ROD_TURNOS_DEFAULT)
+export const saveRodTurnos = (empresaId, lista) => saveListaEmpresa(empresaId, 'rod_turnos', 'movtek_rod_turnos', lista, ROD_TURNOS_DEFAULT, 'Turnos de rodamiento')
