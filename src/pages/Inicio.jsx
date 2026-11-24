@@ -11,6 +11,9 @@ const MODULOS = [
   { label: 'Vehículos', icon: 'vehiculo', to: '/vehiculos', desc: 'Flota de la empresa', roles: ['admin', 'operativo', 'propietario'] },
   { label: 'Matriz destinos', icon: 'mapa', to: '/destinos', desc: 'Ciudades de Colombia', roles: ['admin', 'operativo'] },
   { label: 'FUEC', icon: 'fuec', to: '/fuec', desc: 'Extracto del contrato', roles: ['admin', 'operativo', 'propietario'] },
+  { label: 'Preoperacionales', icon: 'checklist', to: '/preoperacionales', desc: 'Revisiones diarias', roles: ['admin', 'operativo', 'propietario'] },
+  { label: 'Plan de rodamiento', icon: 'rodamiento', to: '/rodamiento', desc: 'Programación por días', roles: ['admin', 'operativo', 'propietario'] },
+  { label: 'Plan de mantenimiento', icon: 'mantenimiento', to: '/mantenimiento', desc: 'Preventivo y bitácora', roles: ['admin', 'operativo', 'propietario'] },
   { label: 'Empresas', icon: 'empresa', to: '/empresas', desc: 'Plataforma de cada empresa', roles: ['admin'] },
   { label: 'Usuarios', icon: 'usuarios', to: '/usuarios', desc: 'Accesos y roles', roles: ['admin'] },
 ]
