@@ -2,7 +2,7 @@ import { supabase, isSupabaseConfigured } from './supabase'
 
 // Llave pública VAPID (es pública, no es secreto). Se puede sobrescribir con una variable de entorno.
 export const VAPID_PUBLIC = import.meta.env.VITE_VAPID_PUBLIC_KEY
-  || 'BFaLceHeWFIHkqFGSyIvbAdDmQXHNfPd-WniDYXRyNpI8RRRo_pZWSVlUFIGvZ69Jc5vmYeNmTwk_ZGAQQEFVaU'
+  || 'BM-l-azrYjPngGEFjh9g18AF7GceZULvDOFw2bQ-FdCqPMCyRUV-0L1lFtWGJYdl8d3_20x4gXRHdBpyDA2WbhY'
 
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
