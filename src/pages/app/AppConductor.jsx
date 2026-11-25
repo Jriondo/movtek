@@ -189,6 +189,7 @@ function Home({ empresa, user, conductorId, onLogout }) {
   const [modal, setModal] = useState('')
   const [nuevas, setNuevas] = useState(0)
   const [permiso, setPermiso] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'denied')
+  const [avisoMsg, setAvisoMsg] = useState('')
   const rutasIdsRef = useRef([])
   const vehiculo = useMemo(() => vehiculos.find((v) => String(v.id) === String(selId)), [vehiculos, selId])
 
@@ -200,14 +201,23 @@ function Home({ empresa, user, conductorId, onLogout }) {
     }
   }, [conductor?.id])
 
-  // Activación con un toque (los navegadores exigen un gesto para pedir el permiso).
+  // Activación con un toque. Muestra el resultado EN PANTALLA (no solo alert).
   async function activarAvisos() {
-    const r = await activarPushConductor({ empresa, conductor, email: user?.email })
-    setPermiso(typeof Notification !== 'undefined' ? Notification.permission : 'denied')
-    if (r.ok) { alert('✅ Avisos activados. Ya puedes recibir notificaciones.'); return }
-    if (r.motivo === 'sin-permiso') alert('Debes permitir las notificaciones en tu navegador. Si antes dijiste "Bloquear", ábrelo en los permisos del sitio y actívalas.')
-    else if (r.motivo === 'no-soportado') alert('Tu teléfono/navegador no soporta notificaciones aquí. En iPhone: Compartir → Agregar a inicio, y abre desde el ícono.')
-    else alert('No se pudo activar. Detalle: ' + (r.motivo || 'desconocido'))
+    setAvisoMsg('⏳ Activando avisos…')
+    try {
+      if (typeof Notification === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+        setAvisoMsg('⚠️ Este navegador no soporta notificaciones aquí. En iPhone: Compartir → Agregar a inicio y abre desde el ícono.')
+        return
+      }
+      const r = await activarPushConductor({ empresa, conductor, email: user?.email })
+      setPermiso(typeof Notification !== 'undefined' ? Notification.permission : 'denied')
+      if (r.ok) setAvisoMsg('✅ ¡Avisos activados! Ya puedes recibir notificaciones.')
+      else if (r.motivo === 'sin-permiso') setAvisoMsg('⚠️ Permiso bloqueado. Toca el candado 🔒 de la barra → Notificaciones → Permitir, y vuelve a intentar.')
+      else if (r.motivo === 'no-soportado') setAvisoMsg('⚠️ No soportado aquí. En iPhone instala la app en inicio primero.')
+      else setAvisoMsg('⚠️ No se pudo activar. Detalle: ' + (r.motivo || 'desconocido'))
+    } catch (e) {
+      setAvisoMsg('⚠️ Error: ' + (e?.message || 'desconocido'))
+    }
   }
 
   async function cargar() {
@@ -328,10 +338,13 @@ function Home({ empresa, user, conductorId, onLogout }) {
 
             {/* Activar avisos (solo si aún no están activados) */}
             {permiso !== 'granted' && (
-              <button onClick={activarAvisos} className="mt-3 flex w-full items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-bold"
+              <button onClick={activarAvisos} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-center text-sm font-bold"
                 style={{ borderColor: '#2f5a1c', background: '#172a12', color: '#b6f08a' }}>
                 🔔 Toca para activar los avisos de preoperacional y rutas
               </button>
+            )}
+            {avisoMsg && (
+              <p className="mt-2 rounded-lg px-3 py-2 text-xs font-semibold" style={{ background: '#13201a', color: '#e6f2ec' }}>{avisoMsg}</p>
             )}
 
             {/* Pestañas / carpetas */}
