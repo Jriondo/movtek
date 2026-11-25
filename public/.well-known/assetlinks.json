@@ -5,7 +5,7 @@
     ],
     "target": {
       "namespace": "android_app",
-      "package_name": "com.movtek.transportessantiago",
+      "package_name": "com.movtek.transmovilisate",
       "sha256_cert_fingerprints": [
         "30:27:D0:B9:53:D7:79:7D:88:97:2A:A8:0E:FE:86:DA:78:F9:6F:BB:F5:87:9B:D9:FC:4C:41:C4:ED:C7:D6:F8"
       ]
@@ -17,7 +17,7 @@
     ],
     "target": {
       "namespace": "android_app",
-      "package_name": "com.movtek.transmovilisate",
+      "package_name": "com.movtek.transportessantiago",
       "sha256_cert_fingerprints": [
         "30:27:D0:B9:53:D7:79:7D:88:97:2A:A8:0E:FE:86:DA:78:F9:6F:BB:F5:87:9B:D9:FC:4C:41:C4:ED:C7:D6:F8"
       ]
