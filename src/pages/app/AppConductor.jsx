@@ -190,6 +190,12 @@ function Home({ empresa, user, conductorId, onLogout }) {
   const [nuevas, setNuevas] = useState(0)
   const [permiso, setPermiso] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'denied')
   const [avisoMsg, setAvisoMsg] = useState('')
+  const [enlaceCopiado, setEnlaceCopiado] = useState(false)
+  async function copiarEnlaceApp() {
+    const url = `${window.location.origin}/e/${empresa?.slug || ''}/app`
+    try { await navigator.clipboard.writeText(url); setEnlaceCopiado(true); setTimeout(() => setEnlaceCopiado(false), 5000) }
+    catch { window.prompt('Copia este enlace y ábrelo en Chrome:', url) }
+  }
   const rutasIdsRef = useRef([])
   const vehiculo = useMemo(() => vehiculos.find((v) => String(v.id) === String(selId)), [vehiculos, selId])
 
@@ -341,9 +347,9 @@ function Home({ empresa, user, conductorId, onLogout }) {
               esApk() ? (
                 <div className="mt-3 rounded-xl border px-4 py-3" style={{ borderColor: '#5a4a1c', background: '#2a2410' }}>
                   <p className="text-sm font-bold" style={{ color: '#f5d98a' }}>🔔 Para recibir notificaciones</p>
-                  <p className="mt-0.5 text-xs" style={{ color: '#d9c48a' }}>Esta versión (APK) no puede enviar avisos. Ábrela en Chrome una vez y actívalos ahí.</p>
-                  <button onClick={abrirEnChrome} className="mt-2 w-full rounded-lg px-4 py-2.5 text-sm font-extrabold text-white" style={{ background: '#15803d' }}>
-                    📲 Abrir en Chrome y activar avisos
+                  <p className="mt-0.5 text-xs" style={{ color: '#d9c48a' }}>Esta versión (APK) no puede enviar avisos. Copia el enlace, ábrelo en <b>Chrome</b> y activa los avisos ahí (solo una vez).</p>
+                  <button onClick={copiarEnlaceApp} className="mt-2 w-full rounded-lg px-4 py-2.5 text-sm font-extrabold text-white" style={{ background: '#15803d' }}>
+                    {enlaceCopiado ? '✅ Enlace copiado — pégalo en Chrome' : '📋 Copiar enlace para Chrome'}
                   </button>
                 </div>
               ) : (
