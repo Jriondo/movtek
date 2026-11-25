@@ -7,7 +7,7 @@ const FuecForm = lazy(() => import('../FuecForm'))
 const FuecImprimir = lazy(() => import('../FuecImprimir'))
 import { TIPO } from '../../lib/preoperacional'
 import { applyTheme } from '../../lib/theme'
-import { activarPwaEmpresa, esStandalone } from '../../lib/pwa'
+import { activarPwaEmpresa, esStandalone, esApk, abrirEnChrome } from '../../lib/pwa'
 import { activarPushConductor } from '../../lib/push'
 import InstalarApp from '../../components/InstalarApp'
 import { useAuth } from '../../context/AuthContext'
@@ -336,14 +336,24 @@ function Home({ empresa, user, conductorId, onLogout }) {
               </div>
             )}
 
-            {/* Activar avisos (solo si aún no están activados) */}
+            {/* Avisos: en el APK no se puede → mandar a Chrome. En navegador → activar. */}
             {permiso !== 'granted' && (
-              <button onClick={activarAvisos} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-center text-sm font-bold"
-                style={{ borderColor: '#2f5a1c', background: '#172a12', color: '#b6f08a' }}>
-                🔔 Toca para activar los avisos de preoperacional y rutas
-              </button>
+              esApk() ? (
+                <div className="mt-3 rounded-xl border px-4 py-3" style={{ borderColor: '#5a4a1c', background: '#2a2410' }}>
+                  <p className="text-sm font-bold" style={{ color: '#f5d98a' }}>🔔 Para recibir notificaciones</p>
+                  <p className="mt-0.5 text-xs" style={{ color: '#d9c48a' }}>Esta versión (APK) no puede enviar avisos. Ábrela en Chrome una vez y actívalos ahí.</p>
+                  <button onClick={abrirEnChrome} className="mt-2 w-full rounded-lg px-4 py-2.5 text-sm font-extrabold text-white" style={{ background: '#15803d' }}>
+                    📲 Abrir en Chrome y activar avisos
+                  </button>
+                </div>
+              ) : (
+                <button onClick={activarAvisos} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-center text-sm font-bold"
+                  style={{ borderColor: '#2f5a1c', background: '#172a12', color: '#b6f08a' }}>
+                  🔔 Toca para activar los avisos de preoperacional y rutas
+                </button>
+              )
             )}
-            {avisoMsg && (
+            {avisoMsg && !esApk() && (
               <p className="mt-2 rounded-lg px-3 py-2 text-xs font-semibold" style={{ background: '#13201a', color: '#e6f2ec' }}>{avisoMsg}</p>
             )}
 

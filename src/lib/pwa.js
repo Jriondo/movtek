@@ -43,6 +43,17 @@ export const esStandalone = () => typeof window !== 'undefined' &&
     window.navigator.standalone === true ||
     /MovtekApp/.test(navigator.userAgent || ''))
 
+// ¿Está corriendo dentro del APK (WebView)? Ese NO soporta notificaciones push.
+export const esApk = () => typeof navigator !== 'undefined' && /MovtekApp/.test(navigator.userAgent || '')
+
+// Abre la URL actual en Chrome (desde el WebView del APK), para poder activar las notificaciones.
+export function abrirEnChrome() {
+  try {
+    const sinEsquema = window.location.href.replace(/^https?:\/\//, '')
+    window.location.href = `intent://${sinEsquema}#Intent;scheme=https;package=com.android.chrome;end`
+  } catch { window.open(window.location.href, '_blank') }
+}
+
 // ¿Es un iPhone/iPad? (allí se instala con "Agregar a inicio", no con botón).
 export const esIOS = () => typeof navigator !== 'undefined' && /iphone|ipad|ipod/i.test(navigator.userAgent || '')
 
