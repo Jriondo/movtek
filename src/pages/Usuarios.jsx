@@ -125,7 +125,7 @@ export default function Usuarios() {
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Rol">
             <select className="input" value={form.rol} onChange={(e) => set('rol', e.target.value)}>
-              {ROLES.filter((r) => esMovtek ? r.value === 'admin' : r.value !== 'admin').map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+              {ROLES.filter((r) => esMovtek ? r.value === 'admin' : (r.value === 'admin' ? esAdmin : true)).map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
             </select>
             <p className="mt-1 text-xs text-ink-soft">{descripcionRol(form.rol)}</p>
           </Field>
@@ -206,7 +206,8 @@ function dedupPorCorreo(lista) {
 }
 
 function descripcionRol(rol) {
-  if (rol === 'admin') return 'Acceso total. Puede crear y gestionar usuarios.'
+  if (rol === 'admin') return 'Superadministrador del sistema (Movtek): acceso total a todas las empresas.'
+  if (rol === 'admin_empresa') return 'Administrador de la empresa: gestiona toda su empresa, incluidos sus usuarios.'
   if (rol === 'operativo') return 'Crea y edita toda la información, pero no gestiona usuarios.'
   return 'Solo ve su vehículo y conductores, crea FUEC con sus vehículos y edita sus datos.'
 }

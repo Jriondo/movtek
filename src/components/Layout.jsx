@@ -36,7 +36,14 @@ export default function Layout() {
   const { empresa } = useEmpresa()
   const email = user?.email || 'socio@movtek.app'
   const initial = email[0]?.toUpperCase() || 'M'
-  const navVisible = nav.filter((item) => !item.roles || item.roles.includes(rol))
+  // El Administrador de empresa ve todo lo que ve el admin, salvo lo del sistema Movtek.
+  const SISTEMA_SOLO = ['/empresas', '/almacenamiento']
+  const navVisible = nav.filter((item) => {
+    if (!item.roles) return true
+    if (item.roles.includes(rol)) return true
+    if (rol === 'admin_empresa' && item.roles.includes('admin') && !SISTEMA_SOLO.includes(item.to)) return true
+    return false
+  })
 
   return (
     <div className="grid min-h-full grid-rows-[auto_1fr] md:grid-cols-[250px_1fr] md:grid-rows-1 print:block">

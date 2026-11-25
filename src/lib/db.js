@@ -1245,7 +1245,8 @@ export async function deleteUsuario(id) {
 }
 
 export const ROLES = [
-  { value: 'admin', label: 'Administrador' },
+  { value: 'admin', label: 'Superadministrador' },
+  { value: 'admin_empresa', label: 'Administrador' },
   { value: 'operativo', label: 'Operativo' },
   { value: 'propietario', label: 'Propietario' },
   { value: 'conductor', label: 'Conductor (app preoperacional)' },
