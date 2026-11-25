@@ -53,41 +53,37 @@ export default function InstalarApp({ empresa }) {
     )
   }
 
-  // Android: se ofrecen LAS DOS opciones; el usuario elige la que le funcione.
+  // Android: la PWA es la RECOMENDADA (recibe notificaciones y se actualiza sola).
+  // El APK queda como alternativa (no recibe notificaciones).
   return (
     <div className="mb-4 rounded-2xl border-2 p-3" style={{ borderColor: color, background: color + '0d' }}>
-      <p className="mb-2 text-center text-sm font-bold text-ink">Instala la app (elige una opción)</p>
+      <p className="mb-2 text-center text-sm font-bold text-ink">Instala la app</p>
 
-      {/* Opción 1: descargar el APK */}
-      {apkListo === false ? (
-        <div className="rounded-xl border border-dashed p-2.5 text-center text-xs text-ink-soft" style={{ borderColor: color }}>
-          ⏳ <b>Opción 1 — Descargar APK:</b> se está preparando el instalador de tu empresa. Intenta en un momento, o usa la Opción 2.
-        </div>
-      ) : (
-        <a href={apkUrl} download
-          className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-base font-extrabold text-white shadow-glow"
-          style={{ background: color }}>
-          ⬇️ Opción 1 · Descargar APK
-        </a>
-      )}
-
-      <div className="my-2 text-center text-xs font-bold text-ink-faint">— o —</div>
-
-      {/* Opción 2: instalar como app (PWA) */}
+      {/* Opción 1 (recomendada): instalar como app (PWA) */}
       <button onClick={instalarNavegador}
-        className="flex w-full items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-base font-extrabold"
-        style={{ borderColor: color, color }}>
-        📲 Opción 2 · Instalar como app
+        className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-base font-extrabold text-white shadow-glow"
+        style={{ background: color }}>
+        📲 Instalar app (recomendado)
       </button>
-
+      <p className="mt-1 text-center text-[11px] font-semibold" style={{ color }}>✅ Recibe notificaciones y se actualiza sola</p>
       {pasos && (
         <p className="mt-2 text-center text-xs text-ink-soft">
-          Si no se abrió el instalador, usa el menú <b>⋮</b> de Chrome → <b>“Instalar aplicación”</b>.
+          Si no se abrió el instalador, usa el menú <b>⋮</b> de Chrome → <b>“Instalar aplicación”</b> (o “Agregar a pantalla de inicio”).
         </p>
       )}
-      <p className="mt-2 text-center text-[11px] text-ink-faint">
-        Con la <b>Opción 1</b>, al abrir el archivo activa <b>“Permitir de esta fuente”</b> y toca Instalar.
-      </p>
+
+      {/* Opción 2 (alternativa): descargar el APK */}
+      {apkListo !== false && (
+        <>
+          <div className="my-2 text-center text-xs font-bold text-ink-faint">— o —</div>
+          <a href={apkUrl} download
+            className="flex w-full items-center justify-center gap-2 rounded-xl border-2 px-4 py-2.5 text-sm font-bold"
+            style={{ borderColor: color, color }}>
+            ⬇️ Descargar APK (alternativa)
+          </a>
+          <p className="mt-1 text-center text-[11px] text-ink-faint">Útil si no puedes instalarla desde Chrome. <b>Ojo:</b> el APK no recibe notificaciones.</p>
+        </>
+      )}
     </div>
   )
 }
