@@ -25,13 +25,23 @@ export async function activarPushConductor({ empresa, conductor, email }) {
     }
     if (Notification.permission !== 'granted') return { ok: false, motivo: 'sin-permiso' }
 
-    const reg = await navigator.serviceWorker.ready
+    // Asegura que el service worker esté listo (con tiempo límite para no quedar pegado).
+    if (!navigator.serviceWorker.controller) { try { await navigator.serviceWorker.register('/sw.js') } catch {} }
+    const reg = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise((_, rej) => setTimeout(() => rej(new Error('sw-timeout')), 8000)),
+    ])
+
+    const appKey = urlBase64ToUint8Array(VAPID_PUBLIC)
     let sub = await reg.pushManager.getSubscription()
+    // Si ya existe pero con OTRA llave (p. ej. una vieja), se cancela y se vuelve a suscribir.
+    if (sub) {
+      const prev = new Uint8Array(sub.options?.applicationServerKey || [])
+      const igual = prev.length === appKey.length && prev.every((b, i) => b === appKey[i])
+      if (!igual) { try { await sub.unsubscribe() } catch {} sub = null }
+    }
     if (!sub) {
-      sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC),
-      })
+      sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: appKey })
     }
 
     // Sin Supabase (modo demo) no hay servidor que envíe; igual queda suscrito localmente.

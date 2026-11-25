@@ -204,8 +204,10 @@ function Home({ empresa, user, conductorId, onLogout }) {
   async function activarAvisos() {
     const r = await activarPushConductor({ empresa, conductor, email: user?.email })
     setPermiso(typeof Notification !== 'undefined' ? Notification.permission : 'denied')
-    if (!r.ok && r.motivo === 'sin-permiso') alert('Debes permitir las notificaciones en tu navegador para recibir el recordatorio.')
-    else if (!r.ok && r.motivo === 'no-soportado') alert('Tu teléfono o navegador no soporta notificaciones. En iPhone debes “Agregar a inicio” primero.')
+    if (r.ok) { alert('✅ Avisos activados. Ya puedes recibir notificaciones.'); return }
+    if (r.motivo === 'sin-permiso') alert('Debes permitir las notificaciones en tu navegador. Si antes dijiste "Bloquear", ábrelo en los permisos del sitio y actívalas.')
+    else if (r.motivo === 'no-soportado') alert('Tu teléfono/navegador no soporta notificaciones aquí. En iPhone: Compartir → Agregar a inicio, y abre desde el ícono.')
+    else alert('No se pudo activar. Detalle: ' + (r.motivo || 'desconocido'))
   }
 
   async function cargar() {
