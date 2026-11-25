@@ -24,10 +24,12 @@ for pair in "mdpi 48" "hdpi 72" "xhdpi 96" "xxhdpi 144" "xxxhdpi 192"; do
 done
 
 IDSUFFIX=$(echo "$SLUG" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9')
+HOSTNAME=$(echo "$BASE" | sed -E 's#https?://##; s#/.*##')
 cd "$HERE"
 ./gradlew --no-daemon :app:assembleRelease \
   -PappId="com.movtek.$IDSUFFIX" \
   -PappName="$NAME" \
-  -PstartUrl="$BASE/e/$SLUG/app" -q
+  -PstartUrl="$BASE/e/$SLUG/app" \
+  -PhostName="$HOSTNAME" -q
 cp app/build/outputs/apk/release/app-release.apk "$OUT/$SLUG.apk"
 echo "OK: public/apk/$SLUG.apk"

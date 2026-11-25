@@ -6,13 +6,22 @@ android {
     applicationId (project.findProperty('appId') ?: 'com.movtek.app')
     minSdk 23
     targetSdk 34
-    versionCode 1
-    versionName "1.0"
+    versionCode 2
+    versionName "2.0"
     resValue "string", "app_name", (project.findProperty('appName') ?: 'Movtek')
     resValue "string", "start_url", (project.findProperty('startUrl') ?: 'https://movtek.vercel.app')
+    resValue "string", "host_name", (project.findProperty('hostName') ?: 'movtek.vercel.app')
+  }
+  signingConfigs {
+    release {
+      storeFile rootProject.file(project.findProperty('ksFile') ?: 'movtek.keystore')
+      storePassword (project.findProperty('ksPass') ?: 'movtek123')
+      keyAlias (project.findProperty('ksAlias') ?: 'movtek')
+      keyPassword (project.findProperty('ksKeyPass') ?: 'movtek123')
+    }
   }
   buildTypes {
-    release { minifyEnabled false; signingConfig signingConfigs.debug }
+    release { minifyEnabled false; signingConfig signingConfigs.release }
   }
   compileOptions {
     sourceCompatibility JavaVersion.VERSION_17
@@ -21,4 +30,6 @@ android {
 }
 dependencies {
   implementation 'androidx.appcompat:appcompat:1.6.1'
+  // Trusted Web Activity: ejecuta la PWA dentro de Chrome → soporta notificaciones web.
+  implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
 }

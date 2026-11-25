@@ -66,11 +66,22 @@ jobs:
               fi
             done
 
+      - name: Generar assetlinks.json (verificación TWA de todas las empresas)
+        run: |
+          set -e
+          mkdir -p public/.well-known
+          FP=$(keytool -list -v -keystore android/movtek.keystore -alias movtek -storepass movtek123 2>/dev/null | grep -i 'SHA256:' | head -1 | sed 's/.*SHA256: *//; s/ //g')
+          echo "Huella: $FP"
+          EMP=$(curl -fsSL "$SUPABASE_URL/rest/v1/empresas?select=slug" \
+                 -H "apikey: $SUPABASE_KEY" -H "Authorization: Bearer $SUPABASE_KEY")
+          echo "$EMP" | jq --arg fp "$FP" '[ .[] | select(.slug!=null and .slug!="") | { relation:["delegate_permission/common.handle_all_urls"], target:{ namespace:"android_app", package_name:("com.movtek." + (.slug|ascii_downcase|gsub("[^a-z0-9]";""))), sha256_cert_fingerprints:[$fp] } } ]' > public/.well-known/assetlinks.json
+          echo "assetlinks.json:"; cat public/.well-known/assetlinks.json
+
       - name: Publicar los APK nuevos (commit)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add public/apk
+          git add public/apk public/.well-known
           if git diff --cached --quiet; then
             echo "Sin APK nuevos."
           else
