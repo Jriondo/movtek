@@ -19,7 +19,8 @@ export default async function handler(req, res) {
     }
   } catch {}
 
-  const logo = slug ? `/api/logo?slug=${encodeURIComponent(slug)}` : '/icon-192.png'
+  const icon192 = slug ? `/api/icon?slug=${encodeURIComponent(slug)}&size=192` : '/icon-192.png'
+  const icon512 = slug ? `/api/icon?slug=${encodeURIComponent(slug)}&size=512` : '/icon-512.png'
   const manifest = {
     name: nombre ? `${nombre} · Preoperacional` : 'App de preoperacional',
     short_name: nombre ? nombre.slice(0, 20) : 'Preop',
@@ -30,11 +31,10 @@ export default async function handler(req, res) {
     background_color: '#ffffff',
     theme_color: color,
     icons: [
-      // Logo de la EMPRESA (lo que se ve como ícono en el celular). Sin "type" para que
-      // el navegador use el tipo real (png/webp/jpg) y no lo rechace por desajuste.
-      // Sin "maskable" para que Android NO recorte el logo (lo muestra completo).
-      { src: logo, sizes: '192x192', purpose: 'any' },
-      { src: logo, sizes: '512x512', purpose: 'any' },
+      // Ícono con el logo de la empresa GRANDE (compuesto en /api/icon). 'maskable' para
+      // que Android llene el ícono (sin el borde blanco que lo hacía ver chiquito).
+      { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+      { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
       // Respaldo PNG al final (solo si falla el logo; garantiza que se pueda instalar).
       { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
     ],
