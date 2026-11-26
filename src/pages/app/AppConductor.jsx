@@ -21,16 +21,39 @@ export default function AppConductor() {
   const { user, login, logout, empresaIdUsuario, conductorId, esConductor, esPropietario, esAdmin, esOperativo, esMantenimiento, propietarioId, sinAcceso } = useAuth()
   const { entrarAEmpresa } = useEmpresa() || {}
   const [empresa, setEmpresa] = useState(undefined)
+  const [tardando, setTardando] = useState(false)
 
   useEffect(() => {
+    setTardando(false)
+    const t = setTimeout(() => setTardando(true), 10000)
     getEmpresaPorSlug(slug).then((e) => {
+      clearTimeout(t)
       setEmpresa(e || null)
       if (e?.color_primario) applyTheme({ primary: e.color_primario, accent: e.color_acento })
       if (e) { entrarAEmpresa?.(e); activarPwaEmpresa(e, slug) }
-    }).catch(() => setEmpresa(null))
+    }).catch(() => { clearTimeout(t); setEmpresa(null) })
+    return () => clearTimeout(t)
   }, [slug])
 
-  if (empresa === undefined) return <Pantalla><p className="text-ink-faint">Cargando…</p></Pantalla>
+  async function recargarLimpio() {
+    try { const regs = (await navigator.serviceWorker?.getRegistrations?.()) || []; await Promise.all(regs.map((r) => r.unregister())) } catch {}
+    try { const keys = (await caches?.keys?.()) || []; await Promise.all(keys.map((k) => caches.delete(k))) } catch {}
+    window.location.reload()
+  }
+
+  if (empresa === undefined) return (
+    <Pantalla>
+      <div className="text-center">
+        <p className="text-ink-faint">Cargando…</p>
+        {tardando && (
+          <div className="mt-4">
+            <p className="text-sm text-ink-soft">Está tardando más de lo normal.</p>
+            <button onClick={recargarLimpio} className="btn-primary mt-3">↻ Reintentar</button>
+          </div>
+        )}
+      </div>
+    </Pantalla>
+  )
   if (empresa === null) return (
     <Pantalla>
       <div className="text-center">

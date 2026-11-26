@@ -1,5 +1,5 @@
 // Service worker: instala la app (PWA/TWA) y acelera la carga con caché inteligente.
-const CACHE = 'movtek-app-v5'
+const CACHE = 'movtek-app-v6'
 
 self.addEventListener('install', () => { self.skipWaiting() })
 self.addEventListener('activate', (e) => {

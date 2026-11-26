@@ -1,41 +1,64 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import { useEmpresa } from './context/EmpresaContext'
 import { slugify } from './lib/db'
 import Layout from './components/Layout'
 
+// Si una página (trozo de código) no carga —por un despliegue nuevo o caché vieja en el
+// APK/TWA— limpiamos la caché y recargamos UNA sola vez, para no quedar en "Cargando…".
+const REINTENTO_KEY = 'mv_reload_chunk'
+async function recargarLimpio() {
+  try { const regs = (await navigator.serviceWorker?.getRegistrations?.()) || []; await Promise.all(regs.map((r) => r.unregister())) } catch {}
+  try { const keys = (await caches?.keys?.()) || []; await Promise.all(keys.map((k) => caches.delete(k))) } catch {}
+  window.location.reload()
+}
+function lazyR(factory) {
+  return lazy(() => Promise.race([
+    factory(),
+    new Promise((_, rej) => setTimeout(() => rej(new Error('timeout-chunk')), 12000)),
+  ]).then((mod) => {
+    try { sessionStorage.removeItem(REINTENTO_KEY) } catch {}
+    return mod
+  }).catch((err) => {
+    let ya = null
+    try { ya = sessionStorage.getItem(REINTENTO_KEY) } catch {}
+    if (!ya) { try { sessionStorage.setItem(REINTENTO_KEY, '1') } catch {}; recargarLimpio(); return new Promise(() => {}) }
+    throw err
+  }))
+}
+
 // Carga diferida: cada página se descarga solo cuando se entra a ella.
 // Así la app abre rápido (no baja las 20 pantallas de una).
-const Login = lazy(() => import('./pages/Login'))
-const Inicio = lazy(() => import('./pages/Inicio'))
-const Clientes = lazy(() => import('./pages/Clientes'))
-const ClienteForm = lazy(() => import('./pages/ClienteForm'))
-const Conductores = lazy(() => import('./pages/Conductores'))
-const ConductorForm = lazy(() => import('./pages/ConductorForm'))
-const Propietarios = lazy(() => import('./pages/Propietarios'))
-const PropietarioForm = lazy(() => import('./pages/PropietarioForm'))
-const Transportadoras = lazy(() => import('./pages/Transportadoras'))
-const TransportadoraForm = lazy(() => import('./pages/TransportadoraForm'))
-const Vehiculos = lazy(() => import('./pages/Vehiculos'))
-const VehiculoForm = lazy(() => import('./pages/VehiculoForm'))
-const MatrizDestinos = lazy(() => import('./pages/MatrizDestinos'))
-const Fuec = lazy(() => import('./pages/Fuec'))
-const FuecForm = lazy(() => import('./pages/FuecForm'))
-const FuecImprimir = lazy(() => import('./pages/FuecImprimir'))
-const VerificarFuec = lazy(() => import('./pages/VerificarFuec'))
-const Usuarios = lazy(() => import('./pages/Usuarios'))
-const Empresas = lazy(() => import('./pages/Empresas'))
-const Historial = lazy(() => import('./pages/Historial'))
-const NuevaPassword = lazy(() => import('./pages/NuevaPassword'))
-const AccesoEmpresa = lazy(() => import('./pages/AccesoEmpresa'))
-const AppConductor = lazy(() => import('./pages/app/AppConductor'))
-const Preoperacionales = lazy(() => import('./pages/Preoperacionales'))
-const PreoperacionalReportePage = lazy(() => import('./pages/PreoperacionalReportePage'))
-const PreguntasPreop = lazy(() => import('./pages/PreguntasPreop'))
-const PlanRodamiento = lazy(() => import('./pages/PlanRodamiento'))
-const PlanMantenimiento = lazy(() => import('./pages/PlanMantenimiento'))
-const Almacenamiento = lazy(() => import('./pages/Almacenamiento'))
+const Login = lazyR(() => import('./pages/Login'))
+const Inicio = lazyR(() => import('./pages/Inicio'))
+const Clientes = lazyR(() => import('./pages/Clientes'))
+const ClienteForm = lazyR(() => import('./pages/ClienteForm'))
+const Conductores = lazyR(() => import('./pages/Conductores'))
+const ConductorForm = lazyR(() => import('./pages/ConductorForm'))
+const Propietarios = lazyR(() => import('./pages/Propietarios'))
+const PropietarioForm = lazyR(() => import('./pages/PropietarioForm'))
+const Transportadoras = lazyR(() => import('./pages/Transportadoras'))
+const TransportadoraForm = lazyR(() => import('./pages/TransportadoraForm'))
+const Vehiculos = lazyR(() => import('./pages/Vehiculos'))
+const VehiculoForm = lazyR(() => import('./pages/VehiculoForm'))
+const MatrizDestinos = lazyR(() => import('./pages/MatrizDestinos'))
+const Fuec = lazyR(() => import('./pages/Fuec'))
+const FuecForm = lazyR(() => import('./pages/FuecForm'))
+const FuecImprimir = lazyR(() => import('./pages/FuecImprimir'))
+const VerificarFuec = lazyR(() => import('./pages/VerificarFuec'))
+const Usuarios = lazyR(() => import('./pages/Usuarios'))
+const Empresas = lazyR(() => import('./pages/Empresas'))
+const Historial = lazyR(() => import('./pages/Historial'))
+const NuevaPassword = lazyR(() => import('./pages/NuevaPassword'))
+const AccesoEmpresa = lazyR(() => import('./pages/AccesoEmpresa'))
+const AppConductor = lazyR(() => import('./pages/app/AppConductor'))
+const Preoperacionales = lazyR(() => import('./pages/Preoperacionales'))
+const PreoperacionalReportePage = lazyR(() => import('./pages/PreoperacionalReportePage'))
+const PreguntasPreop = lazyR(() => import('./pages/PreguntasPreop'))
+const PlanRodamiento = lazyR(() => import('./pages/PlanRodamiento'))
+const PlanMantenimiento = lazyR(() => import('./pages/PlanMantenimiento'))
+const Almacenamiento = lazyR(() => import('./pages/Almacenamiento'))
 
 function Cargando() {
   return <div className="grid min-h-screen place-items-center text-ink-faint">Cargando…</div>
