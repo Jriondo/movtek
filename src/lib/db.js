@@ -1562,6 +1562,16 @@ export async function deleteRutaMaestra(id) {
 
 export const DESCRIPCIONES_ROD = ['Ingreso Personal', 'Salida Personal', 'Traslado']
 
+// Avisa por push a un conductor que le asignaron ruta(s) nueva(s). No falla si algo sale mal.
+export async function notificarRutaNueva({ conductorId, empresaId, cantidad = 1, fecha = '' }) {
+  if (!isSupabaseConfigured || !conductorId) return
+  try {
+    await supabase.functions.invoke('notificar-ruta', {
+      body: { conductor_id: conductorId, empresa_id: empresaId, cantidad, fecha },
+    })
+  } catch {}
+}
+
 // ================= MÓDULO: PLAN DE MANTENIMIENTO =================
 // (A) Plan preventivo por vehículo (tareas con próximo por fecha/km).
 // (B) Bitácora de mantenimientos realizados.

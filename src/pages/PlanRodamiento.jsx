@@ -3,7 +3,7 @@ import {
   listVehiculos, listConductores, nombreConductor, fechaLocalISO,
   listRodamiento, saveRodamiento, deleteRodamiento,
   listRutasMaestras, saveRutaMaestra, deleteRutaMaestra,
-  tiempoRecorrido, DESCRIPCIONES_ROD,
+  tiempoRecorrido, DESCRIPCIONES_ROD, notificarRutaNueva,
 } from '../lib/db'
 import { descargarExcel } from '../lib/excel'
 import { useEmpresa } from '../context/EmpresaContext'
@@ -279,6 +279,12 @@ function ModalGenerarDia({ empresa, rutas, vehiculos, conductores, onClose, onDo
         hora_inicial: v.hora_inicial || '', hora_final: '', estado: 'programado',
       }).catch(() => {})
     }
+    // Aviso push: cuántas rutas nuevas por conductor.
+    const porCond = {}
+    for (const r of marcadas) { const c = sel[r.id]?.conductor_id; if (c) porCond[c] = (porCond[c] || 0) + 1 }
+    for (const [cid, cant] of Object.entries(porCond)) {
+      notificarRutaNueva({ conductorId: cid, empresaId: empresa?.id, cantidad: cant, fecha }).catch(() => {})
+    }
     setBusy(false); onDone()
   }
 
@@ -358,6 +364,8 @@ function ModalServicio({ empresa, base, rutas, vehiculos, conductores, onClose, 
     const cond = conductores.find((x) => String(x.id) === String(f.conductor_id))
     await saveRodamiento({ ...f, empresa_id: empresa?.id, conductor_nombre: cond ? nombreConductor(cond) : f.conductor_nombre, vehiculo_id: (vehiculos.find((x) => x.placa === f.placa) || {}).id || null })
       .catch((e) => alert('No se pudo guardar. ' + (e?.message || '')))
+    // Aviso push solo si es un servicio NUEVO y tiene conductor.
+    if (!f.id && f.conductor_id) notificarRutaNueva({ conductorId: f.conductor_id, empresaId: empresa?.id, cantidad: 1, fecha: f.fecha }).catch(() => {})
     setBusy(false); onSaved()
   }
   return (
