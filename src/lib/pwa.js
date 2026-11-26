@@ -22,20 +22,11 @@ export function activarPwaEmpresa(empresa, slug) {
     // Registro estándar (scope raíz): no depende de headers especiales y es el más confiable
     // para que el navegador permita instalar la app.
     navigator.serviceWorker.register('/sw.js').then((reg) => {
-      // Busca actualizaciones al abrir.
       try { reg.update() } catch {}
     }).catch(() => {})
-
-    // Auto-actualización: recarga SOLO cuando una versión NUEVA reemplaza a una que ya
-    // controlaba la página. NO recarga en la primera instalación (eso causaba un bucle
-    // de recargas "Cargando…" dentro del APK/TWA).
-    let yaControlaba = !!navigator.serviceWorker.controller
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!yaControlaba) { yaControlaba = true; return }   // primera toma de control: no recargar
-      if (window.__mvRecargado) return
-      window.__mvRecargado = true
-      window.location.reload()
-    })
+    // Nota: NO recargamos automáticamente al cambiar el service worker. El HTML va con
+    // no-cache y los recursos son red-primero, así que cada apertura ya trae lo último.
+    // (La auto-recarga causaba un bucle de "Cargando…" dentro del APK/TWA.)
   }
 }
 
