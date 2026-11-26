@@ -36,7 +36,6 @@ export default function PlanRodamiento() {
   const [rutas, setRutas] = useState([])
   const [servicios, setServicios] = useState([])
   const [cargando, setCargando] = useState(true)
-  const [modalGen, setModalGen] = useState(false)
   const [modalServ, setModalServ] = useState(null)   // servicio a crear/editar
   const [modalRuta, setModalRuta] = useState(null)   // ruta maestra a crear/editar
 
@@ -99,8 +98,7 @@ export default function PlanRodamiento() {
           </button>
           {tab === 'crono' && <>
             <button onClick={exportarExcel} className="btn-ghost">⬇️ Excel</button>
-            <button onClick={() => setModalServ({})} className="btn-ghost">+ Servicio</button>
-            <button onClick={() => setModalGen(true)} className="btn-primary">⚡ Generar día</button>
+            <button onClick={() => setModalServ({})} className="btn-primary">+ Servicio</button>
           </>}
           {tab === 'rutas' && <button onClick={() => setModalRuta({})} className="btn-primary">+ Ruta</button>}
         </div>
@@ -158,7 +156,7 @@ export default function PlanRodamiento() {
                       </td>
                     </tr>
                   ))}
-                  {filtrados.length === 0 && <tr><td colSpan={13} className="px-3 py-8 text-center text-ink-soft">Sin servicios. Usa “⚡ Generar día” para crear el cronograma.</td></tr>}
+                  {filtrados.length === 0 && <tr><td colSpan={13} className="px-3 py-8 text-center text-ink-soft">Sin servicios. Usa “+ Servicio” para agregar al cronograma.</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -166,10 +164,6 @@ export default function PlanRodamiento() {
         </>
       )}
 
-      {modalGen && (
-        <ModalGenerarDia empresa={empresa} rutas={rutas} vehiculos={vehiculos} conductores={conductores}
-          onClose={() => setModalGen(false)} onDone={() => { setModalGen(false); cargarServicios() }} />
-      )}
       {modalServ && (
         <ModalServicio empresa={empresa} base={modalServ} rutas={rutas} vehiculos={vehiculos} conductores={conductores}
           onClose={() => setModalServ(null)} onSaved={() => { setModalServ(null); cargarServicios() }} />
@@ -247,91 +241,6 @@ function ModalRuta({ empresa, base, onClose, onSaved }) {
         <div className="mt-4 flex gap-2">
           <button onClick={onClose} className="btn-ghost ml-auto">Cancelar</button>
           <button onClick={guardar} disabled={busy} className="btn-primary">{busy ? 'Guardando…' : 'Guardar'}</button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ---------- Modal: Generar día (rutas maestras + asignar) ----------
-function ModalGenerarDia({ empresa, rutas, vehiculos, conductores, onClose, onDone }) {
-  const [fecha, setFecha] = useState(fechaLocalISO())
-  const [sel, setSel] = useState({})   // rutaId -> { on, placa, conductor_id, hora_inicial, hora_final }
-  const [busy, setBusy] = useState(false)
-  const toggle = (r) => setSel((s) => s[r.id]?.on
-    ? { ...s, [r.id]: { ...s[r.id], on: false } }
-    : { ...s, [r.id]: { on: true, placa: s[r.id]?.placa || '', conductor_id: s[r.id]?.conductor_id || '', hora_inicial: s[r.id]?.hora_inicial || '' } })
-  const setv = (id, k, v) => setSel((s) => ({ ...s, [id]: { ...s[id], [k]: v } }))
-  const marcadas = rutas.filter((r) => sel[r.id]?.on)
-
-  async function generar() {
-    if (!marcadas.length) { alert('Marca al menos una ruta.'); return }
-    setBusy(true)
-    for (const r of marcadas) {
-      const v = sel[r.id]
-      const veh = vehiculos.find((x) => (x.placa || '') === v.placa)
-      const cond = conductores.find((x) => String(x.id) === String(v.conductor_id))
-      await saveRodamiento({
-        empresa_id: empresa?.id, fecha, ruta_id: r.id, ruta: r.nombre,
-        placa: v.placa || '', vehiculo_id: veh?.id || null, clase: veh?.clase || '',
-        conductor_id: v.conductor_id || null, conductor_nombre: cond ? nombreConductor(cond) : '',
-        descripcion: r.descripcion || '', origen: r.origen || '', destino: r.destino || '', empresa_cliente: r.empresa_cliente || '',
-        hora_inicial: v.hora_inicial || '', hora_final: '', estado: 'programado',
-      }).catch(() => {})
-    }
-    // Aviso push: cuántas rutas nuevas por conductor.
-    const porCond = {}
-    for (const r of marcadas) { const c = sel[r.id]?.conductor_id; if (c) porCond[c] = (porCond[c] || 0) + 1 }
-    for (const [cid, cant] of Object.entries(porCond)) {
-      notificarRutaNueva({ conductorId: cid, empresaId: empresa?.id, cantidad: cant, fecha }).catch(() => {})
-    }
-    setBusy(false); onDone()
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={onClose}>
-      <div className="card flex max-h-[88vh] w-full max-w-lg flex-col p-5" onClick={(e) => e.stopPropagation()}>
-        <h2 className="font-display text-lg font-extrabold text-ink">⚡ Generar cronograma del día</h2>
-        <div className="mt-2 flex items-center gap-2">
-          <label className="label">Fecha:</label>
-          <input type="date" className="input w-auto" value={fecha} onChange={(e) => setFecha(e.target.value)} />
-          <span className="ml-auto text-xs text-ink-soft">{marcadas.length} marcada(s)</span>
-        </div>
-        {rutas.length === 0 ? (
-          <p className="mt-4 text-sm text-ink-soft">No hay rutas maestras. Crea primero las rutas en “⚙️ Rutas maestras”.</p>
-        ) : (
-          <div className="mt-3 flex flex-col gap-2 overflow-y-auto">
-            {rutas.map((r) => {
-              const v = sel[r.id] || {}
-              return (
-                <div key={r.id} className={`rounded-xl border p-2.5 ${v.on ? 'border-brand-300 bg-brand-50' : 'border-cloud-line'}`}>
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" checked={!!v.on} onChange={() => toggle(r)} className="h-4 w-4" />
-                    <span className="font-bold text-ink">{r.nombre}</span>
-                    <span className="text-xs text-ink-soft">{r.empresa_cliente} · {r.descripcion}</span>
-                  </label>
-                  {v.on && (
-                    <div className="mt-2 grid grid-cols-1 gap-2 pl-6 sm:grid-cols-3">
-                      <select className="input" value={v.placa} onChange={(e) => setv(r.id, 'placa', e.target.value)}>
-                        <option value="">Placa…</option>
-                        {vehiculos.map((x) => <option key={x.id} value={x.placa}>{x.placa}</option>)}
-                      </select>
-                      <select className="input" value={v.conductor_id} onChange={(e) => setv(r.id, 'conductor_id', e.target.value)}>
-                        <option value="">Conductor…</option>
-                        {conductores.filter((c) => c.estado_habilitacion !== 'inactivo').map((c) => <option key={c.id} value={c.id}>{nombreConductor(c)}</option>)}
-                      </select>
-                      <label className="flex items-center gap-1.5 text-xs text-ink-soft">H. inicio
-                        <input type="time" className="input" value={v.hora_inicial} onChange={(e) => setv(r.id, 'hora_inicial', e.target.value)} /></label>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        )}
-        <div className="mt-4 flex gap-2">
-          <button onClick={onClose} className="btn-ghost ml-auto">Cancelar</button>
-          <button onClick={generar} disabled={busy || !marcadas.length} className="btn-primary">{busy ? 'Generando…' : `Generar ${marcadas.length || ''}`}</button>
         </div>
       </div>
     </div>
