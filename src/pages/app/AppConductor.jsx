@@ -215,8 +215,12 @@ function Home({ empresa, user, conductorId, onLogout }) {
         setAvisoMsg('⚠️ Este navegador no soporta notificaciones aquí. En iPhone: Compartir → Agregar a inicio y abre desde el ícono.')
         return
       }
-      const r = await activarPushConductor({ empresa, conductor, email: user?.email })
+      const r = await Promise.race([
+        activarPushConductor({ empresa, conductor, email: user?.email }),
+        new Promise((res) => setTimeout(() => res({ ok: false, motivo: 'timeout' }), 20000)),
+      ])
       setPermiso(typeof Notification !== 'undefined' ? Notification.permission : 'denied')
+      if (r.motivo === 'timeout') { setAvisoMsg('⚠️ Tardó demasiado. Si saliste del permiso, vuelve a tocar el botón. Si ya diste "Permitir", reintenta.'); return }
       if (r.ok) setAvisoMsg('✅ ¡Avisos activados! Ya puedes recibir notificaciones.')
       else if (r.motivo === 'sin-permiso') setAvisoMsg('⚠️ Permiso bloqueado. Toca el candado 🔒 de la barra → Notificaciones → Permitir, y vuelve a intentar.')
       else if (r.motivo === 'no-soportado') setAvisoMsg('⚠️ No soportado aquí. En iPhone instala la app en inicio primero.')
