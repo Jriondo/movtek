@@ -11,7 +11,7 @@ import { useAuth } from '../context/AuthContext'
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 const hhmm = (t) => (t ? String(t).slice(0, 5) : '')
-const PERIODOS = [['todos', 'Todos'], ['dia', 'Día'], ['semana', 'Semana'], ['mes', 'Mes'], ['anio', 'Año'], ['personalizado', 'Personalizado']]
+const PERIODOS = [['todos', 'Todos'], ['dia', 'Día'], ['semana', 'Semana'], ['mes', 'Mes'], ['anio', 'Año']]
 
 // [desde, hasta] para un preset de periodo (basado en hoy). 'todos'/'personalizado' → sin rango fijo.
 function rangoPreset(p) {
@@ -122,11 +122,11 @@ export default function PlanRodamiento() {
             </div>
             <div>
               <label className="label">Fecha inicio</label>
-              <input type="date" className="input mt-1 w-auto" value={fIni} onChange={(e) => { setFIni(e.target.value); setPeriodo('personalizado') }} />
+              <input type="date" className="input mt-1 w-auto" value={fIni} onChange={(e) => setFIni(e.target.value)} />
             </div>
             <div>
               <label className="label">Fecha final</label>
-              <input type="date" className="input mt-1 w-auto" value={fFin} onChange={(e) => { setFFin(e.target.value); setPeriodo('personalizado') }} />
+              <input type="date" className="input mt-1 w-auto" value={fFin} onChange={(e) => setFFin(e.target.value)} />
             </div>
             <button onClick={cargarServicios} disabled={cargando} className="btn-primary">{cargando ? 'Buscando…' : '🔍 Buscar'}</button>
             <input className="input mt-1 w-auto flex-1" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar placa, conductor, ruta, empresa…" />

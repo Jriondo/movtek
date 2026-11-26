@@ -13,7 +13,6 @@ const PERIODOS = [
   { v: 'semana', label: 'Semana' },
   { v: 'mes', label: 'Mes' },
   { v: 'anio', label: 'Año' },
-  { v: 'personalizado', label: 'Personalizado' },
 ]
 
 // [desde, hasta] para un preset de periodo (basado en hoy). 'todos'/'personalizado' → sin rango fijo.
@@ -237,11 +236,11 @@ export default function Preoperacionales() {
           </div>
           <div>
             <label className="label">Fecha inicio</label>
-            <input type="date" className="input mt-1" value={fIni} onChange={(e) => { setFIni(e.target.value); setPeriodo('personalizado') }} />
+            <input type="date" className="input mt-1" value={fIni} onChange={(e) => setFIni(e.target.value)} />
           </div>
           <div>
             <label className="label">Fecha final</label>
-            <input type="date" className="input mt-1" value={fFin} onChange={(e) => { setFFin(e.target.value); setPeriodo('personalizado') }} />
+            <input type="date" className="input mt-1" value={fFin} onChange={(e) => setFFin(e.target.value)} />
           </div>
           <div>
             <label className="label">Buscar placa</label>
