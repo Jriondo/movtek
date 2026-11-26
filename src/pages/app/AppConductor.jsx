@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { getEmpresaPorSlug, vehiculosDeConductor, conductorDeUsuario, preoperacionalHoy, listVehiculos, listFuec, listRodamiento, saveRodamiento, listMantPlan, estadoMantenimiento, fechaLocalISO, getPropietario } from '../../lib/db'
+import { getEmpresaPorSlug, vehiculosDeConductor, conductorDeUsuario, preoperacionalHoy, listVehiculos, listFuec, listRodamiento, saveRodamiento, listMantPlan, listMantRegistro, saveMantRegistro, getMantTipos, MANT_TIPOS_DEFAULT, listPreoperacionales, estadoMantenimiento, fechaLocalISO, getPropietario } from '../../lib/db'
 
 // FUEC se carga solo cuando un propietario/admin entra a generarlo (no pesa para el conductor).
 const FuecForm = lazy(() => import('../FuecForm'))
@@ -18,7 +18,7 @@ import PreoperacionalCaptura from './PreoperacionalCaptura'
 // App de conductores (PWA) por empresa: movtek.app/e/<slug>/app
 export default function AppConductor() {
   const { slug } = useParams()
-  const { user, login, logout, empresaIdUsuario, conductorId, esConductor, esPropietario, esAdmin, esOperativo, propietarioId, sinAcceso } = useAuth()
+  const { user, login, logout, empresaIdUsuario, conductorId, esConductor, esPropietario, esAdmin, esOperativo, esMantenimiento, propietarioId, sinAcceso } = useAuth()
   const { entrarAEmpresa } = useEmpresa() || {}
   const [empresa, setEmpresa] = useState(undefined)
 
@@ -42,6 +42,10 @@ export default function AppConductor() {
   )
 
   if (!user) return <LoginConductor empresa={empresa} onLogin={login} />
+  // Mantenimiento → app de mantenimientos.
+  if (esMantenimiento) {
+    return <HomeMantenimiento empresa={empresa} user={user} onLogout={logout} />
+  }
   // Propietario / admin / operativo → app de FUEC. Conductor → app de preoperacional.
   if (esPropietario || esAdmin || esOperativo) {
     return <HomeFuec empresa={empresa} user={user} propietarioId={propietarioId} esPropietario={esPropietario} onLogout={logout} />
@@ -812,6 +816,252 @@ function HomeFuec({ empresa, user, propietarioId, esPropietario, onLogout }) {
       </div>
 
       {modal === 'pass' && <ModalCambiarPass actualizarPassword={actualizarPassword} onClose={() => setModal('')} />}
+    </div>
+  )
+}
+
+// App del usuario de MANTENIMIENTO: ve pendientes de todos los vehículos, quién hizo la
+// preoperacional del día y puede registrar un mantenimiento. Mismo diseño oscuro.
+function HomeMantenimiento({ empresa, user, onLogout }) {
+  const { actualizarPassword } = useAuth()
+  const primary = empresa?.color_primario || '#16a34a'
+  const hoy = fechaLocalISO()
+  const [seccion, setSeccion] = useState('mant')   // mant | preop
+  const [vehiculos, setVehiculos] = useState([])
+  const [planes, setPlanes] = useState([])
+  const [registros, setRegistros] = useState([])
+  const [kmPorVeh, setKmPorVeh] = useState({})
+  const [preopsHoy, setPreopsHoy] = useState([])
+  const [tipos, setTipos] = useState(MANT_TIPOS_DEFAULT)
+  const [cargando, setCargando] = useState(true)
+  const [modalReg, setModalReg] = useState(null)
+  const [modal, setModal] = useState('')
+
+  async function cargar() {
+    setCargando(true)
+    const vs = await listVehiculos({ empresaId: empresa.id }).catch(() => [])
+    setVehiculos(vs)
+    setPlanes(await listMantPlan({ empresaId: empresa.id }).catch(() => []))
+    setRegistros((await listMantRegistro({ empresaId: empresa.id }).catch(() => [])).slice(0, 30))
+    const preops = await listPreoperacionales({ empresaId: empresa.id }).catch(() => [])
+    const km = {}
+    for (const r of preops) {
+      if (!r.kilometraje) continue
+      const k = String(r.vehiculo_id)
+      const fh = (r.fecha || '') + (r.hora || '')
+      if (!km[k] || fh > km[k].fh) km[k] = { km: r.kilometraje, fh }
+    }
+    setKmPorVeh(Object.fromEntries(Object.entries(km).map(([k, v]) => [k, v.km])))
+    setPreopsHoy(preops.filter((r) => (r.fecha || '') === hoy))
+    getMantTipos(empresa.id).then(setTipos).catch(() => {})
+    setCargando(false)
+  }
+  useEffect(() => { cargar() }, [empresa?.id])
+
+  const EST = {
+    vencido: { label: '🔴 Vencido', bg: '#3a1510', color: '#ffb4a2' },
+    proximo: { label: '🟠 Próximo', bg: '#33280d', color: '#ffd98a' },
+    ok: { label: '🟢 Al día', bg: '#12271b', color: '#9ff0c2' },
+  }
+
+  const pendientes = useMemo(() => {
+    const out = []
+    for (const p of planes) {
+      const km = kmPorVeh[String(p.vehiculo_id)] || ''
+      const est = estadoMantenimiento(p, km)
+      if (est === 'ok') continue
+      const veh = vehiculos.find((v) => String(v.id) === String(p.vehiculo_id))
+      out.push({ plan: p, veh, est, km })
+    }
+    return out.sort((a, b) => (a.est === b.est ? 0 : a.est === 'vencido' ? -1 : 1))
+  }, [planes, kmPorVeh, vehiculos])
+
+  const vehConPreop = useMemo(() => new Set(preopsHoy.map((r) => String(r.vehiculo_id))), [preopsHoy])
+  const sinPreop = useMemo(() => vehiculos.filter((v) => !vehConPreop.has(String(v.id))), [vehiculos, vehConPreop])
+
+  async function guardarRegistro(data) {
+    const veh = vehiculos.find((v) => String(v.id) === String(data.vehiculo_id))
+    await saveMantRegistro({ ...data, empresa_id: empresa.id, placa: veh?.placa })
+    setModalReg(null); cargar()
+  }
+
+  const nombreTipoPreop = (t) => t === TIPO.TALLER ? '🔧 En taller' : t === TIPO.DESCANSO ? '🛌 En descanso' : '📋 Preoperacional'
+
+  return (
+    <div className="min-h-screen" style={{ background: '#0e1512', color: '#e6f2ec' }}>
+      <header className="flex items-center gap-3 px-4 pb-6 pt-3 text-white"
+        style={{ background: `linear-gradient(135deg, ${primary} 0%, ${primary} 45%, #0e9488 100%)`, borderRadius: '0 0 24px 24px', boxShadow: '0 10px 30px -14px #0e9488' }}>
+        {empresa?.logo_url
+          ? <img src={empresa.logo_url} alt="" className="h-9 w-auto max-w-[120px] rounded-lg bg-white/90 object-contain p-0.5 drop-shadow" />
+          : <span className="font-display text-lg font-extrabold">{empresa?.nombre}</span>}
+        <button onClick={() => setModal('pass')} className="ml-auto rounded-lg bg-white/25 px-3 py-1.5 text-sm font-semibold backdrop-blur" title="Cambiar contraseña">🔑</button>
+        <button onClick={onLogout} className="rounded-lg bg-white/25 px-3 py-1.5 text-sm font-semibold backdrop-blur">Salir</button>
+      </header>
+
+      <div className="mx-auto -mt-2 max-w-xl px-4 py-5">
+        <p className="text-sm" style={{ color: '#8fb6a3' }}>Hola,</p>
+        <h1 className="font-display text-2xl font-extrabold" style={{ color: '#eafff3', wordBreak: 'break-word' }}>{user?.email || 'Mantenimiento'}</h1>
+
+        <button onClick={() => setModalReg({ fecha: hoy, vehiculo_id: vehiculos[0]?.id || '' })}
+          className="mt-4 w-full rounded-2xl px-5 py-4 text-left text-white shadow-glow" style={{ background: primary }}>
+          <span className="block font-display text-lg font-extrabold">🔧 Registrar mantenimiento</span>
+          <span className="block text-sm text-white/85">Anota un mantenimiento hecho a un vehículo</span>
+        </button>
+
+        {/* Pestañas */}
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <button onClick={() => setSeccion('mant')} className="rounded-xl py-2.5 text-sm font-extrabold"
+            style={seccion === 'mant' ? { background: primary, color: '#042012' } : { background: '#13201a', color: '#8fb6a3' }}>
+            🔧 Pendientes{pendientes.length ? ` (${pendientes.length})` : ''}
+          </button>
+          <button onClick={() => setSeccion('preop')} className="rounded-xl py-2.5 text-sm font-extrabold"
+            style={seccion === 'preop' ? { background: primary, color: '#042012' } : { background: '#13201a', color: '#8fb6a3' }}>
+            📋 Preop. de hoy
+          </button>
+        </div>
+
+        {cargando ? (
+          <p className="mt-5 text-sm" style={{ color: '#5f7d6e' }}>Cargando…</p>
+        ) : seccion === 'mant' ? (
+          <div className="mt-4 flex flex-col gap-2">
+            {pendientes.length === 0 ? (
+              <p className="rounded-xl px-4 py-3 text-sm" style={{ background: '#12271b', color: '#9ff0c2' }}>✅ No hay mantenimientos pendientes. Todo al día.</p>
+            ) : pendientes.map(({ plan, veh, est, km }) => (
+              <div key={plan.id} className="rounded-xl border px-3 py-3" style={{ borderColor: '#203a2d', background: '#13201a' }}>
+                <div className="flex items-center gap-2">
+                  <span className="font-display text-base font-extrabold" style={{ color: '#eafff3' }}>{veh?.placa || plan.placa || '—'}</span>
+                  <span className="text-xs" style={{ color: '#8fb6a3' }}>Móvil {veh?.numero_interno || '—'}</span>
+                  <span className="ml-auto rounded-full px-2.5 py-1 text-xs font-bold" style={{ background: EST[est].bg, color: EST[est].color }}>{EST[est].label}</span>
+                </div>
+                <p className="mt-1 text-sm font-bold" style={{ color: '#cfeede' }}>{plan.tipo}</p>
+                <p className="text-xs" style={{ color: '#8fb6a3' }}>
+                  Próximo: {plan.proxima_fecha ? <b style={{ color: '#eafff3' }}>{plan.proxima_fecha}</b> : '—'}
+                  {plan.proximo_km ? <> · <b style={{ color: '#eafff3' }}>{Number(plan.proximo_km).toLocaleString()} km</b></> : ''}
+                  {km !== '' ? <> · actual {Number(km).toLocaleString()} km</> : ''}
+                </p>
+                <button onClick={() => setModalReg({ fecha: hoy, vehiculo_id: plan.vehiculo_id, plan_id: plan.id, tipo: plan.tipo, km })}
+                  className="mt-2 w-full rounded-lg px-3 py-2 text-xs font-extrabold" style={{ background: primary, color: '#042012' }}>✓ Registrar este mantenimiento</button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-4 flex flex-col gap-3">
+            <div>
+              <p className="mb-1.5 text-xs font-bold uppercase tracking-wide" style={{ color: '#9ff0c2' }}>✅ Ya hicieron la del día ({preopsHoy.length})</p>
+              {preopsHoy.length === 0 ? (
+                <p className="rounded-xl px-4 py-3 text-sm" style={{ background: '#13201a', color: '#8fb6a3' }}>Nadie ha registrado el día todavía.</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {preopsHoy.map((r) => (
+                    <div key={r.id} className="flex items-center gap-2 rounded-xl border px-3 py-2.5" style={{ borderColor: '#203a2d', background: '#13201a' }}>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold" style={{ color: '#eafff3' }}>{r.placa || '—'} · {r.conductor_nombre || '—'}</p>
+                        <p className="truncate text-xs" style={{ color: '#8fb6a3' }}>{nombreTipoPreop(r.tipo)} · {r.hora || ''}{r.kilometraje ? ` · ${Number(r.kilometraje).toLocaleString()} km` : ''}</p>
+                      </div>
+                      {(!r.tipo || r.tipo === TIPO.PREOP) && r.estado_general === 'novedad' && (
+                        <span className="ml-auto rounded-full px-2 py-0.5 text-[11px] font-bold" style={{ background: '#3a1510', color: '#ffb4a2' }}>⚠️ Novedad</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div>
+              <p className="mb-1.5 text-xs font-bold uppercase tracking-wide" style={{ color: '#ffd98a' }}>⏳ Falta la del día ({sinPreop.length})</p>
+              {sinPreop.length === 0 ? (
+                <p className="rounded-xl px-4 py-3 text-sm" style={{ background: '#12271b', color: '#9ff0c2' }}>Todos los vehículos registraron el día. 👏</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {sinPreop.map((v) => (
+                    <span key={v.id} className="rounded-lg px-3 py-1.5 text-sm font-bold" style={{ background: '#13201a', color: '#cfeede', border: '1px solid #203a2d' }}>{v.placa}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Últimos mantenimientos registrados */}
+        {seccion === 'mant' && !cargando && registros.length > 0 && (
+          <div className="mt-6">
+            <p className="mb-1.5 text-xs font-bold uppercase tracking-wide" style={{ color: '#8fb6a3' }}>Últimos registrados</p>
+            <div className="flex flex-col gap-2">
+              {registros.slice(0, 10).map((r) => (
+                <div key={r.id} className="rounded-xl border px-3 py-2.5" style={{ borderColor: '#203a2d', background: '#13201a' }}>
+                  <p className="text-sm font-bold" style={{ color: '#eafff3' }}>{r.placa || '—'} · {r.tipo || '—'}</p>
+                  <p className="truncate text-xs" style={{ color: '#8fb6a3' }}>{r.fecha}{r.km ? ` · ${Number(r.km).toLocaleString()} km` : ''}{r.taller ? ` · ${r.taller}` : ''}{r.descripcion ? ` · ${r.descripcion}` : ''}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {modalReg && <ModalMantApp base={modalReg} vehiculos={vehiculos} tipos={tipos} onClose={() => setModalReg(null)} onSave={guardarRegistro} />}
+      {modal === 'pass' && <ModalCambiarPass actualizarPassword={actualizarPassword} onClose={() => setModal('')} />}
+    </div>
+  )
+}
+
+// Modal para registrar un mantenimiento desde la app (tema oscuro).
+function ModalMantApp({ base, vehiculos, tipos, onClose, onSave }) {
+  const [f, setF] = useState({
+    id: base.id, plan_id: base.plan_id || '', vehiculo_id: base.vehiculo_id || vehiculos[0]?.id || '',
+    fecha: base.fecha || fechaLocalISO(), km: base.km || '', tipo: base.tipo || tipos[0] || 'Otro',
+    descripcion: base.descripcion || '', taller: base.taller || '', costo: base.costo || '',
+  })
+  const set = (k, v) => setF((o) => ({ ...o, [k]: v }))
+  const inputDark = { background: '#0e1512', borderColor: '#203a2d', color: '#eafff3' }
+  const puede = f.vehiculo_id && f.fecha && f.tipo
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center p-4" style={{ background: 'rgba(0,0,0,.6)' }} onClick={onClose}>
+      <div className="w-full max-w-sm rounded-2xl p-5" style={{ background: '#13201a', border: '1px solid #203a2d', color: '#e6f2ec' }} onClick={(e) => e.stopPropagation()}>
+        <h2 className="font-display text-lg font-extrabold" style={{ color: '#eafff3' }}>{base.id ? 'Editar mantenimiento' : 'Registrar mantenimiento'}</h2>
+        <div className="mt-3 flex flex-col gap-3">
+          <div>
+            <label className="text-xs font-bold" style={{ color: '#8fb6a3' }}>Vehículo</label>
+            <select className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" style={inputDark} value={f.vehiculo_id} onChange={(e) => set('vehiculo_id', e.target.value)}>
+              <option value="">Elige…</option>
+              {vehiculos.map((v) => <option key={v.id} value={v.id}>{v.placa} · Móvil {v.numero_interno || '—'}</option>)}
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-bold" style={{ color: '#8fb6a3' }}>Fecha</label>
+              <input type="date" className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" style={inputDark} value={f.fecha} onChange={(e) => set('fecha', e.target.value)} />
+            </div>
+            <div>
+              <label className="text-xs font-bold" style={{ color: '#8fb6a3' }}>Kilometraje</label>
+              <input inputMode="numeric" className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" style={inputDark} value={f.km} onChange={(e) => set('km', e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-bold" style={{ color: '#8fb6a3' }}>Tipo</label>
+            <select className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" style={inputDark} value={f.tipo} onChange={(e) => set('tipo', e.target.value)}>
+              {tipos.map((t) => <option key={t}>{t}</option>)}
+              {f.tipo && !tipos.includes(f.tipo) && <option>{f.tipo}</option>}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-bold" style={{ color: '#8fb6a3' }}>Descripción</label>
+            <textarea className="mt-1 h-16 w-full rounded-xl border px-3 py-2 text-sm" style={inputDark} value={f.descripcion} onChange={(e) => set('descripcion', e.target.value)} placeholder="Qué se hizo…" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-bold" style={{ color: '#8fb6a3' }}>Taller</label>
+              <input className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" style={inputDark} value={f.taller} onChange={(e) => set('taller', e.target.value)} />
+            </div>
+            <div>
+              <label className="text-xs font-bold" style={{ color: '#8fb6a3' }}>Costo</label>
+              <input inputMode="numeric" className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" style={inputDark} value={f.costo} onChange={(e) => set('costo', e.target.value)} />
+            </div>
+          </div>
+        </div>
+        <div className="mt-4 flex gap-2">
+          <button onClick={onClose} className="ml-auto rounded-xl px-4 py-2 text-sm font-bold" style={{ background: '#1c2f26', color: '#cfeede' }}>Cancelar</button>
+          <button onClick={() => puede && onSave(f)} disabled={!puede} className="rounded-xl px-4 py-2 text-sm font-extrabold" style={{ background: puede ? '#16a34a' : '#20352a', color: puede ? '#042012' : '#5f7d6e' }}>Guardar</button>
+        </div>
+      </div>
     </div>
   )
 }
