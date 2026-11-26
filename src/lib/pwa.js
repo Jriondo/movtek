@@ -26,12 +26,14 @@ export function activarPwaEmpresa(empresa, slug) {
       try { reg.update() } catch {}
     }).catch(() => {})
 
-    // Cuando entra en control una versión nueva del service worker, recarga UNA vez
-    // para que el usuario quede en la última versión sin tener que reinstalar.
-    let recargado = false
+    // Auto-actualización: recarga SOLO cuando una versión NUEVA reemplaza a una que ya
+    // controlaba la página. NO recarga en la primera instalación (eso causaba un bucle
+    // de recargas "Cargando…" dentro del APK/TWA).
+    let yaControlaba = !!navigator.serviceWorker.controller
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (recargado) return
-      recargado = true
+      if (!yaControlaba) { yaControlaba = true; return }   // primera toma de control: no recargar
+      if (window.__mvRecargado) return
+      window.__mvRecargado = true
       window.location.reload()
     })
   }
