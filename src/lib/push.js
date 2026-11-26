@@ -19,11 +19,13 @@ export async function activarPushConductor({ empresa, conductor, email }) {
   try {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return { ok: false, motivo: 'no-soportado' }
     if (!('Notification' in window)) return { ok: false, motivo: 'no-soportado' }
-    if (Notification.permission === 'default') {
-      const perm = await Notification.requestPermission()
+    // Intentamos pedir el permiso siempre que no esté concedido. Si solo se "descartó"
+    // (sin denegar), Chrome vuelve a mostrar el cuadro; si ya fue DENEGADO, el sistema
+    // responde "denied" al instante sin cuadro (regla de Android), y guiamos a Ajustes.
+    if (Notification.permission !== 'granted') {
+      const perm = await Notification.requestPermission().catch(() => Notification.permission)
       if (perm !== 'granted') return { ok: false, motivo: 'sin-permiso' }
     }
-    if (Notification.permission !== 'granted') return { ok: false, motivo: 'sin-permiso' }
 
     // Asegura que el service worker esté listo (con tiempo límite para no quedar pegado).
     if (!navigator.serviceWorker.controller) { try { await navigator.serviceWorker.register('/sw.js') } catch {} }
