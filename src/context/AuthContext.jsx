@@ -188,11 +188,12 @@ export function AuthProvider({ children }) {
   const esOperativo = rol === 'operativo'
   const esPropietario = rol === 'propietario'
   const esConductor = rol === 'conductor'
+  const esMantenimiento = rol === 'mantenimiento'
 
   return (
     <AuthContext.Provider value={{
       user, loading, login, logout, registrar, registrarConductor, recuperarPassword, actualizarPassword, crearAccesoUsuario, demo: !isSupabaseConfigured,
-      rol, rolReal, esAdmin, esOperativo, esPropietario, esConductor, propietarioId, conductorId, empresaIdUsuario, sinAcceso,
+      rol, rolReal, esAdmin, esOperativo, esPropietario, esConductor, esMantenimiento, propietarioId, conductorId, empresaIdUsuario, sinAcceso,
       verComo, setVerComo,
     }}>
       {children}

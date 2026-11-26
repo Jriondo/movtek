@@ -746,20 +746,21 @@ function HomeFuec({ empresa, user, propietarioId, esPropietario, onLogout }) {
     return <RegistroRutas empresa={empresa} vehiculos={vehiculos} primary={primary} onBack={() => setPantalla('home')} />
   }
 
-  // HOME de la app de FUEC.
+  // HOME de la app de FUEC (mismo diseño oscuro que el conductor).
   return (
-    <div className="min-h-screen bg-cloud">
-      <header className="flex items-center gap-3 px-4 py-3 text-white" style={{ background: primary }}>
+    <div className="min-h-screen" style={{ background: '#0e1512', color: '#e6f2ec' }}>
+      <header className="flex items-center gap-3 px-4 pb-6 pt-3 text-white"
+        style={{ background: `linear-gradient(135deg, ${primary} 0%, ${primary} 45%, #0e9488 100%)`, borderRadius: '0 0 24px 24px', boxShadow: '0 10px 30px -14px #0e9488' }}>
         {empresa?.logo_url
-          ? <img src={empresa.logo_url} alt="" className="h-9 w-auto max-w-[120px] rounded-lg bg-white/90 object-contain p-0.5" />
+          ? <img src={empresa.logo_url} alt="" className="h-9 w-auto max-w-[120px] rounded-lg bg-white/90 object-contain p-0.5 drop-shadow" />
           : <span className="font-display text-lg font-extrabold">{empresa?.nombre}</span>}
-        <button onClick={() => setModal('pass')} className="ml-auto rounded-lg bg-white/20 px-3 py-1.5 text-sm font-semibold" title="Cambiar contraseña">🔑</button>
-        <button onClick={onLogout} className="rounded-lg bg-white/20 px-3 py-1.5 text-sm font-semibold">Salir</button>
+        <button onClick={() => setModal('pass')} className="ml-auto rounded-lg bg-white/25 px-3 py-1.5 text-sm font-semibold backdrop-blur" title="Cambiar contraseña">🔑</button>
+        <button onClick={onLogout} className="rounded-lg bg-white/25 px-3 py-1.5 text-sm font-semibold backdrop-blur">Salir</button>
       </header>
 
-      <div className="mx-auto max-w-xl px-4 py-5">
-        <p className="text-sm text-ink-soft">Hola,</p>
-        <h1 className="font-display text-2xl font-extrabold text-ink">{user?.email || 'Propietario'}</h1>
+      <div className="mx-auto -mt-2 max-w-xl px-4 py-5">
+        <p className="text-sm" style={{ color: '#8fb6a3' }}>Hola,</p>
+        <h1 className="font-display text-2xl font-extrabold" style={{ color: '#eafff3', wordBreak: 'break-word' }}>{user?.email || 'Propietario'}</h1>
 
         <div className="mt-4 grid grid-cols-1 gap-3">
           <button onClick={() => setPantalla('rapidoPick')}
@@ -768,40 +769,40 @@ function HomeFuec({ empresa, user, propietarioId, esPropietario, onLogout }) {
             <span className="block text-sm text-white/85">Copia el último del vehículo y solo cambia las fechas</span>
           </button>
           <button onClick={() => { setDupId(null); setPantalla('completo') }}
-            className="rounded-2xl border-2 border-cloud-line bg-white px-5 py-4 text-left text-ink">
+            className="rounded-2xl border px-5 py-4 text-left" style={{ borderColor: '#203a2d', background: '#13201a', color: '#eafff3' }}>
             <span className="block font-display text-lg font-extrabold">📝 FUEC completo</span>
-            <span className="block text-sm text-ink-soft">Formulario completo (para el primero o casos nuevos)</span>
+            <span className="block text-sm" style={{ color: '#8fb6a3' }}>Formulario completo (para el primero o casos nuevos)</span>
           </button>
           <div className="grid grid-cols-2 gap-3">
-            <button onClick={() => setPantalla('preopPick')} className="rounded-2xl border-2 border-cloud-line bg-white px-4 py-4 text-left text-ink">
+            <button onClick={() => setPantalla('preopPick')} className="rounded-2xl border px-4 py-4 text-left" style={{ borderColor: '#203a2d', background: '#13201a', color: '#eafff3' }}>
               <span className="block font-display text-base font-extrabold">📋 Preoperacional</span>
-              <span className="block text-xs text-ink-soft">Revisar un vehículo</span>
+              <span className="block text-xs" style={{ color: '#8fb6a3' }}>Revisar un vehículo</span>
             </button>
-            <button onClick={() => setPantalla('rutas')} className="rounded-2xl border-2 border-cloud-line bg-white px-4 py-4 text-left text-ink">
+            <button onClick={() => setPantalla('rutas')} className="rounded-2xl border px-4 py-4 text-left" style={{ borderColor: '#203a2d', background: '#13201a', color: '#eafff3' }}>
               <span className="block font-display text-base font-extrabold">🗓️ Rutas</span>
-              <span className="block text-xs text-ink-soft">Registro de recorridos</span>
+              <span className="block text-xs" style={{ color: '#8fb6a3' }}>Registro de recorridos</span>
             </button>
           </div>
         </div>
 
         {/* FUEC recientes */}
         <div className="mt-6">
-          <p className="label mb-1.5">Últimos FUEC</p>
+          <p className="mb-1.5 text-xs font-bold uppercase tracking-wide" style={{ color: '#8fb6a3' }}>Últimos FUEC</p>
           {cargando ? (
-            <p className="text-sm text-ink-faint">Cargando…</p>
+            <p className="text-sm" style={{ color: '#5f7d6e' }}>Cargando…</p>
           ) : fuecs.length === 0 ? (
-            <p className="rounded-xl bg-white px-4 py-3 text-sm text-ink-soft">Aún no hay FUEC. Crea el primero con “FUEC completo”.</p>
+            <p className="rounded-xl px-4 py-3 text-sm" style={{ background: '#13201a', color: '#8fb6a3' }}>Aún no hay FUEC. Crea el primero con “FUEC completo”.</p>
           ) : (
             <div className="flex flex-col gap-2">
               {fuecs.map((f) => (
-                <div key={f.id} className="flex items-center justify-between gap-2 rounded-xl border border-cloud-line bg-white px-3 py-2.5">
+                <div key={f.id} className="flex items-center justify-between gap-2 rounded-xl border px-3 py-2.5" style={{ borderColor: '#203a2d', background: '#13201a' }}>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-bold text-ink">{f.placa || '—'} · FUEC {f.contrato_hijo || f.numero_fuec || ''}</p>
-                    <p className="truncate text-xs text-ink-soft">Vigencia: {f.vigencia_inicio || '—'} a {f.vigencia_fin || '—'}</p>
+                    <p className="truncate text-sm font-bold" style={{ color: '#eafff3' }}>{f.placa || '—'} · FUEC {f.contrato_hijo || f.numero_fuec || ''}</p>
+                    <p className="truncate text-xs" style={{ color: '#8fb6a3' }}>Vigencia: {f.vigencia_inicio || '—'} a {f.vigencia_fin || '—'}</p>
                   </div>
                   <div className="flex flex-none gap-1.5">
-                    <button onClick={() => repetir(f.id)} className="rounded-lg bg-brand-50 px-2.5 py-1.5 text-xs font-bold text-brand-600">⚡ Repetir</button>
-                    <button onClick={() => verGenerado(f.id)} className="rounded-lg bg-cloud px-2.5 py-1.5 text-xs font-bold text-ink">Ver</button>
+                    <button onClick={() => repetir(f.id)} className="rounded-lg px-2.5 py-1.5 text-xs font-bold" style={{ background: primary, color: '#042012' }}>⚡ Repetir</button>
+                    <button onClick={() => verGenerado(f.id)} className="rounded-lg px-2.5 py-1.5 text-xs font-bold" style={{ background: '#1c2f26', color: '#cfeede' }}>Ver</button>
                   </div>
                 </div>
               ))}

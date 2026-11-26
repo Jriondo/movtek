@@ -7,17 +7,17 @@ import AvisoActualizacion from './AvisoActualizacion'
 
 // Menú lateral. Cada item define qué roles lo ven (roles: admin, operativo, propietario).
 const nav = [
-  { to: '/', label: 'Inicio', icon: 'home', end: true, roles: ['admin', 'operativo', 'propietario'] },
+  { to: '/', label: 'Inicio', icon: 'home', end: true, roles: ['admin', 'operativo', 'propietario', 'mantenimiento'] },
   { to: '/clientes', label: 'Clientes maestros', icon: 'clientes', roles: ['admin', 'operativo'] },
   { to: '/conductores', label: 'Conductores', icon: 'conductor', roles: ['admin', 'operativo', 'propietario'] },
   { to: '/propietarios', label: 'Propietarios', icon: 'propietario', roles: ['admin', 'operativo'] },
   { to: '/transportadoras', label: 'Empresas transp.', icon: 'transportadora', roles: ['admin', 'operativo'] },
-  { to: '/vehiculos', label: 'Vehículos', icon: 'vehiculo', roles: ['admin', 'operativo', 'propietario'] },
+  { to: '/vehiculos', label: 'Vehículos', icon: 'vehiculo', roles: ['admin', 'operativo', 'propietario', 'mantenimiento'] },
   { to: '/destinos', label: 'Matriz destinos', icon: 'mapa', roles: ['admin', 'operativo'] },
   { to: '/fuec', label: 'FUEC', icon: 'fuec', roles: ['admin', 'operativo', 'propietario'] },
   { to: '/preoperacionales', label: 'Preoperacionales', icon: 'checklist', roles: ['admin', 'operativo', 'propietario'] },
   { to: '/rodamiento', label: 'Plan de rodamiento', icon: 'rodamiento', roles: ['admin', 'operativo', 'propietario'] },
-  { to: '/mantenimiento', label: 'Plan de mantenimiento', icon: 'mantenimiento', roles: ['admin', 'operativo', 'propietario'] },
+  { to: '/mantenimiento', label: 'Plan de mantenimiento', icon: 'mantenimiento', roles: ['admin', 'operativo', 'propietario', 'mantenimiento'] },
   { to: '/empresas', label: 'Empresas', icon: 'empresa', roles: ['admin'] },
   { to: '/usuarios', label: 'Usuarios', icon: 'usuarios', roles: ['admin'] },
   { to: '/almacenamiento', label: 'Almacenamiento', icon: 'almacenamiento', roles: ['admin'] },
@@ -29,6 +29,7 @@ const ROLES_UI = [
   { value: '', label: 'Administrador (tú)' },
   { value: 'operativo', label: 'Operativo' },
   { value: 'propietario', label: 'Propietario' },
+  { value: 'mantenimiento', label: 'Mantenimiento' },
 ]
 
 export default function Layout() {
@@ -100,7 +101,7 @@ export default function Layout() {
           <div className="grid h-9 w-9 flex-none place-items-center rounded-full bg-brand-100 font-bold text-brand-600">{initial}</div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-bold text-ink">{email}</p>
-            <p className="text-[11px] text-ink-faint">{rol === 'admin' ? 'Administrador' : rol === 'operativo' ? 'Operativo' : 'Propietario'}{demo ? ' · demo' : ''}</p>
+            <p className="text-[11px] text-ink-faint">{rol === 'admin' ? 'Administrador' : rol === 'operativo' ? 'Operativo' : rol === 'mantenimiento' ? 'Mantenimiento' : 'Propietario'}{demo ? ' · demo' : ''}</p>
           </div>
           <button onClick={logout} title="Cerrar sesión" aria-label="Cerrar sesión" className="flex-none text-ink-faint hover:text-coral-500">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>

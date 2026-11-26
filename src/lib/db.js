@@ -1249,6 +1249,7 @@ export const ROLES = [
   { value: 'admin_empresa', label: 'Administrador' },
   { value: 'operativo', label: 'Operativo' },
   { value: 'propietario', label: 'Propietario' },
+  { value: 'mantenimiento', label: 'Mantenimiento' },
   { value: 'conductor', label: 'Conductor (app preoperacional)' },
 ]
 export const rolLabel = (v) => (ROLES.find((r) => r.value === v)?.label || v || '—')

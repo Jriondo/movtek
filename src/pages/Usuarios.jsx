@@ -209,6 +209,8 @@ function descripcionRol(rol) {
   if (rol === 'admin') return 'Superadministrador del sistema (Movtek): acceso total a todas las empresas.'
   if (rol === 'admin_empresa') return 'Administrador de la empresa: gestiona toda su empresa, incluidos sus usuarios.'
   if (rol === 'operativo') return 'Crea y edita toda la información, pero no gestiona usuarios.'
+  if (rol === 'mantenimiento') return 'Lleva el plan de mantenimiento: ve los vehículos y registra/consulta la información de mantenimientos.'
+  if (rol === 'conductor') return 'Usa la app de preoperacional y rutas (no entra a la plataforma administrativa).'
   return 'Solo ve su vehículo y conductores, crea FUEC con sus vehículos y edita sus datos.'
 }
 
