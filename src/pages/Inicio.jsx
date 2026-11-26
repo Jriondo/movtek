@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useEmpresa } from '../context/EmpresaContext'
-import { listCobros, listVehiculos, cobroVencido, propietarioTieneVehiculo } from '../lib/db'
+import { listCobros, listVehiculos, cobroVencido, propietarioTieneVehiculo, autoGenerarCobrosSiToca } from '../lib/db'
 import Icon from '../components/Icon'
 
 const MODULOS = [
@@ -33,6 +33,8 @@ export default function Inicio() {
   useEffect(() => {
     if (!verCobros || !empresa?.id) { setVencidos([]); return }
     (async () => {
+      // Genera automáticamente los cobros del mes (solo admin) antes de revisar vencidos.
+      if (esAdmin || rol === 'admin_empresa') await autoGenerarCobrosSiToca(empresa).catch(() => {})
       const cs = await listCobros({ empresaId: empresa.id, estado: 'pendiente' }).catch(() => [])
       let pend = cs.filter((c) => cobroVencido(c))
       if (esPropietario && propietarioId) {

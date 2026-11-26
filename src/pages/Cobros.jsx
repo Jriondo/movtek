@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  listCobros, saveCobro, deleteCobro, generarCobrosMes,
+  listCobros, saveCobro, deleteCobro, generarCobrosMesManual, autoGenerarCobrosSiToca,
   listVehiculos, listPropietarios, nombrePropietario,
   periodoActual, periodoLabel, cobroVencido, fechaLocalISO, propietarioTieneVehiculo,
 } from '../lib/db'
@@ -27,6 +27,8 @@ export default function Cobros() {
 
   async function cargar() {
     setCargando(true)
+    // Generación automática del mes (solo admin): si aún no se han generado, los crea.
+    if (puedeGestionar && empresa?.id) await autoGenerarCobrosSiToca(empresa).catch(() => {})
     const vs = await listVehiculos({ empresaId: empresa?.id }).catch(() => [])
     setVehiculos(vs)
     setPropietarios(await listPropietarios({ empresaId: empresa?.id }).catch(() => []))
@@ -58,7 +60,7 @@ export default function Cobros() {
   async function generar() {
     if (!puedeGestionar) return
     setBusy(true); setMsg('')
-    const r = await generarCobrosMes({ empresaId: empresa?.id, periodo }).catch(() => null)
+    const r = await generarCobrosMesManual({ empresaId: empresa?.id, periodo }).catch(() => null)
     setBusy(false)
     if (r) { setMsg(`✅ Se generaron ${r.creados} cobro(s) para ${periodoLabel(periodo)}.`); cargar() }
     else setMsg('⚠️ No se pudieron generar los cobros.')
@@ -93,13 +95,13 @@ export default function Cobros() {
         <div>
           <h1 className="font-display text-2xl font-extrabold text-ink">💵 Cobros</h1>
           <p className="mt-1 text-sm text-ink-soft">
-            {puedeGestionar ? 'Cuotas mensuales por vehículo. Genera, registra pagos y controla los pendientes.' : 'Tus cuotas mensuales: lo que has pagado y lo que está pendiente.'}
+            {puedeGestionar ? 'Los cobros del mes se generan automáticamente por vehículo. Registra pagos, elimina los que no apliquen y controla los pendientes.' : 'Tus cuotas mensuales: lo que has pagado y lo que está pendiente.'}
           </p>
         </div>
         {puedeGestionar && (
           <div className="flex gap-2">
             <button onClick={() => setModal({ periodo })} className="btn-ghost">+ Nuevo cobro</button>
-            <button onClick={generar} disabled={busy} className="btn-primary">{busy ? 'Generando…' : `📅 Generar cobros de ${periodoLabel(periodo)}`}</button>
+            <button onClick={generar} disabled={busy} className="btn-ghost" title="Crea los cobros que falten del mes (por si agregaste vehículos nuevos)">{busy ? 'Generando…' : `↻ Generar faltantes`}</button>
           </div>
         )}
       </div>

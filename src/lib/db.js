@@ -1846,6 +1846,42 @@ export async function generarCobrosMes({ empresaId, periodo }) {
   return { creados }
 }
 
+// Marca en la empresa que los cobros de un periodo ya se generaron (para no repetirlos
+// ni "revivir" los que el administrador borró).
+async function marcarCobrosGenerados(empresaId, periodo) {
+  if (isSupabaseConfigured) {
+    try { await supabase.from('empresas').update({ cobros_ultimo_periodo: periodo }).eq('id', empresaId) } catch {}
+  } else {
+    try { localStorage.setItem(`movtek_cobros_gen_${empresaId}`, periodo) } catch {}
+  }
+}
+function periodoGeneradoLocal(empresaId) {
+  try { return localStorage.getItem(`movtek_cobros_gen_${empresaId}`) || '' } catch { return '' }
+}
+
+// Genera automáticamente los cobros del mes actual SI aún no se han generado para la empresa.
+// Idempotente: si ya se generaron (o se borró alguno a propósito), no vuelve a crearlos.
+export async function autoGenerarCobrosSiToca(empresa) {
+  if (!empresa?.id) return { generado: false, creados: 0 }
+  const periodo = periodoActual()
+  // Guarda por sesión: solo intentamos una vez por empresa+mes en este navegador.
+  const guardKey = `movtek_cobros_try_${empresa.id}_${periodo}`
+  try { if (sessionStorage.getItem(guardKey)) return { generado: false, creados: 0 } } catch {}
+  const ultimo = isSupabaseConfigured ? (empresa.cobros_ultimo_periodo || '') : periodoGeneradoLocal(empresa.id)
+  if (ultimo === periodo) { try { sessionStorage.setItem(guardKey, '1') } catch {}; return { generado: false, creados: 0 } }
+  try { sessionStorage.setItem(guardKey, '1') } catch {}
+  const r = await generarCobrosMes({ empresaId: empresa.id, periodo }).catch(() => ({ creados: 0 }))
+  await marcarCobrosGenerados(empresa.id, periodo)
+  return { generado: true, periodo, creados: r.creados }
+}
+
+// Generación manual (botón): crea los que falten y marca el periodo como generado.
+export async function generarCobrosMesManual({ empresaId, periodo }) {
+  const r = await generarCobrosMes({ empresaId, periodo })
+  await marcarCobrosGenerados(empresaId, periodo)
+  return r
+}
+
 // Nivel de uso del almacenamiento (estimado) para avisar antes de que se llene la base.
 // Límite por defecto: 500 MB (plan gratis de Supabase). El riesgo real de "colapso" es la
 // base, que se llena con las imágenes en base64; por eso medimos ese estimado.

@@ -6,6 +6,9 @@
 -- 1) Valor de cobro por vehículo (para generar los cobros del mes).
 alter table vehiculos add column if not exists valor_cobro numeric;
 
+-- 1b) Marca del último mes generado por empresa (para la generación automática).
+alter table empresas add column if not exists cobros_ultimo_periodo text;
+
 -- 2) Tabla de cobros.
 create table if not exists cobros (
   id uuid primary key default gen_random_uuid(),
