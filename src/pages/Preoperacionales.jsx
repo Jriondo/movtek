@@ -8,29 +8,23 @@ import { normalizarPreguntas, LEYENDA, TIPO, SALUD, saludEnRiesgo } from '../lib
 import PreoperacionalReporte from '../components/PreoperacionalReporte'
 
 const PERIODOS = [
+  { v: 'todos', label: 'Todos' },
   { v: 'dia', label: 'Día' },
   { v: 'semana', label: 'Semana' },
   { v: 'mes', label: 'Mes' },
   { v: 'anio', label: 'Año' },
+  { v: 'personalizado', label: 'Personalizado' },
 ]
 
-// Calcula el rango [desde, hasta] (YYYY-MM-DD) según el periodo y una fecha ancla.
-function rango(periodo, anclaISO) {
-  const d = new Date(anclaISO + 'T12:00:00')
-  const iso = (x) => fechaLocalISO(x)
-  if (periodo === 'dia') return [iso(d), iso(d)]
-  if (periodo === 'semana') {
-    const dia = (d.getDay() + 6) % 7 // lunes=0
-    const lun = new Date(d); lun.setDate(d.getDate() - dia)
-    const dom = new Date(lun); dom.setDate(lun.getDate() + 6)
-    return [iso(lun), iso(dom)]
-  }
-  if (periodo === 'mes') {
-    const a = new Date(d.getFullYear(), d.getMonth(), 1)
-    const b = new Date(d.getFullYear(), d.getMonth() + 1, 0)
-    return [iso(a), iso(b)]
-  }
-  return [`${d.getFullYear()}-01-01`, `${d.getFullYear()}-12-31`]
+// [desde, hasta] para un preset de periodo (basado en hoy). 'todos'/'personalizado' → sin rango fijo.
+function rangoPreset(p) {
+  const hoy = new Date(); const iso = (x) => fechaLocalISO(x)
+  const y = hoy.getFullYear(), m = hoy.getMonth()
+  if (p === 'dia') { const d = iso(hoy); return [d, d] }
+  if (p === 'semana') { const off = (hoy.getDay() + 6) % 7; const lun = new Date(hoy); lun.setDate(hoy.getDate() - off); const dom = new Date(lun); dom.setDate(lun.getDate() + 6); return [iso(lun), iso(dom)] }
+  if (p === 'mes') return [iso(new Date(y, m, 1)), iso(new Date(y, m + 1, 0))]
+  if (p === 'anio') return [`${y}-01-01`, `${y}-12-31`]
+  return ['', '']
 }
 
 const nombreTipo = (t) => t === TIPO.TALLER ? '🔧 En taller' : t === TIPO.DESCANSO ? '🛌 En descanso' : '📋 Preoperacional'
@@ -42,7 +36,8 @@ export default function Preoperacionales() {
   const { esPropietario, propietarioId } = useAuth()
   const [copiado, setCopiado] = useState(false)
   const [periodo, setPeriodo] = useState('mes')
-  const [ancla, setAncla] = useState(fechaLocalISO())
+  const [fIni, setFIni] = useState(() => rangoPreset('mes')[0])
+  const [fFin, setFFin] = useState(() => rangoPreset('mes')[1])
   const [placa, setPlaca] = useState('')
   const [conductor, setConductor] = useState('')
   const [rows, setRows] = useState([])
@@ -51,7 +46,11 @@ export default function Preoperacionales() {
   const [detalle, setDetalle] = useState(null)
   const [zip, setZip] = useState({ busy: false, hecho: 0, total: 0 })
 
-  const [desde, hasta] = useMemo(() => rango(periodo, ancla), [periodo, ancla])
+  const desde = fIni, hasta = fFin
+  function aplicarPeriodo(p) {
+    setPeriodo(p)
+    if (p !== 'personalizado') { const [a, b] = rangoPreset(p); setFIni(a); setFFin(b) }
+  }
 
   // Trae los datos filtrados (incluye preoperacional, taller y descanso).
   async function obtenerDatos() {
@@ -145,7 +144,7 @@ export default function Preoperacionales() {
       ])
       const html2canvas = h2c.default
       const vehiculos = await listVehiculos({ empresaId: empresa?.id }).catch(() => [])
-      const mes = ancla.slice(0, 7)
+      const mes = (fIni || fFin || '').slice(0, 7)
 
       // Contenedor oculto para renderizar cada reporte.
       const host = document.createElement('div')
@@ -194,7 +193,7 @@ export default function Preoperacionales() {
     setZip({ busy: false, hecho: 0, total: 0 })
   }
 
-  const mesActual = ancla.slice(0, 7)
+  const mesActual = (fIni || fFin || '').slice(0, 7)
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
   const slug = empresa?.slug || slugify(empresa?.nombre || '')
   const linkApp = `${origin}/e/${slug}/app`
@@ -229,19 +228,20 @@ export default function Preoperacionales() {
 
       {/* Filtros */}
       <div className="card p-4">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <div>
             <label className="label">Periodo</label>
-            <div className="mt-1 flex gap-1 rounded-xl bg-cloud p-1">
-              {PERIODOS.map((p) => (
-                <button key={p.v} onClick={() => setPeriodo(p.v)}
-                  className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-bold transition ${periodo === p.v ? 'bg-white text-brand-600 shadow-card' : 'text-ink-soft'}`}>{p.label}</button>
-              ))}
-            </div>
+            <select className="input mt-1" value={periodo} onChange={(e) => aplicarPeriodo(e.target.value)}>
+              {PERIODOS.map((p) => <option key={p.v} value={p.v}>{p.label}</option>)}
+            </select>
           </div>
           <div>
-            <label className="label">Fecha</label>
-            <input type="date" className="input mt-1" value={ancla} onChange={(e) => setAncla(e.target.value)} />
+            <label className="label">Fecha inicio</label>
+            <input type="date" className="input mt-1" value={fIni} onChange={(e) => { setFIni(e.target.value); setPeriodo('personalizado') }} />
+          </div>
+          <div>
+            <label className="label">Fecha final</label>
+            <input type="date" className="input mt-1" value={fFin} onChange={(e) => { setFFin(e.target.value); setPeriodo('personalizado') }} />
           </div>
           <div>
             <label className="label">Buscar placa</label>
