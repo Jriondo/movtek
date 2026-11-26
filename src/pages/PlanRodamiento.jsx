@@ -199,14 +199,13 @@ function RutasMaestras({ rutas, onNew, onEdit, onDelete }) {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] text-sm">
             <thead><tr className="border-b border-cloud-line text-left text-xs uppercase text-ink-faint">
-              <th className="py-2 pr-3">Ruta</th><th className="pr-3">Empresa</th><th className="pr-3">Tipo</th><th className="pr-3">Origen → Destino</th><th></th>
+              <th className="py-2 pr-3">Ruta</th><th className="pr-3">Empresa</th><th className="pr-3">Origen → Destino</th><th></th>
             </tr></thead>
             <tbody>
               {rutas.map((r) => (
                 <tr key={r.id} className="border-b border-cloud-line/60">
                   <td className="py-2 pr-3 font-bold text-ink">{r.nombre}</td>
                   <td className="pr-3">{r.empresa_cliente || '—'}</td>
-                  <td className="pr-3">{r.descripcion || '—'}</td>
                   <td className="pr-3 text-ink-soft">{r.origen || '—'} → {r.destino || '—'}</td>
                   <td className="whitespace-nowrap pr-1 text-right">
                     <button onClick={() => onEdit(r)} className="mr-2 text-xs font-bold text-brand-600">Editar</button>
@@ -224,7 +223,7 @@ function RutasMaestras({ rutas, onNew, onEdit, onDelete }) {
 
 function ModalRuta({ empresa, base, onClose, onSaved }) {
   const [f, setF] = useState({
-    id: base.id, nombre: base.nombre || '', empresa_cliente: base.empresa_cliente || '', descripcion: base.descripcion || 'Ingreso Personal',
+    id: base.id, nombre: base.nombre || '', empresa_cliente: base.empresa_cliente || '', descripcion: base.descripcion || '',
     origen: base.origen || '', destino: base.destino || '',
   })
   const set = (k, v) => setF((o) => ({ ...o, [k]: v }))
@@ -241,12 +240,7 @@ function ModalRuta({ empresa, base, onClose, onSaved }) {
         <h2 className="font-display text-lg font-extrabold text-ink">{base.id ? 'Editar ruta' : 'Nueva ruta maestra'}</h2>
         <div className="mt-3 flex flex-col gap-3">
           <div><label className="label">Nombre de la ruta *</label><input className="input mt-1" value={f.nombre} onChange={(e) => set('nombre', e.target.value)} /></div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="label">Empresa (cliente)</label><input className="input mt-1" value={f.empresa_cliente} onChange={(e) => set('empresa_cliente', e.target.value)} /></div>
-            <div><label className="label">Tipo</label>
-              <select className="input mt-1" value={f.descripcion} onChange={(e) => set('descripcion', e.target.value)}>{DESCRIPCIONES_ROD.map((d) => <option key={d}>{d}</option>)}</select>
-            </div>
-          </div>
+          <div><label className="label">Empresa (cliente)</label><input className="input mt-1" value={f.empresa_cliente} onChange={(e) => set('empresa_cliente', e.target.value)} /></div>
           <div><label className="label">Origen</label><input className="input mt-1" value={f.origen} onChange={(e) => set('origen', e.target.value)} /></div>
           <div><label className="label">Destino</label><input className="input mt-1" value={f.destino} onChange={(e) => set('destino', e.target.value)} /></div>
         </div>
@@ -263,13 +257,15 @@ function ModalRuta({ empresa, base, onClose, onSaved }) {
 function ModalServicio({ empresa, base, rutas, vehiculos, conductores, onClose, onSaved }) {
   const [f, setF] = useState({
     id: base.id, fecha: base.fecha || fechaLocalISO(), placa: base.placa || '', clase: base.clase || '',
-    conductor_id: base.conductor_id || '', conductor_nombre: base.conductor_nombre || '', descripcion: base.descripcion || 'Ingreso Personal',
+    conductor_id: base.conductor_id || '', conductor_nombre: base.conductor_nombre || '', descripcion: base.descripcion || '',
     hora_inicial: hhmm(base.hora_inicial), hora_final: hhmm(base.hora_final), ruta: base.ruta || '', ruta_id: base.ruta_id || '',
     origen: base.origen || '', destino: base.destino || '', empresa_cliente: base.empresa_cliente || '', estado: base.estado || 'programado',
     motivo_cancelacion: base.motivo_cancelacion || '',
   })
   const set = (k, v) => setF((o) => ({ ...o, [k]: v }))
   const [busy, setBusy] = useState(false)
+  // Texto visible del buscador de ruta maestra (permite escribir para filtrar).
+  const [rutaTxt, setRutaTxt] = useState(() => (rutas.find((x) => String(x.id) === String(base.ruta_id))?.nombre) || '')
 
   function aplicarRuta(id) {
     const r = rutas.find((x) => String(x.id) === String(id))
@@ -296,18 +292,20 @@ function ModalServicio({ empresa, base, rutas, vehiculos, conductores, onClose, 
         <div className="mt-3 flex flex-col gap-3">
           {rutas.length > 0 && (
             <div><label className="label">Usar ruta maestra</label>
-              <select className="input mt-1" value={f.ruta_id} onChange={(e) => aplicarRuta(e.target.value)}>
-                <option value="">— (manual) —</option>
-                {rutas.map((r) => <option key={r.id} value={r.id}>{r.nombre} · {r.empresa_cliente}</option>)}
-              </select>
+              <input list="rutas-maestras-serv" className="input mt-1" value={rutaTxt}
+                onChange={(e) => {
+                  const txt = e.target.value; setRutaTxt(txt)
+                  const r = rutas.find((x) => (x.nombre || '') === txt)
+                  if (r) aplicarRuta(r.id); else set('ruta_id', '')
+                }}
+                placeholder="Selecciona tu ruta…" />
+              <datalist id="rutas-maestras-serv">
+                {rutas.map((r) => <option key={r.id} value={r.nombre}>{r.empresa_cliente || ''}</option>)}
+              </datalist>
+              <p className="mt-1 text-xs text-ink-faint">Escribe para buscar o despliega la lista. Déjalo vacío para llenarlo a mano.</p>
             </div>
           )}
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="label">Fecha</label><input type="date" className="input mt-1" value={f.fecha} onChange={(e) => set('fecha', e.target.value)} /></div>
-            <div><label className="label">Tipo</label>
-              <select className="input mt-1" value={f.descripcion} onChange={(e) => set('descripcion', e.target.value)}>{DESCRIPCIONES_ROD.map((d) => <option key={d}>{d}</option>)}</select>
-            </div>
-          </div>
+          <div><label className="label">Fecha</label><input type="date" className="input mt-1" value={f.fecha} onChange={(e) => set('fecha', e.target.value)} /></div>
           <div><label className="label">Placa</label>
             <select className="input mt-1" value={f.placa} onChange={(e) => aplicarPlaca(e.target.value)}>
               <option value="">—</option>{vehiculos.map((x) => <option key={x.id} value={x.placa}>{x.placa}</option>)}
