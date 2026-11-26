@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   listVehiculos, listConductores, nombreConductor, fechaLocalISO,
   listRodamiento, saveRodamiento, deleteRodamiento,
@@ -253,6 +253,41 @@ function ModalRuta({ empresa, base, onClose, onSaved }) {
   )
 }
 
+// Buscador desplegable: se ve como un menú, pero deja escribir para filtrar por nombre.
+function BuscadorSelect({ value, onChange, options, placeholder = 'Buscar o elegir…', vacioLabel = '—' }) {
+  const [abierto, setAbierto] = useState(false)
+  const [q, setQ] = useState('')
+  const ref = useRef(null)
+  const sel = options.find((o) => String(o.value) === String(value))
+  const texto = abierto ? q : (sel ? sel.label : '')
+  const filtradas = q.trim() ? options.filter((o) => o.label.toLowerCase().includes(q.trim().toLowerCase())) : options
+  useEffect(() => {
+    function onDoc(e) { if (ref.current && !ref.current.contains(e.target)) { setAbierto(false); setQ('') } }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [])
+  const elegir = (v) => { onChange(v); setAbierto(false); setQ('') }
+  return (
+    <div className="relative mt-1" ref={ref}>
+      <input className="input w-full pr-8" value={texto} placeholder={placeholder}
+        onFocus={() => { setAbierto(true); setQ('') }}
+        onChange={(e) => { setQ(e.target.value); setAbierto(true) }} />
+      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint">▾</span>
+      {abierto && (
+        <div className="absolute z-30 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-cloud-line bg-white py-1 shadow-card">
+          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => elegir('')}
+            className="block w-full px-3 py-2 text-left text-sm text-ink-soft hover:bg-cloud">{vacioLabel}</button>
+          {filtradas.map((o) => (
+            <button key={o.value} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => elegir(o.value)}
+              className={`block w-full px-3 py-2 text-left text-sm hover:bg-cloud ${String(o.value) === String(value) ? 'bg-brand-50 font-bold text-brand-600' : 'text-ink'}`}>{o.label}</button>
+          ))}
+          {filtradas.length === 0 && <p className="px-3 py-2 text-sm text-ink-faint">Sin resultados</p>}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ---------- Modal: un servicio (crear/editar) ----------
 function ModalServicio({ empresa, base, rutas, vehiculos, conductores, onClose, onSaved }) {
   const [f, setF] = useState({
@@ -264,8 +299,6 @@ function ModalServicio({ empresa, base, rutas, vehiculos, conductores, onClose, 
   })
   const set = (k, v) => setF((o) => ({ ...o, [k]: v }))
   const [busy, setBusy] = useState(false)
-  // Texto visible del buscador de ruta maestra (permite escribir para filtrar).
-  const [rutaTxt, setRutaTxt] = useState(() => (rutas.find((x) => String(x.id) === String(base.ruta_id))?.nombre) || '')
 
   function aplicarRuta(id) {
     const r = rutas.find((x) => String(x.id) === String(id))
@@ -292,30 +325,23 @@ function ModalServicio({ empresa, base, rutas, vehiculos, conductores, onClose, 
         <div className="mt-3 flex flex-col gap-3">
           {rutas.length > 0 && (
             <div><label className="label">Usar ruta maestra</label>
-              <input list="rutas-maestras-serv" className="input mt-1" value={rutaTxt}
-                onChange={(e) => {
-                  const txt = e.target.value; setRutaTxt(txt)
-                  const r = rutas.find((x) => (x.nombre || '') === txt)
-                  if (r) aplicarRuta(r.id); else set('ruta_id', '')
-                }}
-                placeholder="Selecciona tu ruta…" />
-              <datalist id="rutas-maestras-serv">
-                {rutas.map((r) => <option key={r.id} value={r.nombre}>{r.empresa_cliente || ''}</option>)}
-              </datalist>
+              <BuscadorSelect value={f.ruta_id} placeholder="Selecciona tu ruta…" vacioLabel="— Llenar a mano —"
+                options={rutas.map((r) => ({ value: r.id, label: r.nombre }))}
+                onChange={(id) => (id ? aplicarRuta(id) : set('ruta_id', ''))} />
               <p className="mt-1 text-xs text-ink-faint">Escribe para buscar o despliega la lista. Déjalo vacío para llenarlo a mano.</p>
             </div>
           )}
           <div><label className="label">Fecha</label><input type="date" className="input mt-1" value={f.fecha} onChange={(e) => set('fecha', e.target.value)} /></div>
           <div><label className="label">Placa</label>
-            <select className="input mt-1" value={f.placa} onChange={(e) => aplicarPlaca(e.target.value)}>
-              <option value="">—</option>{vehiculos.map((x) => <option key={x.id} value={x.placa}>{x.placa}</option>)}
-            </select>
+            <BuscadorSelect value={f.placa} placeholder="Busca o elige la placa…"
+              options={vehiculos.map((v) => ({ value: v.placa, label: v.placa }))}
+              onChange={(placa) => aplicarPlaca(placa)} />
             {f.clase && <p className="mt-1 text-xs text-ink-faint">Clase: {f.clase}</p>}
           </div>
           <div><label className="label">Conductor</label>
-            <select className="input mt-1" value={f.conductor_id} onChange={(e) => set('conductor_id', e.target.value)}>
-              <option value="">—</option>{conductores.map((c) => <option key={c.id} value={c.id}>{nombreConductor(c)}</option>)}
-            </select>
+            <BuscadorSelect value={f.conductor_id} placeholder="Busca o elige el conductor…"
+              options={conductores.map((c) => ({ value: c.id, label: nombreConductor(c) }))}
+              onChange={(id) => set('conductor_id', id)} />
           </div>
           <div><label className="label">Ruta</label><input className="input mt-1" value={f.ruta} onChange={(e) => set('ruta', e.target.value)} /></div>
           <div className="grid grid-cols-2 gap-3">
