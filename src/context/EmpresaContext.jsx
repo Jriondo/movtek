@@ -8,11 +8,33 @@ const EmpresaContext = createContext(null)
 export const useEmpresa = () => useContext(EmpresaContext)
 
 const LS_KEY = 'movtek_empresa'
+const SNAP_KEY = 'movtek_empresa_snap'
+
+// Guarda/lee una "foto" ligera de la empresa activa para pintar su marca
+// (logo, nombre y color) desde la PRIMERA renderización, sin esperar la red.
+// Así no aparece Movtek un instante antes de la empresa al actualizar.
+function leerSnapshot() {
+  try { const s = localStorage.getItem(SNAP_KEY); return s ? JSON.parse(s) : null } catch { return null }
+}
+function guardarSnapshot(e) {
+  if (!e) return
+  try {
+    localStorage.setItem(SNAP_KEY, JSON.stringify({
+      id: e.id, nombre: e.nombre, slug: e.slug, logo_url: e.logo_url,
+      color_primario: e.color_primario, color_acento: e.color_acento,
+    }))
+  } catch {}
+}
 
 export function EmpresaProvider({ children }) {
   const { rolReal, empresaIdUsuario, user } = useAuth() || {}
   const [empresas, setEmpresas] = useState([])
-  const [empresa, setEmpresa] = useState(null)
+  // Arrancamos con la foto guardada → la marca correcta se ve de inmediato.
+  const [empresa, setEmpresa] = useState(() => {
+    const snap = leerSnapshot()
+    if (snap) applyTheme({ primary: snap.color_primario, accent: snap.color_acento })
+    return snap
+  })
 
   // Deja registrado quién hace los cambios (para el historial).
   useEffect(() => { setActorHistorial({ usuario: user?.email || '', empresaId: empresa?.id || null }) }, [user?.email, empresa?.id])
@@ -54,6 +76,7 @@ export function EmpresaProvider({ children }) {
     if (!empresa) return
     applyTheme({ primary: empresa.color_primario, accent: empresa.color_acento })
     try { localStorage.setItem(LS_KEY, empresa.id) } catch {}
+    guardarSnapshot(empresa)
   }, [empresa])
 
   function cambiarEmpresa(id) {

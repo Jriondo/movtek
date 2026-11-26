@@ -128,6 +128,7 @@ export default function PlanRodamiento() {
               <label className="label">Fecha final</label>
               <input type="date" className="input mt-1 w-auto" value={fFin} onChange={(e) => { setFFin(e.target.value); setPeriodo('personalizado') }} />
             </div>
+            <button onClick={cargarServicios} disabled={cargando} className="btn-primary">{cargando ? 'Buscando…' : '🔍 Buscar'}</button>
             <input className="input mt-1 w-auto flex-1" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar placa, conductor, ruta, empresa…" />
             <span className="pb-2 text-sm text-ink-soft">{filtrados.length} servicio(s)</span>
           </div>
