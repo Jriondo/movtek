@@ -3,7 +3,7 @@ import { listUsuarios, saveUsuario, deleteUsuario, listPropietarios, nombrePropi
 import { useEmpresa } from '../context/EmpresaContext'
 import { useAuth } from '../context/AuthContext'
 
-const VACIO = { id: null, rol: 'operativo', nombre: '', email: '', propietario_id: '', empresa_id: '', estado: 'activo' }
+const VACIO = { id: null, rol: 'operativo', nombre: '', email: '', emailOrig: '', propietario_id: '', empresa_id: '', estado: 'activo' }
 
 export default function Usuarios() {
   const { empresa, empresas } = useEmpresa()
@@ -54,7 +54,7 @@ export default function Usuarios() {
 
   function nuevo() { setForm({ ...VACIO, rol: esMovtek ? 'admin' : 'operativo' }); setMsg(''); setOk('') }
   function editar(u) {
-    setForm({ id: u.id, rol: u.rol || 'operativo', nombre: u.nombre || '', email: u.email || '', propietario_id: u.propietario_id || '', empresa_id: u.empresa_id || '', estado: u.estado || 'activo' })
+    setForm({ id: u.id, rol: u.rol || 'operativo', nombre: u.nombre || '', email: u.email || '', emailOrig: u.email || '', propietario_id: u.propietario_id || '', empresa_id: u.empresa_id || '', estado: u.estado || 'activo' })
     setMsg(''); setOk(''); window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -70,13 +70,18 @@ export default function Usuarios() {
       if (form.rol === 'admin') payload.empresa_id = null
       if (!esProp) payload.propietario_id = null
       const esNuevo = !form.id
+      const cambioCorreo = !esNuevo && form.emailOrig && payload.email.trim().toLowerCase() !== form.emailOrig.trim().toLowerCase()
       await saveUsuario(payload)
-      // Al CREAR, se le envía el correo de verificación para que ponga su contraseña.
+      // Al CREAR (o al CAMBIAR el correo), se envía la verificación para activar el acceso.
       if (esNuevo) {
         const res = await crearAccesoUsuario(payload.email)
         if (res?.demo) setOk('✅ Usuario creado. (En modo demo no se envían correos; con Supabase le llegará la verificación.)')
         else if (res?.ok) setOk(`✅ Usuario creado. Le enviamos un correo a ${payload.email} para verificar su cuenta y crear su contraseña.`)
         else setOk(`✅ Usuario creado, pero no se pudo enviar el correo (${res?.error || 'revisa Supabase'}). Puede usar “¿Olvidaste tu contraseña?” para activarlo.`)
+      } else if (cambioCorreo) {
+        const res = await crearAccesoUsuario(payload.email)
+        if (res?.ok || res?.demo) setOk(`✅ Correo actualizado a ${payload.email}. Le enviamos una verificación para que active su acceso con el nuevo correo.`)
+        else setOk(`✅ Correo actualizado, pero no se pudo enviar la verificación (${res?.error || 'revisa Supabase'}). El usuario puede usar “¿Olvidaste tu contraseña?” con el nuevo correo.`)
       } else {
         setOk('✅ Cambios guardados.')
       }
@@ -170,7 +175,12 @@ export default function Usuarios() {
             </Field>
           )}
           <Field label="Nombre"><input className="input" value={form.nombre} onChange={(e) => set('nombre', e.target.value)} /></Field>
-          <Field label="Correo (usuario de acceso)"><input type="email" className="input" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="correo@ejemplo.com" disabled={editando} /></Field>
+          <Field label="Correo (usuario de acceso)">
+            <input type="email" className="input" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="correo@ejemplo.com" />
+            {editando && form.email.trim().toLowerCase() !== (form.emailOrig || '').trim().toLowerCase() && (
+              <p className="mt-1 text-xs text-amber-600">Cambiarás el correo de acceso. Le enviaremos una verificación al nuevo para que vuelva a activar su cuenta.</p>
+            )}
+          </Field>
         </div>
         {ok && <p className="mt-3 rounded-xl bg-mint-500/15 px-4 py-2.5 text-sm font-medium text-mint-600">{ok}</p>}
         {msg && <p className="mt-3 rounded-xl bg-coral-400/15 px-4 py-2.5 text-sm font-medium text-coral-500">{msg}</p>}
