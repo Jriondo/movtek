@@ -109,10 +109,16 @@ export default function PreoperacionalReportePage() {
       <div className="flex flex-wrap items-center gap-2 no-print">
         <button onClick={() => navigate('/preoperacionales')} className="btn-ghost">← Volver</button>
         <span className="font-display text-sm font-bold text-ink">Reporte mensual · {nombreMes}</span>
-        {placas.length > 1 && (
-          <select className="input ml-2 w-auto" value={placaSel} onChange={(e) => setPlacaSel(e.target.value)}>
-            {placas.map((p) => <option key={p}>{p}</option>)}
-          </select>
+        {placas.length > 0 && (
+          <div className="ml-2 flex items-center gap-1">
+            <input list="placas-reporte" className="input w-40" value={placaSel}
+              onChange={(e) => setPlacaSel(e.target.value.toUpperCase())}
+              placeholder="Escribe o elige placa…" />
+            <datalist id="placas-reporte">
+              {placas.map((p) => <option key={p} value={p} />)}
+            </datalist>
+            <span className="whitespace-nowrap text-xs text-ink-faint">{placas.length} con registros</span>
+          </div>
         )}
         <div className="ml-auto flex gap-2">
           <button onClick={actualizarApp} className="btn-ghost" title="Si ves una versión vieja, actualiza">⟳ Actualizar</button>
