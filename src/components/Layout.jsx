@@ -19,6 +19,7 @@ const nav = [
   { to: '/preoperacionales', label: 'Preoperacionales', icon: 'checklist', roles: ['admin', 'operativo', 'propietario', 'mantenimiento'] },
   { to: '/rodamiento', label: 'Plan de rodamiento', icon: 'rodamiento', roles: ['admin', 'operativo', 'propietario'] },
   { to: '/mantenimiento', label: 'Plan de mantenimiento', icon: 'mantenimiento', roles: ['admin', 'operativo', 'propietario', 'mantenimiento'] },
+  { to: '/cobros', label: 'Cobros', icon: 'fuec', roles: ['admin', 'propietario'] },
   { to: '/empresas', label: 'Empresas', icon: 'empresa', roles: ['admin'] },
   { to: '/usuarios', label: 'Usuarios', icon: 'usuarios', roles: ['admin'] },
   { to: '/almacenamiento', label: 'Almacenamiento', icon: 'almacenamiento', roles: ['admin'] },

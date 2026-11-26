@@ -1,6 +1,8 @@
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useEmpresa } from '../context/EmpresaContext'
+import { listCobros, listVehiculos, cobroVencido, propietarioTieneVehiculo } from '../lib/db'
 import Icon from '../components/Icon'
 
 const MODULOS = [
@@ -14,6 +16,7 @@ const MODULOS = [
   { label: 'Preoperacionales', icon: 'checklist', to: '/preoperacionales', desc: 'Revisiones diarias', roles: ['admin', 'operativo', 'propietario', 'mantenimiento'] },
   { label: 'Plan de rodamiento', icon: 'rodamiento', to: '/rodamiento', desc: 'Programación por días', roles: ['admin', 'operativo', 'propietario'] },
   { label: 'Plan de mantenimiento', icon: 'mantenimiento', to: '/mantenimiento', desc: 'Preventivo y bitácora', roles: ['admin', 'operativo', 'propietario', 'mantenimiento'] },
+  { label: 'Cobros', icon: 'fuec', to: '/cobros', desc: 'Cuotas mensuales por vehículo', roles: ['admin', 'propietario'] },
   { label: 'Empresas', icon: 'empresa', to: '/empresas', desc: 'Plataforma de cada empresa', roles: ['admin'] },
   { label: 'Usuarios', icon: 'usuarios', to: '/usuarios', desc: 'Accesos y roles', roles: ['admin'] },
   { label: 'Almacenamiento', icon: 'almacenamiento', to: '/almacenamiento', desc: 'Espacio y optimización', roles: ['admin'] },
@@ -21,8 +24,26 @@ const MODULOS = [
 
 export default function Inicio() {
   const navigate = useNavigate()
-  const { rol } = useAuth()
+  const { rol, esAdmin, esPropietario, propietarioId } = useAuth()
   const { empresa } = useEmpresa() || {}
+  const verCobros = esAdmin || rol === 'admin_empresa' || esPropietario
+
+  // Avisos de cobros vencidos (pendientes después del día 10 del mes).
+  const [vencidos, setVencidos] = useState([])
+  useEffect(() => {
+    if (!verCobros || !empresa?.id) { setVencidos([]); return }
+    (async () => {
+      const cs = await listCobros({ empresaId: empresa.id, estado: 'pendiente' }).catch(() => [])
+      let pend = cs.filter((c) => cobroVencido(c))
+      if (esPropietario && propietarioId) {
+        const vs = await listVehiculos({ empresaId: empresa.id }).catch(() => [])
+        const mios = new Set(vs.filter((v) => propietarioTieneVehiculo(v, propietarioId)).map((v) => String(v.id)))
+        pend = pend.filter((c) => mios.has(String(c.vehiculo_id)))
+      }
+      setVencidos(pend)
+    })().catch(() => setVencidos([]))
+  }, [empresa?.id, verCobros, esPropietario, propietarioId])
+  const totalVencido = useMemo(() => vencidos.reduce((s, c) => s + (Number(c.monto) || 0), 0), [vencidos])
   // El Administrador de empresa ve los módulos de nivel admin, salvo los del sistema (Movtek).
   const SISTEMA_SOLO = ['/empresas', '/almacenamiento']
   const modulos = MODULOS.filter((m) =>
@@ -37,6 +58,21 @@ export default function Inicio() {
         <h1 className="font-display text-2xl font-extrabold text-ink">Inicio</h1>
         <p className="mt-1 text-sm text-ink-soft">Panel de {nombreEmp}. Accede rápido a tus módulos.</p>
       </div>
+
+      {vencidos.length > 0 && (
+        <button onClick={() => navigate('/cobros')} className="flex w-full flex-wrap items-center gap-3 rounded-xl border border-coral-400/50 bg-coral-400/10 px-4 py-3 text-left">
+          <span className="text-xl">🔴</span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-coral-600">
+              {esPropietario
+                ? `Tienes ${vencidos.length} cobro(s) pendiente(s) vencido(s)`
+                : `Hay ${vencidos.length} cobro(s) vencido(s) sin pagar`}
+            </p>
+            <p className="text-xs text-ink-soft">Total pendiente vencido: <b>${totalVencido.toLocaleString('es-CO')}</b>. Se pasó el día 10 del mes. Toca para ver el detalle.</p>
+          </div>
+          <span className="rounded-lg bg-coral-500 px-3 py-1.5 text-xs font-bold text-white">Ver cobros</span>
+        </button>
+      )}
 
       <div>
         <h2 className="mb-3 font-display text-sm font-bold uppercase tracking-wide text-ink-faint">Módulos</h2>

@@ -25,7 +25,7 @@ const VACIO = {
   // operacionales
   aseguradora_soat: '', fecha_venc_soat: '', fecha_venc_rcc_rce: '', aseguradora_rcc_rce: '',
   fecha_venc_preventiva: '', fecha_venc_tecnomecanica: '', tarjeta_operacion: '', fecha_venc_toperacion: '',
-  propietario_id: '', tenedor_id: '', transportadora_id: '',
+  propietario_id: '', tenedor_id: '', transportadora_id: '', valor_cobro: '',
   estado: 'activo', desvinculacion: 'NO',
   // adicionales / convenio
   tiene_convenio: 'NO', depto_matricula: '', ciudad_matricula: '', fecha_matricula: '', inicio_convenio: '', caducidad_convenio: '',
@@ -193,7 +193,14 @@ export default function VehiculoForm() {
             <Field label="Fecha venc. tarjeta de operación"><FechaInput value={form.fecha_venc_toperacion} onChange={(v) => set('fecha_venc_toperacion', v)} /></Field>
 
             <Field label="Propietario"><BuscarSelect value={form.propietario_id} onChange={(v) => set('propietario_id', v)} items={propietarios} label={nombrePropietario} placeholder="Busca por nombre o documento…" /></Field>
-            <Field label="Tenedor"><BuscarSelect value={form.tenedor_id} onChange={(v) => set('tenedor_id', v)} items={propietarios} label={nombrePropietario} placeholder="Busca por nombre o documento…" /></Field>
+            <Field label="Tenedor">
+              <BuscarSelect value={form.tenedor_id} onChange={(v) => set('tenedor_id', v)} items={propietarios} label={nombrePropietario} placeholder="Busca por nombre o documento…" />
+              <p className="mt-1 text-xs text-ink-soft">El tenedor tiene los mismos accesos que el propietario sobre este vehículo.</p>
+            </Field>
+            <Field label="Valor de cobro mensual">
+              <input className="input" inputMode="numeric" value={form.valor_cobro} onChange={(e) => set('valor_cobro', e.target.value.replace(/[^\d]/g, ''))} placeholder="Ej. 150000" disabled={soloLectura} />
+              <p className="mt-1 text-xs text-ink-soft">Se usa para generar los cobros del mes de este vehículo.</p>
+            </Field>
             <Field label="Empresa transportadora" className="sm:col-span-2"><BuscarSelect value={form.transportadora_id} onChange={(v) => set('transportadora_id', v)} items={transportadoras} label={nombreTransportadora} placeholder="Busca por nombre o documento…" /></Field>
 
             <Field label="Estado">

@@ -59,6 +59,7 @@ const PreguntasPreop = lazyR(() => import('./pages/PreguntasPreop'))
 const PlanRodamiento = lazyR(() => import('./pages/PlanRodamiento'))
 const PlanMantenimiento = lazyR(() => import('./pages/PlanMantenimiento'))
 const Almacenamiento = lazyR(() => import('./pages/Almacenamiento'))
+const Cobros = lazyR(() => import('./pages/Cobros'))
 
 function Cargando() {
   return <div className="grid min-h-screen place-items-center text-ink-faint">Cargando…</div>
@@ -139,6 +140,7 @@ export default function App() {
         <Route path="preoperacionales/preguntas" element={<PreguntasPreop />} />
         <Route path="rodamiento" element={<PlanRodamiento />} />
         <Route path="mantenimiento" element={<PlanMantenimiento />} />
+        <Route path="cobros" element={<Cobros />} />
         <Route path="usuarios" element={<Usuarios />} />
         <Route path="almacenamiento" element={<Almacenamiento />} />
         <Route path="empresas" element={<Empresas />} />

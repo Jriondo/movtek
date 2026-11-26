@@ -4,7 +4,7 @@ import {
   listMantPlan, saveMantPlan, deleteMantPlan,
   listMantRegistro, saveMantRegistro, deleteMantRegistro,
   estadoMantenimiento, calcularProximo, fechaLocalISO,
-  getMantTipos, saveMantTipos, MANT_TIPOS_DEFAULT,
+  getMantTipos, saveMantTipos, MANT_TIPOS_DEFAULT, propietarioTieneVehiculo,
 } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
 import { useAuth } from '../context/AuthContext'
@@ -32,7 +32,7 @@ export default function PlanMantenimiento() {
   async function cargarBase() {
     setCargando(true)
     let vs = await listVehiculos({ empresaId: empresa?.id }).catch(() => [])
-    if (esPropietario && propietarioId) vs = vs.filter((v) => String(v.propietario_id) === String(propietarioId))
+    if (esPropietario && propietarioId) vs = vs.filter((v) => propietarioTieneVehiculo(v, propietarioId))
     setVehiculos(vs)
     setSelId((prev) => prev || vs[0]?.id || '')
     // Km actual por vehículo = kilometraje de la última preoperacional.

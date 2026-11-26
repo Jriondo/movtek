@@ -1759,6 +1759,93 @@ export async function almacenamientoStats() {
   return { firmasBase64, firmasUrl, logosBase64, logosUrl, estMB }
 }
 
+// ¿El propietario (por su id) tiene acceso a este vehículo? Cuenta si es el propietario
+// O el tenedor del vehículo (el tenedor tiene los mismos accesos que el propietario).
+export const propietarioTieneVehiculo = (v, propId) =>
+  !!propId && (String(v?.propietario_id) === String(propId) || String(v?.tenedor_id) === String(propId))
+
+// ---------------- MÓDULO DE COBROS (mensualidad por vehículo) ----------------
+const LS_KEY_COB = 'movtek_cobros'
+function lsAllCob() { try { return JSON.parse(localStorage.getItem(LS_KEY_COB) || '[]') } catch { return [] } }
+function lsSaveCob(rows) { try { localStorage.setItem(LS_KEY_COB, JSON.stringify(rows)) } catch {} }
+
+export const periodoActual = () => fechaLocalISO().slice(0, 7) // 'YYYY-MM'
+export const periodoLabel = (p) => {
+  if (!p) return '—'
+  const [a, m] = p.split('-').map(Number)
+  return new Date(a, (m || 1) - 1, 1).toLocaleDateString('es', { month: 'long', year: 'numeric' })
+}
+
+// ¿El cobro está vencido? Pendiente y ya pasó el día 10 del mes del cobro (o es de un mes anterior).
+export function cobroVencido(c, diaLimite = 10) {
+  if (!c || (c.estado || 'pendiente') === 'pagado') return false
+  const hoy = fechaLocalISO()
+  const periodoHoy = hoy.slice(0, 7)
+  const dia = Number(hoy.slice(8, 10))
+  if ((c.periodo || '') < periodoHoy) return true
+  if ((c.periodo || '') === periodoHoy && dia > diaLimite) return true
+  return false
+}
+
+export async function listCobros({ empresaId = null, periodo = '', estado = '', vehiculoId = '' } = {}) {
+  if (isSupabaseConfigured) {
+    let q = supabase.from('cobros').select('*').order('periodo', { ascending: false })
+    if (empresaId) q = q.eq('empresa_id', empresaId)
+    if (periodo) q = q.eq('periodo', periodo)
+    if (estado) q = q.eq('estado', estado)
+    if (vehiculoId) q = q.eq('vehiculo_id', vehiculoId)
+    const { data, error } = await q
+    if (error) throw error
+    return data
+  }
+  let rows = lsAllCob()
+  if (empresaId) rows = rows.filter((r) => r.empresa_id === empresaId)
+  if (periodo) rows = rows.filter((r) => r.periodo === periodo)
+  if (estado) rows = rows.filter((r) => (r.estado || 'pendiente') === estado)
+  if (vehiculoId) rows = rows.filter((r) => String(r.vehiculo_id) === String(vehiculoId))
+  return rows.sort((a, b) => (b.periodo || '').localeCompare(a.periodo || ''))
+}
+
+export async function saveCobro(data) {
+  const payload = { ...data }
+  if (isSupabaseConfigured) {
+    if (payload.id) {
+      const { id, created_at, ...rest } = payload
+      const { data: d, error } = await supabase.from('cobros').update(nulls(rest)).eq('id', id).select().single()
+      if (error) throw error; return d
+    }
+    delete payload.id
+    const { data: d, error } = await supabase.from('cobros').insert(nulls(payload)).select().single()
+    if (error) throw error; return d
+  }
+  const rows = lsAllCob()
+  if (payload.id) { const i = rows.findIndex((r) => String(r.id) === String(payload.id)); if (i >= 0) { rows[i] = { ...rows[i], ...payload }; lsSaveCob(rows); return rows[i] } }
+  payload.id = newId(); payload.created_at = new Date().toISOString(); rows.unshift(payload); lsSaveCob(rows); return payload
+}
+
+export async function deleteCobro(id) {
+  if (isSupabaseConfigured) { const { error } = await supabase.from('cobros').delete().eq('id', id); if (error) throw error; return }
+  lsSaveCob(lsAllCob().filter((r) => String(r.id) !== String(id)))
+}
+
+// Genera los cobros del periodo para los vehículos activos que aún no lo tengan.
+export async function generarCobrosMes({ empresaId, periodo }) {
+  const vehiculos = await listVehiculos({ empresaId, estado: 'activo' }).catch(() => [])
+  const existentes = await listCobros({ empresaId, periodo }).catch(() => [])
+  const yaTiene = new Set(existentes.map((c) => String(c.vehiculo_id)))
+  let creados = 0
+  for (const v of vehiculos) {
+    if (yaTiene.has(String(v.id))) continue
+    await saveCobro({
+      empresa_id: empresaId, vehiculo_id: v.id, placa: v.placa,
+      propietario_id: v.propietario_id || null, tenedor_id: v.tenedor_id || null,
+      periodo, concepto: 'Mensualidad', monto: Number(v.valor_cobro) || 0, estado: 'pendiente',
+    })
+    creados++
+  }
+  return { creados }
+}
+
 // Nivel de uso del almacenamiento (estimado) para avisar antes de que se llene la base.
 // Límite por defecto: 500 MB (plan gratis de Supabase). El riesgo real de "colapso" es la
 // base, que se llena con las imágenes en base64; por eso medimos ese estimado.

@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { getEmpresaPorSlug, vehiculosDeConductor, conductorDeUsuario, preoperacionalHoy, listVehiculos, listFuec, listRodamiento, saveRodamiento, listMantPlan, listMantRegistro, saveMantRegistro, getMantTipos, MANT_TIPOS_DEFAULT, listPreoperacionales, estadoMantenimiento, fechaLocalISO, getPropietario } from '../../lib/db'
+import { getEmpresaPorSlug, vehiculosDeConductor, conductorDeUsuario, preoperacionalHoy, listVehiculos, listFuec, listRodamiento, saveRodamiento, listMantPlan, listMantRegistro, saveMantRegistro, getMantTipos, MANT_TIPOS_DEFAULT, listPreoperacionales, estadoMantenimiento, fechaLocalISO, getPropietario, propietarioTieneVehiculo } from '../../lib/db'
 
 // FUEC se carga solo cuando un propietario/admin entra a generarlo (no pesa para el conductor).
 const FuecForm = lazy(() => import('../FuecForm'))
@@ -657,7 +657,7 @@ function HomeFuec({ empresa, user, propietarioId, esPropietario, onLogout }) {
   async function cargar() {
     setCargando(true)
     let vs = await listVehiculos({ empresaId: empresa.id }).catch(() => [])
-    if (esPropietario && propietarioId) vs = vs.filter((v) => String(v.propietario_id) === String(propietarioId))
+    if (esPropietario && propietarioId) vs = vs.filter((v) => propietarioTieneVehiculo(v, propietarioId))
     setVehiculos(vs)
     let fs = await listFuec({ empresaId: empresa.id }).catch(() => [])
     if (esPropietario && propietarioId) {

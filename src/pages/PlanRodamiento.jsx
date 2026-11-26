@@ -3,7 +3,7 @@ import {
   listVehiculos, listConductores, nombreConductor, fechaLocalISO,
   listRodamiento, saveRodamiento, deleteRodamiento,
   listRutasMaestras, saveRutaMaestra, deleteRutaMaestra,
-  tiempoRecorrido, DESCRIPCIONES_ROD, notificarRutaNueva,
+  tiempoRecorrido, DESCRIPCIONES_ROD, notificarRutaNueva, propietarioTieneVehiculo,
 } from '../lib/db'
 import { descargarExcel } from '../lib/excel'
 import { useEmpresa } from '../context/EmpresaContext'
@@ -48,7 +48,7 @@ export default function PlanRodamiento() {
 
   async function cargarBase() {
     let vs = await listVehiculos({ empresaId: empresa?.id }).catch(() => [])
-    if (esPropietario && propietarioId) vs = vs.filter((v) => String(v.propietario_id) === String(propietarioId))
+    if (esPropietario && propietarioId) vs = vs.filter((v) => propietarioTieneVehiculo(v, propietarioId))
     setVehiculos(vs)
     setConductores(await listConductores({ empresaId: empresa?.id }).catch(() => []))
     setRutas(await listRutasMaestras({ empresaId: empresa?.id }).catch(() => []))

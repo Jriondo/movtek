@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { listPreoperacionales, listVehiculos, fechaLocalISO, getPropietario, nombrePropietario } from '../lib/db'
+import { listPreoperacionales, listVehiculos, fechaLocalISO, getPropietario, nombrePropietario, propietarioTieneVehiculo } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
 import { useAuth } from '../context/AuthContext'
 import PreoperacionalReporte from '../components/PreoperacionalReporte'
@@ -28,7 +28,7 @@ export default function PreoperacionalReportePage() {
       let data = await listPreoperacionales({ empresaId: empresa?.id, desde, hasta })
       if (esPropietario && propietarioId) {
         const vs = await listVehiculos({ empresaId: empresa?.id })
-        const mias = new Set(vs.filter((v) => String(v.propietario_id) === String(propietarioId)).map((v) => String(v.id)))
+        const mias = new Set(vs.filter((v) => propietarioTieneVehiculo(v, propietarioId)).map((v) => String(v.id)))
         data = data.filter((r) => mias.has(String(r.vehiculo_id)))
       }
       setRows(data)
