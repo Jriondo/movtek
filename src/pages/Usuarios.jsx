@@ -3,7 +3,7 @@ import { listUsuarios, saveUsuario, deleteUsuario, listPropietarios, nombrePropi
 import { useEmpresa } from '../context/EmpresaContext'
 import { useAuth } from '../context/AuthContext'
 
-const VACIO = { id: null, rol: 'operativo', nombre: '', email: '', propietario_id: '', estado: 'activo' }
+const VACIO = { id: null, rol: 'operativo', nombre: '', email: '', propietario_id: '', empresa_id: '', estado: 'activo' }
 
 export default function Usuarios() {
   const { empresa, empresas } = useEmpresa()
@@ -19,6 +19,11 @@ export default function Usuarios() {
   const esMovtek = !empresa || empresa.es_maestra || empresa.id === 'movtek'
   const editando = !!form.id
   const esProp = form.rol === 'propietario'
+  // Empresas a las que el superadministrador puede asignar un usuario (todas menos Movtek).
+  const empresasAsignables = useMemo(() => (empresas || []).filter((e) => !(e.es_maestra || e.id === 'movtek')), [empresas])
+  // En Movtek, un rol de empresa (admin_empresa, operativo, etc.) necesita elegir empresa.
+  const necesitaEmpresa = esMovtek && form.rol !== 'admin'
+  const empresaDestinoId = esMovtek ? (form.empresa_id || null) : empresa?.id
 
   async function cargar() {
     const todos = await listUsuarios().catch(() => [])
@@ -27,9 +32,13 @@ export default function Usuarios() {
       ? todos.filter((u) => u.rol === 'admin' || !u.empresa_id)
       : todos.filter((u) => String(u.empresa_id) === String(empresa.id))
     setUsuarios(dedupPorCorreo(propios))
-    setPropietarios(await listPropietarios({ empresaId: empresa?.id, estado: 'activo' }).catch(() => []))
   }
   useEffect(() => { cargar(); setForm((f) => ({ ...VACIO, rol: esMovtek ? 'admin' : 'operativo' })) }, [empresa?.id])
+  // Propietarios de la empresa destino (en Movtek depende de la empresa elegida en el formulario).
+  useEffect(() => {
+    if (!empresaDestinoId) { setPropietarios([]); return }
+    listPropietarios({ empresaId: empresaDestinoId, estado: 'activo' }).then(setPropietarios).catch(() => setPropietarios([]))
+  }, [empresaDestinoId])
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
 
@@ -43,7 +52,7 @@ export default function Usuarios() {
 
   function nuevo() { setForm({ ...VACIO, rol: esMovtek ? 'admin' : 'operativo' }); setMsg(''); setOk('') }
   function editar(u) {
-    setForm({ id: u.id, rol: u.rol || 'operativo', nombre: u.nombre || '', email: u.email || '', propietario_id: u.propietario_id || '', estado: u.estado || 'activo' })
+    setForm({ id: u.id, rol: u.rol || 'operativo', nombre: u.nombre || '', email: u.email || '', propietario_id: u.propietario_id || '', empresa_id: u.empresa_id || '', estado: u.estado || 'activo' })
     setMsg(''); setOk(''); window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -51,10 +60,11 @@ export default function Usuarios() {
     setMsg(''); setOk('')
     if (!form.nombre.trim() || !form.email.trim()) { setMsg('Completa el nombre y el correo.'); return }
     if (esProp && !form.propietario_id) { setMsg('Selecciona el propietario al que pertenece este usuario.'); return }
+    if (necesitaEmpresa && !form.empresa_id) { setMsg('Elige la empresa a la que pertenece este usuario.'); return }
     setBusy(true)
     try {
-      // La empresa del usuario es la empresa activa (en Movtek, administrador del sistema).
-      const payload = { ...form, empresa_id: esMovtek ? null : empresa.id }
+      // La empresa del usuario: la activa, o (desde Movtek) la elegida en el formulario.
+      const payload = { ...form, empresa_id: esMovtek ? (form.empresa_id || null) : empresa.id }
       if (form.rol === 'admin') payload.empresa_id = null
       if (!esProp) payload.propietario_id = null
       const esNuevo = !form.id
@@ -125,13 +135,25 @@ export default function Usuarios() {
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Rol">
             <select className="input" value={form.rol} onChange={(e) => set('rol', e.target.value)}>
-              {ROLES.filter((r) => esMovtek ? r.value === 'admin' : (r.value === 'admin' ? esAdmin : true)).map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+              {ROLES.filter((r) => esMovtek ? (esAdmin || r.value === 'admin') : (r.value === 'admin' ? esAdmin : true)).map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
             </select>
             <p className="mt-1 text-xs text-ink-soft">{descripcionRol(form.rol)}</p>
           </Field>
           <Field label="Empresa">
-            <input className="input bg-cloud" value={esMovtek ? 'Movtek (sistema)' : empresa.nombre} readOnly />
-            <p className="mt-1 text-xs text-ink-soft">El usuario pertenece a esta empresa y solo trabaja dentro de ella.</p>
+            {necesitaEmpresa ? (
+              <>
+                <select className="input" value={form.empresa_id} onChange={(e) => set('empresa_id', e.target.value)}>
+                  <option value="">Selecciona la empresa…</option>
+                  {empresasAsignables.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+                </select>
+                <p className="mt-1 text-xs text-ink-soft">Elige a qué empresa pertenece este usuario.</p>
+              </>
+            ) : (
+              <>
+                <input className="input bg-cloud" value={form.rol === 'admin' ? 'Movtek (sistema)' : (esMovtek ? 'Movtek (sistema)' : empresa.nombre)} readOnly />
+                <p className="mt-1 text-xs text-ink-soft">{form.rol === 'admin' ? 'El superadministrador gestiona todo el sistema.' : 'El usuario pertenece a esta empresa y solo trabaja dentro de ella.'}</p>
+              </>
+            )}
           </Field>
           {esProp && (
             <Field label="Propietario">
