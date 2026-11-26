@@ -17,6 +17,7 @@ export default function Cobros() {
 
   const [periodo, setPeriodo] = useState(periodoActual())
   const [estado, setEstado] = useState('')      // '' | pendiente | pagado
+  const [qPlaca, setQPlaca] = useState('')      // filtro por vehículo (placa o propietario)
   const [cobros, setCobros] = useState([])
   const [vehiculos, setVehiculos] = useState([])
   const [propietarios, setPropietarios] = useState([])
@@ -48,14 +49,20 @@ export default function Cobros() {
     return p ? nombrePropietario(p) : '—'
   }
 
+  const filtrados = useMemo(() => {
+    const t = qPlaca.trim().toLowerCase()
+    if (!t) return cobros
+    return cobros.filter((c) => (c.placa || '').toLowerCase().includes(t) || nombreProp(c.propietario_id).toLowerCase().includes(t))
+  }, [cobros, qPlaca, propietarios])
+
   const resumen = useMemo(() => {
     let pend = 0, pagado = 0, venc = 0
-    for (const c of cobros) {
+    for (const c of filtrados) {
       if ((c.estado || 'pendiente') === 'pagado') pagado += Number(c.monto) || 0
       else { pend += Number(c.monto) || 0; if (cobroVencido(c)) venc++ }
     }
     return { pend, pagado, venc }
-  }, [cobros])
+  }, [filtrados])
 
   async function generar() {
     if (!puedeGestionar) return
@@ -122,6 +129,10 @@ export default function Cobros() {
             <option value="pagado">Pagados</option>
           </select>
         </div>
+        <div>
+          <label className="label">Vehículo</label>
+          <input className="input mt-1 w-auto" value={qPlaca} onChange={(e) => setQPlaca(e.target.value)} placeholder="Placa o propietario…" />
+        </div>
         <div className="ml-auto flex flex-wrap gap-2 text-xs font-bold">
           <span className="rounded-full bg-amber-100 px-2.5 py-1 text-amber-700">Pendiente: {money(resumen.pend)}</span>
           <span className="rounded-full bg-mint-500/15 px-2.5 py-1 text-mint-600">Pagado: {money(resumen.pagado)}</span>
@@ -147,9 +158,9 @@ export default function Cobros() {
           <tbody>
             {cargando ? (
               <tr><td colSpan={puedeGestionar ? 8 : 7} className="px-3 py-8 text-center text-ink-faint">Cargando…</td></tr>
-            ) : cobros.length === 0 ? (
-              <tr><td colSpan={puedeGestionar ? 8 : 7} className="px-3 py-8 text-center text-ink-faint">No hay cobros en {periodoLabel(periodo)}.{puedeGestionar ? ' Usa “Generar cobros”.' : ''}</td></tr>
-            ) : cobros.map((c) => (
+            ) : filtrados.length === 0 ? (
+              <tr><td colSpan={puedeGestionar ? 8 : 7} className="px-3 py-8 text-center text-ink-faint">{qPlaca ? `Ningún cobro coincide con “${qPlaca}”.` : `No hay cobros en ${periodoLabel(periodo)}.`}</td></tr>
+            ) : filtrados.map((c) => (
               <tr key={c.id} className="border-t border-cloud-line">
                 <td className="px-3 py-2.5 font-semibold">{c.placa || '—'}</td>
                 <td className="px-3 py-2.5">{nombreProp(c.propietario_id)}</td>
