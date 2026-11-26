@@ -67,6 +67,7 @@ export default function Usuarios() {
     try {
       // La empresa del usuario: la activa, o (desde Movtek) la elegida en el formulario.
       const payload = { ...form, empresa_id: esMovtek ? (form.empresa_id || null) : empresa.id }
+      delete payload.emailOrig // campo solo del formulario, no existe en la base
       if (form.rol === 'admin') payload.empresa_id = null
       if (!esProp) payload.propietario_id = null
       const esNuevo = !form.id
