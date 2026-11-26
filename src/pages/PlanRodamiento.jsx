@@ -11,17 +11,17 @@ import { useAuth } from '../context/AuthContext'
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 const hhmm = (t) => (t ? String(t).slice(0, 5) : '')
-const PERIODOS = [['dia', 'Día'], ['mes', 'Mes'], ['anio', 'Año']]
+const PERIODOS = [['todos', 'Todos'], ['dia', 'Día'], ['semana', 'Semana'], ['mes', 'Mes'], ['anio', 'Año'], ['personalizado', 'Personalizado']]
 
-// Rango [desde, hasta] (YYYY-MM-DD) según periodo y fecha ancla.
-function rangoFechas(periodo, anclaISO) {
-  const d = new Date(anclaISO + 'T12:00:00')
-  const iso = (x) => x.toISOString().slice(0, 10)
-  if (periodo === 'dia') return [anclaISO, anclaISO]
-  if (periodo === 'anio') return [`${d.getFullYear()}-01-01`, `${d.getFullYear()}-12-31`]
-  const a = new Date(d.getFullYear(), d.getMonth(), 1)
-  const b = new Date(d.getFullYear(), d.getMonth() + 1, 0)
-  return [iso(a), iso(b)]
+// [desde, hasta] para un preset de periodo (basado en hoy). 'todos'/'personalizado' → sin rango fijo.
+function rangoPreset(p) {
+  const hoy = new Date(); const iso = (x) => fechaLocalISO(x)
+  const y = hoy.getFullYear(), m = hoy.getMonth()
+  if (p === 'dia') { const d = iso(hoy); return [d, d] }
+  if (p === 'semana') { const off = (hoy.getDay() + 6) % 7; const lun = new Date(hoy); lun.setDate(hoy.getDate() - off); const dom = new Date(lun); dom.setDate(lun.getDate() + 6); return [iso(lun), iso(dom)] }
+  if (p === 'mes') return [iso(new Date(y, m, 1)), iso(new Date(y, m + 1, 0))]
+  if (p === 'anio') return [`${y}-01-01`, `${y}-12-31`]
+  return ['', '']
 }
 
 export default function PlanRodamiento() {
@@ -29,7 +29,8 @@ export default function PlanRodamiento() {
   const { esPropietario, propietarioId } = useAuth()
   const [tab, setTab] = useState('crono')
   const [periodo, setPeriodo] = useState('mes')
-  const [ancla, setAncla] = useState(fechaLocalISO())
+  const [fIni, setFIni] = useState(() => rangoPreset('mes')[0])
+  const [fFin, setFFin] = useState(() => rangoPreset('mes')[1])
   const [q, setQ] = useState('')
   const [vehiculos, setVehiculos] = useState([])
   const [conductores, setConductores] = useState([])
@@ -39,9 +40,11 @@ export default function PlanRodamiento() {
   const [modalServ, setModalServ] = useState(null)   // servicio a crear/editar
   const [modalRuta, setModalRuta] = useState(null)   // ruta maestra a crear/editar
 
-  const [desde, hasta] = useMemo(() => rangoFechas(periodo, ancla), [periodo, ancla])
-  const mes = ancla.slice(0, 7)
-  const [anio, mesNum] = mes.split('-').map(Number)
+  const desde = fIni, hasta = fFin
+  function aplicarPeriodo(p) {
+    setPeriodo(p)
+    if (p !== 'personalizado') { const [a, b] = rangoPreset(p); setFIni(a); setFFin(b) }
+  }
 
   async function cargarBase() {
     let vs = await listVehiculos({ empresaId: empresa?.id }).catch(() => [])
@@ -110,15 +113,23 @@ export default function PlanRodamiento() {
       ) : (
         <>
           {/* Filtros */}
-          <div className="card flex flex-wrap items-center gap-3 p-3">
-            <div className="flex rounded-lg bg-cloud p-0.5">
-              {PERIODOS.map(([v, l]) => (
-                <button key={v} onClick={() => setPeriodo(v)} className={`rounded-md px-3 py-1.5 text-sm font-bold ${periodo === v ? 'bg-white text-brand-600 shadow-sm' : 'text-ink-soft'}`}>{l}</button>
-              ))}
+          <div className="card flex flex-wrap items-end gap-3 p-3">
+            <div>
+              <label className="label">Periodo</label>
+              <select className="input mt-1 w-auto" value={periodo} onChange={(e) => aplicarPeriodo(e.target.value)}>
+                {PERIODOS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
             </div>
-            <input type="date" className="input w-auto" value={ancla} onChange={(e) => setAncla(e.target.value)} />
-            <input className="input w-auto flex-1" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar placa, conductor, ruta, empresa…" />
-            <span className="text-sm text-ink-soft">{filtrados.length} servicio(s)</span>
+            <div>
+              <label className="label">Fecha inicio</label>
+              <input type="date" className="input mt-1 w-auto" value={fIni} onChange={(e) => { setFIni(e.target.value); setPeriodo('personalizado') }} />
+            </div>
+            <div>
+              <label className="label">Fecha final</label>
+              <input type="date" className="input mt-1 w-auto" value={fFin} onChange={(e) => { setFFin(e.target.value); setPeriodo('personalizado') }} />
+            </div>
+            <input className="input mt-1 w-auto flex-1" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar placa, conductor, ruta, empresa…" />
+            <span className="pb-2 text-sm text-ink-soft">{filtrados.length} servicio(s)</span>
           </div>
 
           {cargando ? <p className="text-ink-faint">Cargando…</p> : (
