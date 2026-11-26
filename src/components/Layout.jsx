@@ -101,7 +101,7 @@ export default function Layout() {
           <div className="grid h-9 w-9 flex-none place-items-center rounded-full bg-brand-100 font-bold text-brand-600">{initial}</div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-bold text-ink">{email}</p>
-            <p className="text-[11px] text-ink-faint">{rol === 'admin' ? 'Administrador' : rol === 'operativo' ? 'Operativo' : rol === 'mantenimiento' ? 'Mantenimiento' : 'Propietario'}{demo ? ' · demo' : ''}</p>
+            <p className="text-[11px] text-ink-faint">{rol === 'admin' ? 'Superadministrador' : rol === 'admin_empresa' ? 'Administrador' : rol === 'operativo' ? 'Operativo' : rol === 'mantenimiento' ? 'Mantenimiento' : 'Propietario'}{demo ? ' · demo' : ''}</p>
           </div>
           <button onClick={logout} title="Cerrar sesión" aria-label="Cerrar sesión" className="flex-none text-ink-faint hover:text-coral-500">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>

@@ -23,7 +23,12 @@ export default function Inicio() {
   const navigate = useNavigate()
   const { rol } = useAuth()
   const { empresa } = useEmpresa() || {}
-  const modulos = MODULOS.filter((m) => m.roles.includes(rol))
+  // El Administrador de empresa ve los módulos de nivel admin, salvo los del sistema (Movtek).
+  const SISTEMA_SOLO = ['/empresas', '/almacenamiento']
+  const modulos = MODULOS.filter((m) =>
+    m.roles.includes(rol) ||
+    (rol === 'admin_empresa' && m.roles.includes('admin') && !SISTEMA_SOLO.includes(m.to))
+  )
   const nombreEmp = empresa?.nombre || 'Movtek'
 
   return (
