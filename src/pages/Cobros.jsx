@@ -15,7 +15,9 @@ export default function Cobros() {
   const { esAdmin, rol, esPropietario, propietarioId } = useAuth()
   const puedeGestionar = esAdmin || rol === 'admin_empresa'
 
+  const [vista, setVista] = useState('mes')     // 'mes' | 'anio'
   const [periodo, setPeriodo] = useState(periodoActual())
+  const [anio, setAnio] = useState(() => periodoActual().slice(0, 4))
   const [estado, setEstado] = useState('')      // '' | pendiente | pagado
   const [qPlaca, setQPlaca] = useState('')      // filtro por vehículo (placa o propietario)
   const [cobros, setCobros] = useState([])
@@ -33,7 +35,10 @@ export default function Cobros() {
     const vs = await listVehiculos({ empresaId: empresa?.id }).catch(() => [])
     setVehiculos(vs)
     setPropietarios(await listPropietarios({ empresaId: empresa?.id }).catch(() => []))
-    let cs = await listCobros({ empresaId: empresa?.id, periodo, estado }).catch(() => [])
+    // Por mes: un periodo exacto. Por año: todos los del año elegido.
+    let cs = vista === 'anio'
+      ? (await listCobros({ empresaId: empresa?.id, estado }).catch(() => [])).filter((c) => (c.periodo || '').startsWith(`${anio}-`))
+      : await listCobros({ empresaId: empresa?.id, periodo, estado }).catch(() => [])
     // El propietario/tenedor solo ve los cobros de SUS vehículos.
     if (esPropietario && propietarioId) {
       const mios = new Set(vs.filter((v) => propietarioTieneVehiculo(v, propietarioId)).map((v) => String(v.id)))
@@ -42,7 +47,7 @@ export default function Cobros() {
     setCobros(cs)
     setCargando(false)
   }
-  useEffect(() => { cargar() }, [empresa?.id, periodo, estado])
+  useEffect(() => { cargar() }, [empresa?.id, vista, periodo, anio, estado])
 
   const nombreProp = (id) => {
     const p = propietarios.find((x) => String(x.id) === String(id))
@@ -118,9 +123,23 @@ export default function Cobros() {
       {/* Filtros */}
       <div className="card flex flex-wrap items-end gap-3 p-3">
         <div>
-          <label className="label">Mes</label>
-          <input type="month" className="input mt-1 w-auto" value={periodo} onChange={(e) => setPeriodo(e.target.value)} />
+          <label className="label">Ver por</label>
+          <select className="input mt-1 w-auto" value={vista} onChange={(e) => setVista(e.target.value)}>
+            <option value="mes">Mes</option>
+            <option value="anio">Año completo</option>
+          </select>
         </div>
+        {vista === 'mes' ? (
+          <div>
+            <label className="label">Mes</label>
+            <input type="month" className="input mt-1 w-auto" value={periodo} onChange={(e) => setPeriodo(e.target.value)} />
+          </div>
+        ) : (
+          <div>
+            <label className="label">Año</label>
+            <input type="number" min="2020" max="2100" className="input mt-1 w-28" value={anio} onChange={(e) => setAnio(e.target.value)} />
+          </div>
+        )}
         <div>
           <label className="label">Estado</label>
           <select className="input mt-1 w-auto" value={estado} onChange={(e) => setEstado(e.target.value)}>
@@ -159,7 +178,7 @@ export default function Cobros() {
             {cargando ? (
               <tr><td colSpan={puedeGestionar ? 8 : 7} className="px-3 py-8 text-center text-ink-faint">Cargando…</td></tr>
             ) : filtrados.length === 0 ? (
-              <tr><td colSpan={puedeGestionar ? 8 : 7} className="px-3 py-8 text-center text-ink-faint">{qPlaca ? `Ningún cobro coincide con “${qPlaca}”.` : `No hay cobros en ${periodoLabel(periodo)}.`}</td></tr>
+              <tr><td colSpan={puedeGestionar ? 8 : 7} className="px-3 py-8 text-center text-ink-faint">{qPlaca ? `Ningún cobro coincide con “${qPlaca}”.` : `No hay cobros en ${vista === 'anio' ? `el año ${anio}` : periodoLabel(periodo)}.`}</td></tr>
             ) : filtrados.map((c) => (
               <tr key={c.id} className="border-t border-cloud-line">
                 <td className="px-3 py-2.5 font-semibold">{c.placa || '—'}</td>
