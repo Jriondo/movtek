@@ -222,7 +222,10 @@ function Home({ empresa, user, conductorId, onLogout }) {
       setPermiso(typeof Notification !== 'undefined' ? Notification.permission : 'denied')
       if (r.motivo === 'timeout') { setAvisoMsg('⚠️ Tardó demasiado. Si saliste del permiso, vuelve a tocar el botón. Si ya diste "Permitir", reintenta.'); return }
       if (r.ok) setAvisoMsg('✅ ¡Avisos activados! Ya puedes recibir notificaciones.')
-      else if (r.motivo === 'sin-permiso') setAvisoMsg('⚠️ Permiso bloqueado. Toca el candado 🔒 de la barra → Notificaciones → Permitir, y vuelve a intentar.')
+      else if (r.motivo === 'sin-permiso') setAvisoMsg(
+        esStandalone()
+          ? '⚠️ Las notificaciones están bloqueadas. Abre los Ajustes del teléfono → Aplicaciones → esta app → Notificaciones (o Permisos) → actívalas. Luego vuelve y toca el botón otra vez.'
+          : '⚠️ Permiso bloqueado. Toca el candado 🔒 de la barra → Notificaciones → Permitir, y vuelve a intentar.')
       else if (r.motivo === 'no-soportado') setAvisoMsg('⚠️ No soportado aquí. En iPhone instala la app en inicio primero.')
       else setAvisoMsg('⚠️ No se pudo activar. Detalle: ' + (r.motivo || 'desconocido'))
     } catch (e) {
