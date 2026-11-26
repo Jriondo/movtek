@@ -46,6 +46,7 @@ export default function Fuec() {
   }
 
   async function eliminar(r) {
+    if (!esAdmin) { alert('Solo el superadministrador puede eliminar un FUEC.'); return }
     if (!window.confirm(`¿Eliminar el FUEC ${r.no_maestro}-${r.contrato_hijo}? Esta acción no se puede deshacer.`)) return
     registrarCambio({ accion: 'eliminar', entidad: 'FUEC', descripcion: `${r.no_maestro || ''}-${r.contrato_hijo || ''}`, empresa_id: r.empresa_id })
     await deleteFuec(r.id); cargar()
