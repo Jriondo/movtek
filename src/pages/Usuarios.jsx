@@ -7,7 +7,9 @@ const VACIO = { id: null, rol: 'operativo', nombre: '', email: '', propietario_i
 
 export default function Usuarios() {
   const { empresa, empresas } = useEmpresa()
-  const { esAdmin, crearAccesoUsuario } = useAuth()
+  const { esAdmin, rol, crearAccesoUsuario } = useAuth()
+  // El superadministrador y el Administrador de empresa pueden gestionar usuarios.
+  const puedeGestionar = esAdmin || rol === 'admin_empresa'
   const [usuarios, setUsuarios] = useState([])
   const [propietarios, setPropietarios] = useState([])
   const [form, setForm] = useState(VACIO)
@@ -109,7 +111,7 @@ export default function Usuarios() {
     cargar()
   }
 
-  if (!esAdmin) {
+  if (!puedeGestionar) {
     return (
       <div className="card p-8 text-center">
         <p className="text-sm font-semibold text-ink">Acceso restringido</p>
