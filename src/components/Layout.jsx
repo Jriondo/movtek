@@ -4,6 +4,7 @@ import { useEmpresa } from '../context/EmpresaContext'
 import Logo from './Logo'
 import Icon from './Icon'
 import AvisoActualizacion from './AvisoActualizacion'
+import AlertaAlmacenamiento from './AlertaAlmacenamiento'
 
 // Menú lateral. Cada item define qué roles lo ven (roles: admin, operativo, propietario).
 const nav = [
@@ -114,6 +115,7 @@ export default function Layout() {
       <main className="overflow-x-hidden px-4 py-6 md:px-8">
         <div className="mx-auto max-w-5xl">
           <AvisoActualizacion />
+          {rolReal === 'admin' && <AlertaAlmacenamiento />}
           <Outlet />
         </div>
       </main>

@@ -1759,6 +1759,18 @@ export async function almacenamientoStats() {
   return { firmasBase64, firmasUrl, logosBase64, logosUrl, estMB }
 }
 
+// Nivel de uso del almacenamiento (estimado) para avisar antes de que se llene la base.
+// Límite por defecto: 500 MB (plan gratis de Supabase). El riesgo real de "colapso" es la
+// base, que se llena con las imágenes en base64; por eso medimos ese estimado.
+export async function nivelAlmacenamiento({ limiteMB = 500 } = {}) {
+  const s = await almacenamientoStats().catch(() => null)
+  if (!s) return null
+  const estMB = s.estMB || 0
+  const pct = limiteMB > 0 ? Math.min(100, Math.round((estMB / limiteMB) * 100)) : 0
+  const nivel = pct >= 90 ? 'critico' : pct >= 70 ? 'alerta' : 'ok'
+  return { estMB, limiteMB, pct, nivel, pendientes: (s.firmasBase64 || 0) + (s.logosBase64 || 0) }
+}
+
 // Migra las imágenes base64 que queden en la base a Storage (y deja solo la URL).
 export async function migrarImagenesAStorage(onProgress) {
   if (!isSupabaseConfigured) return { ok: false, motivo: 'demo' }
