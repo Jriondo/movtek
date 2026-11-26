@@ -1,10 +1,9 @@
-// Service worker mínimo: habilita la instalación de la app (PWA) y un caché básico.
-const CACHE = 'movtek-app-v4'
+// Service worker: instala la app (PWA/TWA) y acelera la carga con caché inteligente.
+const CACHE = 'movtek-app-v5'
 
-self.addEventListener('install', (e) => { self.skipWaiting() })
+self.addEventListener('install', () => { self.skipWaiting() })
 self.addEventListener('activate', (e) => {
   e.waitUntil((async () => {
-    // Limpia cachés viejos y toma control.
     const keys = await caches.keys()
     await Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
     await self.clients.claim()
@@ -14,24 +13,36 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const req = e.request
   if (req.method !== 'GET') return
+  const url = new URL(req.url)
   const esNavegacion = req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html')
 
-  // Las páginas (HTML) SIEMPRE van a la red para no mostrar versiones viejas;
-  // solo si no hay conexión se usa lo cacheado.
+  // HTML / navegación: SIEMPRE de la red (para tomar nuevos despliegues), respaldo offline.
   if (esNavegacion) {
-    e.respondWith(fetch(req).catch(() => caches.match(req)))
+    e.respondWith(fetch(req).catch(() => caches.match(req).then((r) => r || caches.match('/'))))
     return
   }
 
-  // Recursos (js, css, imágenes): red primero y guarda copia para uso sin conexión.
-  e.respondWith(
-    fetch(req)
-      .then((res) => {
+  // Recursos con hash en /assets/ (JS, CSS, imágenes): son inmutables → CACHÉ primero = instantáneo.
+  if (url.origin === self.location.origin && url.pathname.startsWith('/assets/')) {
+    e.respondWith(
+      caches.match(req).then((hit) => hit || fetch(req).then((res) => {
         const copy = res.clone()
         caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {})
         return res
-      })
-      .catch(() => caches.match(req))
+      }))
+    )
+    return
+  }
+
+  // Resto (API, logos, etc.): red primero; no se cachea /api (datos dinámicos).
+  e.respondWith(
+    fetch(req).then((res) => {
+      if (url.origin === self.location.origin && !url.pathname.startsWith('/api/')) {
+        const copy = res.clone()
+        caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {})
+      }
+      return res
+    }).catch(() => caches.match(req))
   )
 })
 
