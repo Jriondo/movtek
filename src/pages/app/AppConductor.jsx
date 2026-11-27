@@ -20,19 +20,31 @@ export default function AppConductor() {
   const { slug } = useParams()
   const { user, login, logout, empresaIdUsuario, conductorId, esConductor, esPropietario, esAdmin, esOperativo, esMantenimiento, propietarioId, sinAcceso } = useAuth()
   const { entrarAEmpresa } = useEmpresa() || {}
-  const [empresa, setEmpresa] = useState(undefined)
+  // Copia local de la empresa por slug: abre al instante aunque la red esté lenta.
+  const cacheKey = `movtek_emp_slug_${slug}`
+  const [empresa, setEmpresa] = useState(() => {
+    try { const s = localStorage.getItem(cacheKey); return s ? JSON.parse(s) : undefined } catch { return undefined }
+  })
   const [tardando, setTardando] = useState(false)
 
   useEffect(() => {
+    // Si no hay copia local, mostramos "Cargando…" con reintento tras 10 s.
+    let tieneCache = false
+    try { tieneCache = !!localStorage.getItem(cacheKey) } catch {}
     setTardando(false)
-    const t = setTimeout(() => setTardando(true), 10000)
+    const t = tieneCache ? null : setTimeout(() => setTardando(true), 10000)
     getEmpresaPorSlug(slug).then((e) => {
-      clearTimeout(t)
-      setEmpresa(e || null)
-      if (e?.color_primario) applyTheme({ primary: e.color_primario, accent: e.color_acento })
-      if (e) { entrarAEmpresa?.(e); activarPwaEmpresa(e, slug) }
-    }).catch(() => { clearTimeout(t); setEmpresa(null) })
-    return () => clearTimeout(t)
+      if (t) clearTimeout(t)
+      if (e) {
+        setEmpresa(e)
+        try { localStorage.setItem(cacheKey, JSON.stringify(e)) } catch {}
+        if (e.color_primario) applyTheme({ primary: e.color_primario, accent: e.color_acento })
+        entrarAEmpresa?.(e); activarPwaEmpresa(e, slug)
+      } else if (!tieneCache) {
+        setEmpresa(null)
+      }
+    }).catch(() => { if (t) clearTimeout(t); if (!tieneCache) setEmpresa(null) })
+    return () => { if (t) clearTimeout(t) }
   }, [slug])
 
   async function recargarLimpio() {
