@@ -827,7 +827,12 @@ function HomeFuec({ empresa, user, propietarioId, esPropietario, onLogout }) {
 
       <div className="mx-auto -mt-2 max-w-xl px-4 py-5">
         <p className="text-sm" style={{ color: '#8fb6a3' }}>Hola,</p>
-        <h1 className="font-display text-2xl font-extrabold" style={{ color: '#eafff3', wordBreak: 'break-word' }}>{user?.email || 'Propietario'}</h1>
+        <h1 className="font-display text-2xl font-extrabold" style={{ color: '#eafff3', wordBreak: 'break-word' }}>
+          {(condProp && `${condProp.nombres || ''} ${condProp.apellidos || ''}`.trim()) || user?.email || 'Propietario'}
+        </h1>
+        {condProp && `${condProp.nombres || ''} ${condProp.apellidos || ''}`.trim() && (
+          <p className="text-xs" style={{ color: '#5f7d6e', wordBreak: 'break-word' }}>{user?.email}</p>
+        )}
 
         <div className="mt-4 grid grid-cols-1 gap-3">
           <button onClick={() => setPantalla('rapidoPick')}
