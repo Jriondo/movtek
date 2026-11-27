@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { listUsuarios, saveUsuario, deleteUsuario, listPropietarios, nombrePropietario, ROLES, rolLabel, registrarCambio } from '../lib/db'
+import { listUsuarios, saveUsuario, deleteUsuario, listPropietarios, nombrePropietario, ROLES, rolLabel, registrarCambio, getUsuarioPorEmail } from '../lib/db'
 import { useEmpresa } from '../context/EmpresaContext'
 import { useAuth } from '../context/AuthContext'
 
@@ -63,6 +63,11 @@ export default function Usuarios() {
     if (!form.nombre.trim() || !form.email.trim()) { setMsg('Completa el nombre y el correo.'); return }
     if (esProp && !form.propietario_id) { setMsg('Selecciona el propietario al que pertenece este usuario.'); return }
     if (necesitaEmpresa && !form.empresa_id) { setMsg('Elige la empresa a la que pertenece este usuario.'); return }
+    // Evita correos duplicados entre usuarios (un correo = una sola persona).
+    const yaCorreo = await getUsuarioPorEmail(form.email.trim()).catch(() => null)
+    if (yaCorreo && String(yaCorreo.id) !== String(form.id)) {
+      setMsg(`Ya existe un usuario con el correo ${form.email.trim()} (${rolLabel(yaCorreo.rol)}). Usa otro correo o edita el usuario existente.`); return
+    }
     setBusy(true)
     try {
       // La empresa del usuario: la activa, o (desde Movtek) la elegida en el formulario.

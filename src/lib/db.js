@@ -1050,6 +1050,20 @@ export async function deleteFuec(id) {
   lsSaveF(lsAllF().filter((r) => String(r.id) !== String(id)))
 }
 
+// Verificación PÚBLICA (QR, sin login): devuelve SOLO el FUEC consultado + su empresa,
+// vía un RPC seguro. Respaldo a lectura directa por si aún no se ha corrido el SQL.
+export async function verificarFuecPublico(id) {
+  if (isSupabaseConfigured) {
+    try {
+      const { data, error } = await supabase.rpc('verificar_fuec', { p_id: id })
+      if (!error && data) return { fuec: data.fuec || null, empresa: data.empresa || null }
+    } catch {}
+  }
+  const fuec = await getFuec(id).catch(() => null)
+  const empresa = fuec?.empresa_id ? await getEmpresa(fuec.empresa_id).catch(() => null) : null
+  return { fuec, empresa }
+}
+
 // Duplica un FUEC (genera un nuevo contrato hijo).
 export async function duplicarFuec(id) {
   const orig = await getFuec(id)

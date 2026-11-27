@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import QRCode from 'qrcode'
-import { getFuec, getEmpresa } from '../lib/db'
+import { verificarFuecPublico } from '../lib/db'
 import { applyTheme } from '../lib/theme'
 import FuecDocumento from '../components/FuecDocumento'
 
@@ -20,10 +20,9 @@ export default function VerificarFuec() {
   }, [id])
 
   useEffect(() => {
-    getFuec(id).then(async (fuec) => {
+    verificarFuecPublico(id).then(({ fuec, empresa: e }) => {
       setF(fuec || null)
-      if (fuec?.empresa_id) {
-        const e = await getEmpresa(fuec.empresa_id)
+      if (e) {
         setEmpresa(e)
         if (e?.color_primario) applyTheme({ primary: e.color_primario, accent: e.color_acento })
       }
