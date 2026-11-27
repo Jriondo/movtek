@@ -56,10 +56,10 @@ export default function AppConductor() {
   if (empresa === undefined) return (
     <Pantalla>
       <div className="text-center">
-        <p className="text-ink-faint">Cargando…</p>
+        <p style={{ color: '#8fb6a3' }}>Cargando…</p>
         {tardando && (
           <div className="mt-4">
-            <p className="text-sm text-ink-soft">Está tardando más de lo normal.</p>
+            <p className="text-sm" style={{ color: '#8fb6a3' }}>Está tardando más de lo normal.</p>
             <button onClick={recargarLimpio} className="btn-primary mt-3">↻ Reintentar</button>
           </div>
         )}
@@ -70,8 +70,8 @@ export default function AppConductor() {
     <Pantalla>
       <div className="text-center">
         <div className="text-4xl">🔎</div>
-        <h1 className="mt-3 font-display text-xl font-extrabold">Empresa no encontrada</h1>
-        <p className="mt-1 text-sm text-ink-soft">Verifica el enlace con tu empresa.</p>
+        <h1 className="mt-3 font-display text-xl font-extrabold" style={{ color: '#eafff3' }}>Empresa no encontrada</h1>
+        <p className="mt-1 text-sm" style={{ color: '#8fb6a3' }}>Verifica el enlace con tu empresa.</p>
       </div>
     </Pantalla>
   )
@@ -90,8 +90,8 @@ export default function AppConductor() {
       <Pantalla>
         <div className="text-center">
           <div className="text-4xl">🔒</div>
-          <h1 className="mt-3 font-display text-xl font-extrabold">Sin acceso</h1>
-          <p className="mt-1 text-sm text-ink-soft">Tu usuario no está habilitado en {empresa?.nombre}. Habla con tu empresa.</p>
+          <h1 className="mt-3 font-display text-xl font-extrabold" style={{ color: '#eafff3' }}>Sin acceso</h1>
+          <p className="mt-1 text-sm" style={{ color: '#8fb6a3' }}>Tu usuario no está habilitado en {empresa?.nombre}. Habla con tu empresa.</p>
           <button onClick={logout} className="btn-ghost mt-4">Salir</button>
         </div>
       </Pantalla>
@@ -101,7 +101,8 @@ export default function AppConductor() {
 }
 
 function Pantalla({ children }) {
-  return <div className="grid min-h-screen place-items-center bg-cloud p-6">{children}</div>
+  // Mismo fondo oscuro que la app, para que no haya parpadeo claro→oscuro al cargar.
+  return <div className="grid min-h-screen place-items-center p-6" style={{ background: '#0e1512', color: '#cfeede' }}>{children}</div>
 }
 
 // ---------- LOGIN / REGISTRO del conductor (marca de la empresa) ----------
@@ -312,7 +313,7 @@ function Home({ empresa, user, conductorId, onLogout }) {
 
   useRecordatorio({ pendiente: !hoy && !!vehiculo, empresa })
 
-  if (cargando) return <Pantalla><p className="text-ink-faint">Cargando tu información…</p></Pantalla>
+  if (cargando) return <Pantalla><p style={{ color: '#8fb6a3' }}>Cargando tu información…</p></Pantalla>
 
   if (pantalla === 'captura' && vehiculo && conductor) {
     return <PreoperacionalCaptura empresa={empresa} vehiculo={vehiculo} conductor={conductor}
