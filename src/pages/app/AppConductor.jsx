@@ -229,7 +229,26 @@ function Home({ empresa, user, conductorId, onLogout }) {
   const [modal, setModal] = useState('')
   const [nuevas, setNuevas] = useState(0)
   const [permiso, setPermiso] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'denied')
+  const [suscrito, setSuscrito] = useState(null)   // null=desconocido, true/false
   const [avisoMsg, setAvisoMsg] = useState('')
+
+  // Comprueba el estado REAL de los avisos (permiso + suscripción activa).
+  // Se re-chequea al volver a la app (p. ej. tras cambiar Ajustes del teléfono).
+  async function revisarAvisos() {
+    try { setPermiso(typeof Notification !== 'undefined' ? Notification.permission : 'denied') } catch {}
+    try {
+      const reg = await navigator.serviceWorker?.ready
+      const sub = await reg?.pushManager?.getSubscription()
+      setSuscrito(!!sub)
+    } catch { setSuscrito(false) }
+  }
+  useEffect(() => {
+    revisarAvisos()
+    const onVis = () => { if (document.visibilityState === 'visible') revisarAvisos() }
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
+  }, [])
+  const avisosOk = permiso === 'granted' && suscrito === true
   const [enlaceCopiado, setEnlaceCopiado] = useState(false)
   async function copiarEnlaceApp() {
     const url = `${window.location.origin}/e/${empresa?.slug || ''}/app`
@@ -260,6 +279,7 @@ function Home({ empresa, user, conductorId, onLogout }) {
         new Promise((res) => setTimeout(() => res({ ok: false, motivo: 'timeout' }), 20000)),
       ])
       setPermiso(typeof Notification !== 'undefined' ? Notification.permission : 'denied')
+      if (r.ok) setSuscrito(true); else revisarAvisos()
       if (r.motivo === 'timeout') { setAvisoMsg('⚠️ Tardó demasiado. Si saliste del permiso, vuelve a tocar el botón. Si ya diste "Permitir", reintenta.'); return }
       if (r.ok) setAvisoMsg('✅ ¡Avisos activados! Ya puedes recibir notificaciones.')
       else if (r.motivo === 'sin-permiso') setAvisoMsg(
@@ -389,22 +409,27 @@ function Home({ empresa, user, conductorId, onLogout }) {
               </div>
             )}
 
-            {/* Avisos: en el APK no se puede → mandar a Chrome. En navegador → activar. */}
-            {permiso !== 'granted' && (
-              esApk() ? (
-                <div className="mt-3 rounded-xl border px-4 py-3" style={{ borderColor: '#5a4a1c', background: '#2a2410' }}>
-                  <p className="text-sm font-bold" style={{ color: '#f5d98a' }}>🔔 Para recibir notificaciones</p>
-                  <p className="mt-0.5 text-xs" style={{ color: '#d9c48a' }}>Esta versión (APK) no puede enviar avisos. Copia el enlace, ábrelo en <b>Chrome</b> y activa los avisos ahí (solo una vez).</p>
-                  <button onClick={copiarEnlaceApp} className="mt-2 w-full rounded-lg px-4 py-2.5 text-sm font-extrabold text-white" style={{ background: '#15803d' }}>
-                    {enlaceCopiado ? '✅ Enlace copiado — pégalo en Chrome' : '📋 Copiar enlace para Chrome'}
-                  </button>
-                </div>
-              ) : (
-                <button onClick={activarAvisos} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-center text-sm font-bold"
-                  style={{ borderColor: '#2f5a1c', background: '#172a12', color: '#b6f08a' }}>
-                  🔔 Toca para activar los avisos de preoperacional y rutas
+            {/* Estado de avisos: SIEMPRE visible, para saber si están activados o no. */}
+            {esApk() && !avisosOk ? (
+              <div className="mt-3 rounded-xl border px-4 py-3" style={{ borderColor: '#5a4a1c', background: '#2a2410' }}>
+                <p className="text-sm font-bold" style={{ color: '#f5d98a' }}>🔔 Para recibir notificaciones</p>
+                <p className="mt-0.5 text-xs" style={{ color: '#d9c48a' }}>Esta versión (APK) no puede enviar avisos. Copia el enlace, ábrelo en <b>Chrome</b> y activa los avisos ahí (solo una vez).</p>
+                <button onClick={copiarEnlaceApp} className="mt-2 w-full rounded-lg px-4 py-2.5 text-sm font-extrabold text-white" style={{ background: '#15803d' }}>
+                  {enlaceCopiado ? '✅ Enlace copiado — pégalo en Chrome' : '📋 Copiar enlace para Chrome'}
                 </button>
-              )
+              </div>
+            ) : avisosOk ? (
+              <div className="mt-3 flex items-center gap-2 rounded-xl border px-4 py-2.5" style={{ borderColor: '#1e5a34', background: '#102a1b' }}>
+                <span className="text-sm font-bold" style={{ color: '#9ff0c2' }}>🔔 Avisos activados</span>
+                <button onClick={revisarAvisos} className="ml-auto text-xs font-semibold" style={{ color: '#8fb6a3' }}>Revisar</button>
+              </div>
+            ) : (
+              <div className="mt-3 rounded-xl border px-4 py-3" style={{ borderColor: '#5a4a1c', background: '#2a2410' }}>
+                <p className="text-sm font-bold" style={{ color: '#f5d98a' }}>🔔 Avisos desactivados</p>
+                <p className="mt-0.5 text-xs" style={{ color: '#d9c48a' }}>No recibirás preoperacional ni rutas. Toca para activarlos{permiso === 'denied' ? '; si no aparece el permiso, actívalos en Ajustes del teléfono → Notificaciones' : ''}.</p>
+                <button onClick={activarAvisos} className="mt-2 w-full rounded-lg px-4 py-2.5 text-center text-sm font-extrabold"
+                  style={{ background: '#16a34a', color: '#042012' }}>🔔 Activar avisos</button>
+              </div>
             )}
             {avisoMsg && !esApk() && (
               <p className="mt-2 rounded-lg px-3 py-2 text-xs font-semibold" style={{ background: '#13201a', color: '#e6f2ec' }}>{avisoMsg}</p>
