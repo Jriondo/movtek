@@ -3,7 +3,7 @@ import { listUsuarios, saveUsuario, deleteUsuario, listPropietarios, nombrePropi
 import { useEmpresa } from '../context/EmpresaContext'
 import { useAuth } from '../context/AuthContext'
 
-const VACIO = { id: null, rol: 'operativo', nombre: '', email: '', emailOrig: '', propietario_id: '', empresa_id: '', estado: 'activo' }
+const VACIO = { id: null, rol: 'operativo', nombre: '', email: '', emailOrig: '', username: '', propietario_id: '', empresa_id: '', estado: 'activo' }
 
 export default function Usuarios() {
   const { empresa, empresas } = useEmpresa()
@@ -54,7 +54,7 @@ export default function Usuarios() {
 
   function nuevo() { setForm({ ...VACIO, rol: esMovtek ? 'admin' : 'operativo' }); setMsg(''); setOk('') }
   function editar(u) {
-    setForm({ id: u.id, rol: u.rol || 'operativo', nombre: u.nombre || '', email: u.email || '', emailOrig: u.email || '', propietario_id: u.propietario_id || '', empresa_id: u.empresa_id || '', estado: u.estado || 'activo' })
+    setForm({ id: u.id, rol: u.rol || 'operativo', nombre: u.nombre || '', email: u.email || '', emailOrig: u.email || '', username: u.username || '', propietario_id: u.propietario_id || '', empresa_id: u.empresa_id || '', estado: u.estado || 'activo' })
     setMsg(''); setOk(''); window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -68,6 +68,7 @@ export default function Usuarios() {
       // La empresa del usuario: la activa, o (desde Movtek) la elegida en el formulario.
       const payload = { ...form, empresa_id: esMovtek ? (form.empresa_id || null) : empresa.id }
       delete payload.emailOrig // campo solo del formulario, no existe en la base
+      if (!payload.username) delete payload.username // solo se envía si se usó (requiere la columna)
       if (form.rol === 'admin') payload.empresa_id = null
       if (!esProp) payload.propietario_id = null
       const esNuevo = !form.id
@@ -181,6 +182,10 @@ export default function Usuarios() {
             {editando && form.email.trim().toLowerCase() !== (form.emailOrig || '').trim().toLowerCase() && (
               <p className="mt-1 text-xs text-amber-600">Cambiarás el correo de acceso. Le enviaremos una verificación al nuevo para que vuelva a activar su cuenta.</p>
             )}
+          </Field>
+          <Field label="Nombre de usuario (opcional)">
+            <input className="input" value={form.username} onChange={(e) => set('username', e.target.value.replace(/[^a-zA-Z0-9._-]/g, '').toLowerCase())} placeholder="ej. yair.riondo" />
+            <p className="mt-1 text-xs text-ink-soft">Puede iniciar sesión con este nombre o con su correo. Sin espacios ni @.</p>
           </Field>
         </div>
         {ok && <p className="mt-3 rounded-xl bg-mint-500/15 px-4 py-2.5 text-sm font-medium text-mint-600">{ok}</p>}

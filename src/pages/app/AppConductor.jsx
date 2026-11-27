@@ -178,7 +178,7 @@ function LoginConductor({ empresa, onLogin }) {
         ) : modo === 'login' ? (
           <>
             <form onSubmit={entrar} className="flex flex-col gap-3">
-              <input type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Correo" autoComplete="username" required />
+              <input type="text" className="input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Correo o nombre de usuario" autoComplete="username" required />
               <PasswordInput value={pass} onChange={(e) => setPass(e.target.value)} autoComplete="current-password" required />
               {err && <p className="rounded-lg bg-coral-400/15 px-3 py-2 text-sm font-semibold text-coral-500">{err}</p>}
               {info && <p className="rounded-lg bg-mint-500/15 px-3 py-2 text-sm font-semibold text-mint-600">{info}</p>}

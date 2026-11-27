@@ -61,14 +61,23 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
-  async function login(email, password) {
+  async function login(identificador, password) {
     if (isSupabaseConfigured) {
+      let email = String(identificador || '').trim()
+      // Si NO es un correo (no tiene @), es un nombre de usuario → resolvemos su correo
+      // con un RPC seguro (anon no puede leer la tabla usuarios directamente).
+      if (email && !email.includes('@')) {
+        try {
+          const { data: correo } = await supabase.rpc('email_por_identificador', { p_identificador: email })
+          if (correo) email = correo
+        } catch {}
+      }
       const { data, error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
       await cargarRol(data.user)
       return data.user
     }
-    const demo = { email: email || 'socio@movtek.app', demo: true }
+    const demo = { email: identificador || 'socio@movtek.app', demo: true }
     try { localStorage.setItem(DEMO_KEY, JSON.stringify(demo)) } catch {}
     setUser(demo); await cargarRol(demo)
     return demo

@@ -173,9 +173,9 @@ export default function Login({ marca = null }) {
 
               <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
                 <div>
-                  <label className="label" htmlFor="email">Correo o N° de socio</label>
+                  <label className="label" htmlFor="email">Correo o nombre de usuario</label>
                   <input id="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)}
-                    placeholder="tucorreo@ejemplo.com" autoComplete="username" required />
+                    placeholder="correo@ejemplo.com o tu usuario" autoComplete="username" required />
                 </div>
                 <div>
                   <label className="label" htmlFor="password">Contraseña</label>
