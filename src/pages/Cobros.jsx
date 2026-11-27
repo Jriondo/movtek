@@ -32,9 +32,12 @@ export default function Cobros() {
     setCargando(true)
     // Generación automática del mes (solo admin): si aún no se han generado, los crea.
     if (puedeGestionar && empresa?.id) await autoGenerarCobrosSiToca(empresa).catch(() => {})
-    const vs = await listVehiculos({ empresaId: empresa?.id }).catch(() => [])
+    const [vs, props] = await Promise.all([
+      listVehiculos({ empresaId: empresa?.id }).catch(() => []),
+      listPropietarios({ empresaId: empresa?.id }).catch(() => []),
+    ])
     setVehiculos(vs)
-    setPropietarios(await listPropietarios({ empresaId: empresa?.id }).catch(() => []))
+    setPropietarios(props)
     // Por mes: un periodo exacto. Por año: todos los del año elegido.
     let cs = vista === 'anio'
       ? (await listCobros({ empresaId: empresa?.id, estado }).catch(() => [])).filter((c) => (c.periodo || '').startsWith(`${anio}-`))

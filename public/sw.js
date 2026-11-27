@@ -1,7 +1,13 @@
 // Service worker: instala la app (PWA/TWA) y acelera la carga con caché inteligente.
-const CACHE = 'movtek-app-v6'
+const CACHE = 'movtek-app-v7'
 
-self.addEventListener('install', () => { self.skipWaiting() })
+self.addEventListener('install', (e) => {
+  e.waitUntil((async () => {
+    // Guarda el cascarón de la app para abrir al instante aunque la red esté lenta.
+    try { const c = await caches.open(CACHE); await c.add('/') } catch {}
+    self.skipWaiting()
+  })())
+})
 self.addEventListener('activate', (e) => {
   e.waitUntil((async () => {
     const keys = await caches.keys()
@@ -16,9 +22,20 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url)
   const esNavegacion = req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html')
 
-  // HTML / navegación: SIEMPRE de la red (para tomar nuevos despliegues), respaldo offline.
+  // HTML / navegación: red primero PERO con límite de 3.5 s. Si la red tarda, servimos el
+  // cascarón guardado (apertura instantánea) y la red sigue actualizando la caché.
   if (esNavegacion) {
-    e.respondWith(fetch(req).catch(() => caches.match(req).then((r) => r || caches.match('/'))))
+    e.respondWith((async () => {
+      try {
+        const res = await Promise.race([
+          fetch(req).then((r) => { caches.open(CACHE).then((c) => c.put('/', r.clone())).catch(() => {}); return r }),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('nav-timeout')), 3500)),
+        ])
+        return res
+      } catch {
+        return (await caches.match(req)) || (await caches.match('/')) || fetch(req)
+      }
+    })())
     return
   }
 

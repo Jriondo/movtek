@@ -31,12 +31,15 @@ export default function PlanMantenimiento() {
 
   async function cargarBase() {
     setCargando(true)
-    let vs = await listVehiculos({ empresaId: empresa?.id }).catch(() => [])
+    const [vsAll, preops] = await Promise.all([
+      listVehiculos({ empresaId: empresa?.id }).catch(() => []),
+      listPreoperacionales({ empresaId: empresa?.id }).catch(() => []),
+    ])
+    let vs = vsAll
     if (esPropietario && propietarioId) vs = vs.filter((v) => propietarioTieneVehiculo(v, propietarioId))
     setVehiculos(vs)
     setSelId((prev) => prev || vs[0]?.id || '')
     // Km actual por vehículo = kilometraje de la última preoperacional.
-    const preops = await listPreoperacionales({ empresaId: empresa?.id }).catch(() => [])
     const km = {}
     for (const r of preops) {
       if (!r.kilometraje) continue

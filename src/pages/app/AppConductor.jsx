@@ -668,21 +668,23 @@ function HomeFuec({ empresa, user, propietarioId, esPropietario, onLogout }) {
 
   async function cargar() {
     setCargando(true)
-    let vs = await listVehiculos({ empresaId: empresa.id }).catch(() => [])
+    // Vehículos, FUEC y propietario en paralelo.
+    const [vsAll, fsAll, pr] = await Promise.all([
+      listVehiculos({ empresaId: empresa.id }).catch(() => []),
+      listFuec({ empresaId: empresa.id }).catch(() => []),
+      propietarioId ? getPropietario(propietarioId).catch(() => null) : Promise.resolve(null),
+    ])
+    let vs = vsAll
     if (esPropietario && propietarioId) vs = vs.filter((v) => propietarioTieneVehiculo(v, propietarioId))
     setVehiculos(vs)
-    let fs = await listFuec({ empresaId: empresa.id }).catch(() => [])
+    let fs = fsAll
     if (esPropietario && propietarioId) {
       const mias = new Set(vs.map((v) => String(v.id)))
       fs = fs.filter((f) => mias.has(String(f.vehiculo_id)))
     }
     setFuecs(fs.slice(0, 25))
-    // Propietario como "conductor" para firmar la preoperacional.
-    if (propietarioId) {
-      const pr = await getPropietario(propietarioId).catch(() => null)
-      if (pr) setCondProp({ id: pr.id, nombres: pr.nombres || pr.compania || '', apellidos: pr.apellidos || '', documento: pr.documento || '' })
-    }
-    if (!propietarioId) setCondProp({ id: null, nombres: (user?.email || 'Responsable'), apellidos: '', documento: '' })
+    if (pr) setCondProp({ id: pr.id, nombres: pr.nombres || pr.compania || '', apellidos: pr.apellidos || '', documento: pr.documento || '' })
+    else if (!propietarioId) setCondProp({ id: null, nombres: (user?.email || 'Responsable'), apellidos: '', documento: '' })
     setCargando(false)
   }
   useEffect(() => { cargar() }, [empresa?.id])
@@ -874,11 +876,16 @@ function HomeMantenimiento({ empresa, user, onLogout }) {
 
   async function cargar() {
     setCargando(true)
-    const vs = await listVehiculos({ empresaId: empresa.id }).catch(() => [])
+    // Todas las consultas en paralelo (más rápido que una tras otra).
+    const [vs, planes, registros, preops] = await Promise.all([
+      listVehiculos({ empresaId: empresa.id }).catch(() => []),
+      listMantPlan({ empresaId: empresa.id }).catch(() => []),
+      listMantRegistro({ empresaId: empresa.id }).catch(() => []),
+      listPreoperacionales({ empresaId: empresa.id }).catch(() => []),
+    ])
     setVehiculos(vs)
-    setPlanes(await listMantPlan({ empresaId: empresa.id }).catch(() => []))
-    setRegistros((await listMantRegistro({ empresaId: empresa.id }).catch(() => [])).slice(0, 30))
-    const preops = await listPreoperacionales({ empresaId: empresa.id }).catch(() => [])
+    setPlanes(planes)
+    setRegistros(registros.slice(0, 30))
     const km = {}
     for (const r of preops) {
       if (!r.kilometraje) continue
