@@ -172,9 +172,13 @@ export function AuthProvider({ children }) {
   }
 
   async function logout() {
-    if (isSupabaseConfigured) await supabase.auth.signOut()
+    // Salimos de inmediato (limpiamos el estado local) y NO esperamos a la red:
+    // así el botón "Salir" siempre funciona aunque la conexión esté lenta.
     try { localStorage.removeItem(DEMO_KEY) } catch {}
     setUser(null); setRolReal('admin'); setPropietarioId(null); setEmpresaIdUsuario(null); setConductorId(null); setSinAcceso(false)
+    if (isSupabaseConfigured) {
+      try { await Promise.race([supabase.auth.signOut(), new Promise((r) => setTimeout(r, 4000))]) } catch {}
+    }
   }
 
   // "Ver como" permite que el admin previsualice la app con otro rol (solo demostración).

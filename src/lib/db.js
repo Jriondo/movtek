@@ -1185,8 +1185,11 @@ export async function getUsuario(id) {
 // Si hay varias filas con el mismo correo (credenciales duplicadas), prioriza:
 // admin > operativo > propietario, y entre iguales, la que esté activa.
 function mejorUsuario(rows) {
-  const peso = (u) => (u.rol === 'admin' ? 3 : u.rol === 'operativo' ? 2 : 1) + (u.estado !== 'inactivo' ? 0.5 : 0)
-  return [...rows].sort((a, b) => peso(b) - peso(a))[0] || null
+  // Peso DISTINTO por rol (antes propietario y conductor empataban → el usuario "cambiaba"
+  // de rol al azar). Desempate estable por id para que SIEMPRE gane la misma ficha.
+  const rango = { admin: 6, admin_empresa: 5, operativo: 4, mantenimiento: 3, propietario: 2, conductor: 1 }
+  const peso = (u) => (rango[u.rol] || 1) + (u.estado !== 'inactivo' ? 0.5 : 0)
+  return [...rows].sort((a, b) => (peso(b) - peso(a)) || String(a.id).localeCompare(String(b.id)))[0] || null
 }
 
 export async function getUsuarioPorEmail(email) {
