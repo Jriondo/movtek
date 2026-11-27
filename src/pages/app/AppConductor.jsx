@@ -234,11 +234,19 @@ function Home({ empresa, user, conductorId, onLogout }) {
 
   // Comprueba el estado REAL de los avisos (permiso + suscripción activa).
   // Se re-chequea al volver a la app (p. ej. tras cambiar Ajustes del teléfono).
+  // Si el permiso ya está concedido pero falta la suscripción, la crea sola.
   async function revisarAvisos() {
-    try { setPermiso(typeof Notification !== 'undefined' ? Notification.permission : 'denied') } catch {}
+    const p = typeof Notification !== 'undefined' ? Notification.permission : 'denied'
+    setPermiso(p)
+    if (p === 'granted') setAvisoMsg('')   // limpia mensajes viejos de "bloqueadas"
     try {
       const reg = await navigator.serviceWorker?.ready
-      const sub = await reg?.pushManager?.getSubscription()
+      let sub = await reg?.pushManager?.getSubscription()
+      if (p === 'granted' && !sub && conductor) {
+        // Permiso concedido pero sin suscripción → la creamos automáticamente.
+        await activarPushConductor({ empresa, conductor, email: user?.email }).catch(() => {})
+        sub = await reg?.pushManager?.getSubscription().catch(() => null)
+      }
       setSuscrito(!!sub)
     } catch { setSuscrito(false) }
   }
@@ -247,7 +255,7 @@ function Home({ empresa, user, conductorId, onLogout }) {
     const onVis = () => { if (document.visibilityState === 'visible') revisarAvisos() }
     document.addEventListener('visibilitychange', onVis)
     return () => document.removeEventListener('visibilitychange', onVis)
-  }, [])
+  }, [conductor?.id])
   const avisosOk = permiso === 'granted' && suscrito === true
   const [enlaceCopiado, setEnlaceCopiado] = useState(false)
   async function copiarEnlaceApp() {
@@ -257,14 +265,6 @@ function Home({ empresa, user, conductorId, onLogout }) {
   }
   const rutasIdsRef = useRef([])
   const vehiculo = useMemo(() => vehiculos.find((v) => String(v.id) === String(selId)), [vehiculos, selId])
-
-  // Intenta activar al abrir (si ya dio permiso, renueva la suscripción sin molestar).
-  useEffect(() => {
-    if (!conductor) return
-    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-      activarPushConductor({ empresa, conductor, email: user?.email }).catch(() => {})
-    }
-  }, [conductor?.id])
 
   // Activación con un toque. Muestra el resultado EN PANTALLA (no solo alert).
   async function activarAvisos() {
@@ -299,11 +299,20 @@ function Home({ empresa, user, conductorId, onLogout }) {
     setConductor(cond)
     const vs = await vehiculosDeConductor({ empresaId: empresa.id, conductorId: cond?.id }).catch(() => [])
     setVehiculos(vs)
-    // Un solo vehículo: entra directo. Varios: muestra el selector antes de entrar.
-    setSelId((prev) => prev || (vs.length === 1 ? vs[0].id : ''))
+    // Recuerda el vehículo elegido la última vez (si sigue disponible).
+    let guardado = ''
+    try { guardado = localStorage.getItem(`movtek_veh_sel_${empresa.id}_${cond?.id || conductorId || ''}`) || '' } catch {}
+    const valido = vs.some((v) => String(v.id) === String(guardado)) ? guardado : ''
+    setSelId((prev) => prev || valido || (vs.length === 1 ? vs[0].id : ''))
     setCargando(false)
   }
   useEffect(() => { cargar() }, [empresa?.id])
+
+  // Guarda/olvida el vehículo elegido para recordarlo al refrescar.
+  function elegirVehiculo(id) {
+    setSelId(id)
+    try { localStorage.setItem(`movtek_veh_sel_${empresa?.id}_${conductor?.id || conductorId || ''}`, id || '') } catch {}
+  }
 
   async function refrescarHoy() {
     if (!vehiculo) { setHoy(null); return }
@@ -369,7 +378,7 @@ function Home({ empresa, user, conductorId, onLogout }) {
           <p className="mb-4 text-sm" style={{ color: '#8fb6a3' }}>Selecciona con cuál vas a trabajar hoy.</p>
           <div className="flex flex-col gap-3">
             {vehiculos.map((v) => (
-              <button key={v.id} onClick={() => setSelId(v.id)} className="rounded-2xl border px-5 py-4 text-left"
+              <button key={v.id} onClick={() => elegirVehiculo(v.id)} className="rounded-2xl border px-5 py-4 text-left"
                 style={{ borderColor: '#203a2d', background: '#13201a' }}>
                 <span className="block font-display text-xl font-extrabold" style={{ color: '#eafff3' }}>{v.placa}</span>
                 <span className="block text-sm" style={{ color: '#8fb6a3' }}>{v.marca} {v.modelo} · Móvil {v.numero_interno || '—'}</span>
@@ -405,7 +414,7 @@ function Home({ empresa, user, conductorId, onLogout }) {
               <div className="mt-3 flex items-center gap-2 rounded-xl px-4 py-2.5" style={{ background: '#132a1e', border: '1px solid #22e07a' }}>
                 <span className="font-display text-base font-extrabold" style={{ color: '#eafff3' }}>🚍 {vehiculo.placa}</span>
                 <span className="text-xs" style={{ color: '#8fb6a3' }}>Móvil {vehiculo.numero_interno || '—'}</span>
-                {vehiculos.length > 1 && <button onClick={() => setSelId('')} className="ml-auto rounded-lg px-2.5 py-1 text-xs font-bold" style={{ background: '#0e9488', color: '#042012' }}>Cambiar</button>}
+                {vehiculos.length > 1 && <button onClick={() => elegirVehiculo('')} className="ml-auto rounded-lg px-2.5 py-1 text-xs font-bold" style={{ background: '#0e9488', color: '#042012' }}>Cambiar</button>}
               </div>
             )}
 
